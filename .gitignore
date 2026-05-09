@@ -1,0 +1,35 @@
+node_modules
+.pnpm-store
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+storybook-static
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Turbo
+.turbo
+
+# Vitest browser failure screenshots
+**/__screenshots__/
+
+# Playwright
+test-results/
+playwright-report/

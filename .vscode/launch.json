@@ -1,0 +1,17 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "App: dev",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "pnpm dev"
+		},
+		{
+			"name": "Storybook",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "pnpm storybook"
+		}
+	]
+}

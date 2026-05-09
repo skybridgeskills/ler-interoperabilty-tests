@@ -1,0 +1,3 @@
+# Collapse these paths by default in GitHub PR diffs (expandable). Not hidden from git locally.
+docs/plans/** linguist-generated
+docs/plans-done/** linguist-generated

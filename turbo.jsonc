@@ -1,0 +1,145 @@
+{
+	"$schema": "https://turborepo.com/schema.json",
+	"ui": "tui",
+	"globalEnv": ["CI", "NODE_ENV"],
+	"tasks": {
+		// =============================================================================================
+		// Category tasks
+		//
+		// These are top-level tasks that perform high-level operations.
+		// These tasks should _not_ be defined in any package.json.
+		//
+
+		// Build: build the application
+		"build": {
+			"dependsOn": ["build:svelte"]
+		},
+
+		// Check: linting, formatting, type checking, etc.
+		"check": {
+			"dependsOn": ["check:prettier", "check:eslint", "check:typescript", "check:svelte"]
+		},
+
+		// Fix: auto-fix problems
+		"fix": {
+			"dependsOn": ["fix:prettier", "fix:eslint"]
+		},
+
+		// Test: unit tests. test:vitest runs all three Vitest projects
+		// (client / server / storybook). test:storybook is kept available as a
+		// manual debugging script (verbose, serial) but is *not* in the dependency
+		// chain — running both in parallel makes them fight over Playwright.
+		"test": {
+			"dependsOn": ["test:vitest"]
+		},
+
+		// E2E: end-to-end tests
+		"e2e": {
+			"dependsOn": ["e2e:playwright"]
+		},
+
+		// Validate: run before committing to ensure correctness
+		"validate": {
+			"dependsOn": ["check", "test", "build"]
+		},
+
+		// Pre-commit: fast formatting only; full checks run on demand or in CI
+		"pre-commit": {
+			"dependsOn": ["fix-staged-fast"]
+		},
+
+		// =============================================================================================
+		// Dev tasks
+
+		"dev": {
+			"cache": false,
+			"persistent": true
+		},
+
+		"storybook": {
+			"cache": false,
+			"persistent": true
+		},
+
+		"preview": {
+			"cache": false,
+			"persistent": true
+		},
+
+		// =============================================================================================
+		// Build tasks
+
+		"build:svelte": {
+			"dependsOn": ["^build"],
+			"inputs": ["$TURBO_DEFAULT$", ".env*"],
+			"outputs": [".svelte-kit/**", "build/**", "dist/**"],
+			"env": ["NODE_ENV"],
+			"cache": true
+		},
+		"build:storybook": {
+			"inputs": ["src/**", ".storybook/**", "package.json"],
+			"outputs": ["storybook-static/**"],
+			"cache": true
+		},
+
+		// =============================================================================================
+		// Check tasks
+
+		"check:prettier": {
+			"inputs": ["**/*.{json,jsonc,md,yml,yaml,ts,svelte,css}", ".prettierrc", ".prettierignore"],
+			"cache": true
+		},
+		"check:eslint": {
+			"inputs": ["src/**", ".eslintrc*", "eslint.config.*"],
+			"cache": true
+		},
+		"check:typescript": {
+			"inputs": ["src/**", "tsconfig.json"],
+			"cache": true
+		},
+		"check:svelte": {
+			"dependsOn": ["check:typescript"],
+			"inputs": ["src/**", "tsconfig.json", "svelte.config.js"],
+			"cache": true
+		},
+
+		// =============================================================================================
+		// Fix tasks
+
+		"fix:prettier": {
+			"inputs": ["**/*.{json,jsonc,md,yml,yaml,ts,svelte,css}", ".prettierrc", ".prettierignore"],
+			"outputs": ["**/*.{json,jsonc,md,yml,yaml,ts,svelte,css}"],
+			"cache": true
+		},
+		"fix:eslint": {
+			"inputs": ["src/**", ".eslintrc*", "eslint.config.*"],
+			"outputs": ["src/**"],
+			"cache": true
+		},
+		"fix-staged-fast": {
+			"cache": false
+		},
+
+		// =============================================================================================
+		// Test tasks
+
+		"test:vitest": {
+			"inputs": ["src/**", "vite.config.ts", "tsconfig.json"],
+			"outputs": ["build/test-results/**", "build/coverage/**"],
+			"env": ["CI"],
+			"cache": true
+		},
+		"test:storybook": {
+			"inputs": ["src/**", ".storybook/**", "vite.config.ts", "tsconfig.json"],
+			"env": ["CI"],
+			"cache": true
+		},
+		"e2e:playwright": {
+			"dependsOn": ["build"],
+			"inputs": ["e2e/**", "src/**", "playwright.config.ts"],
+			"outputs": ["test-results/**"],
+			"env": ["CI"],
+			"cache": true
+		}
+	}
+}
