@@ -86,5 +86,17 @@ export default defineConfig(
 		rules: {
 			'svelte/no-navigation-without-resolve': 'off'
 		}
+	},
+	{
+		// Interop UI + route pages use the typed `checklistHref` / `profileHref`
+		// helpers, which call `resolve()` internally; the rule can't trace that.
+		files: [
+			'src/lib/components/interop/**/*.svelte',
+			'src/lib/pages/**/*.svelte',
+			'src/routes/profiles/**/*.svelte'
+		],
+		rules: {
+			'svelte/no-navigation-without-resolve': 'off'
+		}
 	}
 );

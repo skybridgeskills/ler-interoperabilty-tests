@@ -1,0 +1,21 @@
+<script lang="ts" module>
+	import { defineMeta } from '@storybook/addon-svelte-csf';
+
+	import { allProfiles } from '$lib/interop/index.js';
+
+	import { ProfileBadge } from './index.js';
+
+	const { Story } = defineMeta({
+		title: 'Interop/ProfileBadge',
+		component: ProfileBadge,
+		args: { profile: allProfiles[0] }
+	});
+</script>
+
+<Story name="All profiles">
+	<div class="flex flex-wrap items-center gap-3 bg-background p-6">
+		{#each allProfiles as profile (profile.slug)}
+			<ProfileBadge {profile} href="/profiles/{profile.slug}" />
+		{/each}
+	</div>
+</Story>

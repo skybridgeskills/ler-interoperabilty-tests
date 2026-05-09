@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 import { z } from 'zod';
 
-import { ZodFactory } from './zod-factory.js';
+import { ZodFactory } from '$lib/util/zod-factory.js';
 
 /**
  * Public shape of the `/version` endpoint. Built from package.json + optional
