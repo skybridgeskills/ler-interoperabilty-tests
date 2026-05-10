@@ -9,7 +9,7 @@
 	});
 </script>
 
-<Story name="Default">
+<Story name="Default" asChild>
 	<div class="min-h-screen bg-background p-12">
 		<LandingPage />
 	</div>

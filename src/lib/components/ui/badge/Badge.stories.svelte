@@ -9,7 +9,7 @@
 	});
 </script>
 
-<Story name="Variants">
+<Story name="Variants" asChild>
 	<div class="flex flex-wrap items-center gap-3 bg-background p-6">
 		<Badge>Default</Badge>
 		<Badge variant="secondary">Secondary</Badge>

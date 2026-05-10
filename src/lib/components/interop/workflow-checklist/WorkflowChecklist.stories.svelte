@@ -11,12 +11,11 @@
 
 	const { Story } = defineMeta({
 		title: 'Interop/WorkflowChecklist',
-		component: WorkflowChecklist,
-		args: { checklist: combo.checklist, profile: combo.profile, workflow, role }
+		component: WorkflowChecklist
 	});
 </script>
 
-<Story name="Issuer / Credential Issuance / VCALM-EdDSA">
+<Story name="Issuer / Credential Issuance / VCALM-EdDSA" asChild>
 	<div class="mx-auto max-w-3xl bg-background p-6">
 		<WorkflowChecklist checklist={combo.checklist} profile={combo.profile} {workflow} {role} />
 	</div>

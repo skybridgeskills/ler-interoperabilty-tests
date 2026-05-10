@@ -17,7 +17,7 @@
 	});
 </script>
 
-<Story name="Variants">
+<Story name="Variants" asChild>
 	<div class="flex flex-wrap gap-3 bg-background p-6">
 		<Button variant="default">Default</Button>
 		<Button variant="secondary">Secondary</Button>
@@ -28,7 +28,7 @@
 	</div>
 </Story>
 
-<Story name="Sizes">
+<Story name="Sizes" asChild>
 	<div class="flex flex-wrap items-center gap-3 bg-background p-6">
 		<Button size="xs">XS</Button>
 		<Button size="sm">Small</Button>
@@ -38,7 +38,7 @@
 	</div>
 </Story>
 
-<Story name="Disabled">
+<Story name="Disabled" asChild>
 	<div class="flex gap-3 bg-background p-6">
 		<Button disabled>Default</Button>
 		<Button variant="outline" disabled>Outline</Button>

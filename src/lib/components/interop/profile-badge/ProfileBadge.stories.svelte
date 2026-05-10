@@ -7,12 +7,11 @@
 
 	const { Story } = defineMeta({
 		title: 'Interop/ProfileBadge',
-		component: ProfileBadge,
-		args: { profile: allProfiles[0] }
+		component: ProfileBadge
 	});
 </script>
 
-<Story name="All profiles">
+<Story name="All profiles" asChild>
 	<div class="flex flex-wrap items-center gap-3 bg-background p-6">
 		{#each allProfiles as profile (profile.slug)}
 			<ProfileBadge {profile} href="/profiles/{profile.slug}" />

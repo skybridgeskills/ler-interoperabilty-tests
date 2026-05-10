@@ -9,7 +9,7 @@
 	});
 </script>
 
-<Story name="Default">
+<Story name="Default" asChild>
 	<div class="max-w-2xl bg-background p-6">
 		<Tabs value="wallet" class="w-full">
 			<TabsList>

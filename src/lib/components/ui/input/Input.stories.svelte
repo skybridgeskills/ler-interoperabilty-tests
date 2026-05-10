@@ -9,14 +9,14 @@
 	});
 </script>
 
-<Story name="Default">
+<Story name="Default" asChild>
 	<div class="flex max-w-sm flex-col gap-3 bg-background p-6">
 		<label class="text-label-md text-muted-foreground" for="story-name">Issuer URL</label>
 		<Input id="story-name" placeholder="https://issuer.example.com" />
 	</div>
 </Story>
 
-<Story name="Disabled">
+<Story name="Disabled" asChild>
 	<div class="flex max-w-sm flex-col gap-3 bg-background p-6">
 		<label class="text-label-md text-muted-foreground" for="story-name-disabled">Issuer URL</label>
 		<Input id="story-name-disabled" value="https://example.com" disabled />

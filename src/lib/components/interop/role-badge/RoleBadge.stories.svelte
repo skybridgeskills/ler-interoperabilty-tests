@@ -7,12 +7,11 @@
 
 	const { Story } = defineMeta({
 		title: 'Interop/RoleBadge',
-		component: RoleBadge,
-		args: { role: allRoles[0] }
+		component: RoleBadge
 	});
 </script>
 
-<Story name="All roles">
+<Story name="All roles" asChild>
 	<div class="flex flex-wrap items-center gap-3 bg-background p-6">
 		{#each allRoles as role (role.slug)}
 			<RoleBadge {role} />

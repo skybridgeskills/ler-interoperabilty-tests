@@ -11,12 +11,11 @@
 
 	const { Story } = defineMeta({
 		title: 'Interop/WorkflowCard',
-		component: WorkflowCard,
-		args: { workflow: credentialIssuance, role: issuer, profiles }
+		component: WorkflowCard
 	});
 </script>
 
-<Story name="Issuer / Credential Issuance">
+<Story name="Issuer / Credential Issuance" asChild>
 	<div class="max-w-md bg-background p-6">
 		<WorkflowCard role={issuer} workflow={credentialIssuance} {profiles} />
 	</div>

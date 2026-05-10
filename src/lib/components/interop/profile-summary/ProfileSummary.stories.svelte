@@ -9,12 +9,11 @@
 
 	const { Story } = defineMeta({
 		title: 'Interop/ProfileSummary',
-		component: ProfileSummary,
-		args: { profile: vcalm }
+		component: ProfileSummary
 	});
 </script>
 
-<Story name="VCALM-EdDSA">
+<Story name="VCALM-EdDSA" asChild>
 	<div class="bg-background p-6">
 		<ProfileSummary profile={vcalm} />
 	</div>

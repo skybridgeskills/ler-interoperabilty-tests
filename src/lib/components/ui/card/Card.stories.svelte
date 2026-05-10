@@ -17,7 +17,7 @@
 	});
 </script>
 
-<Story name="Default">
+<Story name="Default" asChild>
 	<div class="grid max-w-3xl gap-4 bg-background p-6 md:grid-cols-2">
 		<Card>
 			<CardHeader>

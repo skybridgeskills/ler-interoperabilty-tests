@@ -9,11 +9,11 @@
 	});
 </script>
 
-<Story name="Default">
+<Story name="Default" asChild>
 	<AppHeader />
 </Story>
 
-<Story name="With scrollable body">
+<Story name="With scrollable body" asChild>
 	<AppHeader />
 	<main class="mx-auto max-w-7xl px-4 py-12">
 		{#each Array.from({ length: 30 }, (_, i) => i + 1) as n (n)}

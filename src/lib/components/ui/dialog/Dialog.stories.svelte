@@ -19,7 +19,7 @@
 	});
 </script>
 
-<Story name="Default">
+<Story name="Default" asChild>
 	<div class="bg-background p-6">
 		<Dialog>
 			<DialogTrigger>

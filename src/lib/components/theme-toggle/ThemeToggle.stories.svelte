@@ -19,7 +19,7 @@
 	});
 </script>
 
-<Story name="Default">
+<Story name="Default" asChild>
 	<div
 		class="flex flex-col items-start gap-4 rounded-md border border-border bg-background p-6 text-foreground"
 	>
@@ -36,7 +36,7 @@
 	</div>
 </Story>
 
-<Story name="Inside a card">
+<Story name="Inside a card" asChild>
 	<div
 		class="flex max-w-sm items-center justify-between gap-4 rounded-md border border-border bg-card p-4 text-card-foreground"
 	>

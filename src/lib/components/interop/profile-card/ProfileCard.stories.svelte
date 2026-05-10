@@ -7,12 +7,11 @@
 
 	const { Story } = defineMeta({
 		title: 'Interop/ProfileCard',
-		component: ProfileCard,
-		args: { profile: allProfiles[0] }
+		component: ProfileCard
 	});
 </script>
 
-<Story name="All profiles">
+<Story name="All profiles" asChild>
 	<div class="grid max-w-5xl gap-6 bg-background p-6 md:grid-cols-3">
 		{#each allProfiles as profile (profile.slug)}
 			<ProfileCard {profile} />
