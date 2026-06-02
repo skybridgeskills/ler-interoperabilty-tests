@@ -1,7 +1,10 @@
 export * from './profile-schema.js';
+export * from './additive-profile-schema.js';
 export * from './roles.js';
 export * from './workflows.js';
 export * from './workflow-groups.js';
 export * from './accessors.js';
 export * from './checklist-href.js';
+export * from './runner-state.js';
 export { allProfiles } from './profiles/all-profiles.js';
+export { allAdditiveProfiles } from './additive-profiles/all-additive-profiles.js';

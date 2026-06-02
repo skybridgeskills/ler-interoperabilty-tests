@@ -66,6 +66,14 @@
 			"persistent": true
 		},
 
+		// Brings up the local DCC dependency services via docker compose.
+		// Persistent + interactive so ctrl-c cleanly tears them down.
+		"dev:services": {
+			"cache": false,
+			"persistent": true,
+			"interactive": true
+		},
+
 		// =============================================================================================
 		// Build tasks
 

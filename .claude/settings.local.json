@@ -1,5 +1,8 @@
 {
 	"permissions": {
-		"additionalDirectories": ["/Users/notto/Projects/strada-ecosystem-coordination-guide"]
+		"additionalDirectories": [
+			"/Users/notto/Projects/strada-ecosystem-coordination-guide",
+			"/Users/notto/Projects/skybridgeskills/dcc/dcc-transaction-service"
+		]
 	}
 }

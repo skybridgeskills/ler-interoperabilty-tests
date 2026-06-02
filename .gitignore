@@ -33,3 +33,6 @@ vite.config.ts.timestamp-*
 # Playwright
 test-results/
 playwright-report/
+
+# Local DCC dev-service state (docker compose volumes)
+.data/

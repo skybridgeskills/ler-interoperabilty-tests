@@ -5,7 +5,7 @@
 
 	import { ProfileSummary } from './index.js';
 
-	const vcalm = profileBySlug('vcalm-eddsa')!;
+	const vcalm = profileBySlug('vcalm')!;
 
 	const { Story } = defineMeta({
 		title: 'Interop/ProfileSummary',
@@ -13,7 +13,7 @@
 	});
 </script>
 
-<Story name="VCALM-EdDSA" asChild>
+<Story name="VCALM" asChild>
 	<div class="bg-background p-6">
 		<ProfileSummary profile={vcalm} />
 	</div>

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+	additiveProfileBySlug,
+	additiveProfilesForBaseProfile,
 	allCombinations,
 	combinationFor,
 	profileBySlug,
@@ -18,8 +20,8 @@ describe('allCombinations', () => {
 });
 
 describe('per-profile checklist composition', () => {
-	it('vcalm-eddsa has 4 checklists across the protocol-based workflows', () => {
-		const p = profileBySlug('vcalm-eddsa')!;
+	it('vcalm has 4 checklists across the protocol-based workflows', () => {
+		const p = profileBySlug('vcalm')!;
 		expect(p.checklists.map((c) => `${c.role}/${c.workflow}`).sort()).toEqual([
 			'issuer/credential-issuance',
 			'verifier/credential-request-and-verification',
@@ -49,9 +51,9 @@ describe('per-profile checklist composition', () => {
 
 describe('combinationFor', () => {
 	it('resolves a valid combination with at least one step', () => {
-		const combo = combinationFor('issuer', 'credential-issuance', 'vcalm-eddsa');
+		const combo = combinationFor('issuer', 'credential-issuance', 'vcalm');
 		expect(combo?.checklist.steps.length).toBeGreaterThan(0);
-		expect(combo?.profile.slug).toBe('vcalm-eddsa');
+		expect(combo?.profile.slug).toBe('vcalm');
 	});
 
 	it('returns undefined for an invalid combination', () => {
@@ -62,7 +64,7 @@ describe('combinationFor', () => {
 describe('profilesForCombination', () => {
 	it('returns the 2 protocol profiles for wallet × credential-presentation', () => {
 		const slugs = profilesForCombination('wallet', 'credential-presentation').map((p) => p.slug);
-		expect(slugs.sort()).toEqual(['oid4-ecdsa', 'vcalm-eddsa']);
+		expect(slugs.sort()).toEqual(['oid4-ecdsa', 'vcalm']);
 	});
 
 	it('returns ob3-direct-delivery for verifier × direct-credential-verification', () => {
@@ -118,5 +120,43 @@ describe('roleBySlug / workflowBySlug', () => {
 	it('round-trips canonical slugs', () => {
 		expect(roleBySlug('verifier')?.name).toBe('Verifier');
 		expect(workflowBySlug('credential-presentation')?.name).toBe('Credential Presentation');
+	});
+});
+
+describe('additive profile accessors', () => {
+	it('resolves open-skill-alignment by slug', () => {
+		const p = additiveProfileBySlug('open-skill-alignment');
+		expect(p?.slug).toBe('open-skill-alignment');
+		expect(p?.appliesToBaseProfiles).toContain('ob3-direct-delivery');
+	});
+
+	it('resolves data-integrity-cryptosuites by slug', () => {
+		const p = additiveProfileBySlug('data-integrity-cryptosuites');
+		expect(p?.slug).toBe('data-integrity-cryptosuites');
+		expect(p?.appliesToBaseProfiles).toContain('vcalm');
+		expect(p?.checklists.map((c) => `${c.role}/${c.workflow}`).sort()).toEqual([
+			'issuer/credential-issuance',
+			'verifier/credential-request-and-verification',
+			'wallet/credential-acceptance',
+			'wallet/credential-presentation'
+		]);
+	});
+
+	it('returns undefined for an unknown slug', () => {
+		expect(additiveProfileBySlug('not-a-slug')).toBeUndefined();
+	});
+
+	it('lists open-skill-alignment as applicable to ob3-direct-delivery', () => {
+		const list = additiveProfilesForBaseProfile('ob3-direct-delivery').map((p) => p.slug);
+		expect(list).toEqual(['open-skill-alignment']);
+	});
+
+	it('lists data-integrity-cryptosuites as applicable to vcalm', () => {
+		const list = additiveProfilesForBaseProfile('vcalm').map((p) => p.slug);
+		expect(list).toEqual(['data-integrity-cryptosuites']);
+	});
+
+	it('returns an empty array for a base profile with no additive profiles', () => {
+		expect(additiveProfilesForBaseProfile('oid4-ecdsa')).toEqual([]);
 	});
 });

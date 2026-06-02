@@ -1,4 +1,5 @@
 import pino, { type Logger as PinoLogger } from 'pino';
+import pretty from 'pino-pretty';
 
 /**
  * Minimal structured logger interface used throughout the app.
@@ -22,12 +23,18 @@ export interface PinoLoggerOptions {
 /**
  * Real logger backed by pino. Use `pretty: true` in dev for a readable console
  * stream; leave it off in CI / prod for structured JSON output.
+ *
+ * When `pretty: true`, `pino-pretty` is wired directly as a synchronous
+ * Writable stream rather than via pino's `transport` option. The transport
+ * mechanism uses worker_threads with runtime module resolution, which the
+ * SvelteKit/Vite server bundler cannot trace at boot — streaming sidesteps
+ * the worker entirely and works in both bundled and unbundled environments.
  */
 export function PinoLoggerService(opts: PinoLoggerOptions = {}): LoggerService {
-	const base: PinoLogger = pino({
-		level: opts.level ?? 'info',
-		transport: opts.pretty ? { target: 'pino-pretty' } : undefined
-	});
+	const level = opts.level ?? 'info';
+	const base: PinoLogger = opts.pretty
+		? pino({ level }, pretty({ colorize: true, translateTime: 'SYS:HH:MM:ss.l' }))
+		: pino({ level });
 	return wrap(base);
 }
 

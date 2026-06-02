@@ -22,7 +22,10 @@
 		"test:storybook": "vite optimize --force && vitest run --reporter=verbose --no-file-parallelism --no-coverage",
 		"e2e:playwright": "playwright test",
 		"storybook": "storybook dev -p 6006",
-		"dev": "vite dev"
+		"dev": "vite dev",
+		"dev:services": "docker compose -f docker/compose.dev.yml --env-file .env up",
+		"dev:services:down": "docker compose -f docker/compose.dev.yml down",
+		"dev:full": "turbo run dev storybook dev:services --concurrency=10"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.4.0",
@@ -45,6 +48,7 @@
 		"@tailwindcss/typography": "^0.5.19",
 		"@tailwindcss/vite": "^4.1.17",
 		"@types/node": "^24",
+		"@types/qrcode": "^1.5.6",
 		"@vitest/browser-playwright": "^4.0.15",
 		"bits-ui": "^2.17.3",
 		"eslint": "^9.39.1",
@@ -75,9 +79,11 @@
 		"vitest-browser-svelte": "^2.0.1"
 	},
 	"dependencies": {
+		"@digitalcredentials/verifier-core": "1.0.0-beta.11",
 		"clsx": "^2.1.1",
 		"pino": "^10.0.0",
 		"pino-pretty": "^13.0.0",
+		"qrcode": "^1.5.4",
 		"tailwind-merge": "^3.4.0",
 		"zod": "^4.3.6"
 	}

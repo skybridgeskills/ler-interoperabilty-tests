@@ -23,15 +23,22 @@ export const WorkflowSlug = ZodFactory(
 export type WorkflowSlug = ReturnType<typeof WorkflowSlug>;
 
 /** URL slug for one of the three interoperability profiles. */
-export const ProfileSlug = ZodFactory(z.enum(['vcalm-eddsa', 'oid4-ecdsa', 'ob3-direct-delivery']));
+export const ProfileSlug = ZodFactory(z.enum(['vcalm', 'oid4-ecdsa', 'ob3-direct-delivery']));
 export type ProfileSlug = ReturnType<typeof ProfileSlug>;
 
 /**
  * One MUST / SHOULD / MAY clause inside a checklist step. The level mirrors
  * RFC 2119 conformance language as used by the source profile docs.
+ *
+ * `id` is an optional stable key used by the issuer-runner check
+ * registry to map a requirement to its automated check function.
+ * Existing checklists may omit it; new checklists added in support of
+ * the runner should set it (kebab-case, namespaced by profile slug —
+ * e.g. `ob3-direct-delivery.signature-valid`).
  */
 export const ChecklistRequirement = ZodFactory(
 	z.object({
+		id: z.string().optional(),
 		level: z.enum(['MUST', 'SHOULD', 'MAY']),
 		text: z.string()
 	})

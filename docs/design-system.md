@@ -26,6 +26,8 @@ Tailwind utilities (`bg-background`, `text-foreground`, etc.).
 | `--accent`             | `hsl(261 60% 55%)` |
 | `--warning`            | `hsl(35 75% 40%)`  |
 | `--destructive`        | `hsl(350 70% 45%)` |
+| `--live`               | `hsl(20 92% 48%)`  |
+| `--live-soft`          | `hsl(20 90% 92%)`  |
 | `--border` / `--input` | `hsl(220 13% 78%)` |
 | `--ring`               | `hsl(217 87% 45%)` |
 
@@ -45,8 +47,29 @@ Tailwind utilities (`bg-background`, `text-foreground`, etc.).
 | `--accent`             | `hsl(261 84% 78%)` |
 | `--warning`            | `hsl(35 65% 64%)`  |
 | `--destructive`        | `hsl(350 89% 71%)` |
+| `--live`               | `hsl(22 95% 64%)`  |
+| `--live-soft`          | `hsl(20 50% 18%)`  |
 | `--border` / `--input` | `hsl(231 12% 25%)` |
 | `--ring`               | `hsl(217 87% 73%)` |
+
+### Live state — warm flame
+
+The `live` token family marks **runtime / in-flight** UI: the live CTA
+on a runner page, the QR code surface, exchange-status indicators,
+delivered-credential summaries. The rest of the app stays cool — reserve
+warm hues for surfaces and elements that are talking to a real service
+right now.
+
+| Class                  | Where to use                                               |
+| ---------------------- | ---------------------------------------------------------- |
+| `bg-live`              | Filled CTA buttons that initiate live actions.             |
+| `text-live-foreground` | Foreground on `bg-live`.                                   |
+| `bg-live-soft`         | Right-column run-state surface (the runner panel).         |
+| `border-live-border`   | Edge of `bg-live-soft` panels and live-state cards.        |
+| `text-live`            | Active-state labels ("Live · in flight", step indicators). |
+
+See the `Theme/Palette` Storybook story for an in-context preview in
+both light and dark.
 
 `--radius` defaults to `0.5rem` and is exposed as `--radius-sm/md/lg/xl`
 via `@theme inline`.

@@ -1,3 +1,5 @@
+import type { AdditiveProfile } from './additive-profile-schema.js';
+import { allAdditiveProfiles } from './additive-profiles/all-additive-profiles.js';
 import type {
 	Profile,
 	ProfileSlug,
@@ -66,4 +68,21 @@ export function profileWorkflows(profile: Profile): { workflow: Workflow; role: 
 		workflow: workflowBySlug(c.workflow)!,
 		role: roleBySlug(c.role)!
 	}));
+}
+
+/** Look up an additive profile by URL slug. */
+export function additiveProfileBySlug(slug: string): AdditiveProfile | undefined {
+	return allAdditiveProfiles.find((p) => p.slug === slug);
+}
+
+/**
+ * Additive profiles that apply to the given base profile slug. The
+ * argument is a plain `string` so route loaders can call this without
+ * pre-parsing the slug — the comparison still narrows internally via
+ * the typed `appliesToBaseProfiles` array.
+ */
+export function additiveProfilesForBaseProfile(base: string): AdditiveProfile[] {
+	return allAdditiveProfiles.filter((p) =>
+		(p.appliesToBaseProfiles as readonly string[]).includes(base)
+	);
 }
