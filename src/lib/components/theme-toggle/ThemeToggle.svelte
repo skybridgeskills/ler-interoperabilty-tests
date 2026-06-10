@@ -91,7 +91,7 @@
 <Button
 	variant="outline"
 	size="icon"
-	class="theme-toggle relative overflow-hidden"
+	class="theme-toggle relative cursor-pointer overflow-hidden"
 	aria-label={resolvedTheme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
 	aria-pressed={resolvedTheme === 'dark'}
 	onclick={toggleTheme}
