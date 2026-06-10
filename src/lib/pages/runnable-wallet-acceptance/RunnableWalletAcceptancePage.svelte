@@ -6,6 +6,7 @@
 		type ExchangePollError,
 		type ExchangePollResponse
 	} from '$lib/client/exchange-runner/index.js';
+	import { recordRun } from '$lib/client/run-history/index.js';
 	import {
 		ExchangeRunnerPanel,
 		type ExchangeProtocolId
@@ -13,8 +14,10 @@
 	import { RunnableChecklist } from '$lib/components/interop/runnable-checklist/index.js';
 	import {
 		combinationFor,
+		exchangeRunRecord,
 		roleBySlug,
 		type ChecklistRunState,
+		type RunStateDerivation,
 		type StepRunState,
 		workflowBySlug
 	} from '$lib/interop/index.js';
@@ -41,6 +44,29 @@
 
 	let pollHandle: { stop: () => void } | undefined;
 
+	// Run-history recording: record exactly once when a run reaches a terminal
+	// state (complete → passed, error/timeout → failed). Reset per run.
+	let recorded = false;
+	let lastExchangeState: 'pending' | 'active' | 'complete' | 'invalid' = 'pending';
+
+	function recordWalletRun(
+		exchangeState: 'pending' | 'active' | 'complete' | 'invalid',
+		derived: RunStateDerivation
+	) {
+		if (recorded) return;
+		recorded = true;
+		recordRun(
+			exchangeRunRecord({
+				role: 'wallet',
+				workflow: 'credential-acceptance',
+				profile: 'vcalm',
+				exchangeId,
+				exchangeState,
+				derived
+			})
+		);
+	}
+
 	function setIdle() {
 		exchangeId = undefined;
 		interactionUrl = undefined;
@@ -49,6 +75,8 @@
 		runState = 'idle';
 		perStep = Array.from({ length: stepCount }, () => 'pending');
 		runnerError = undefined;
+		recorded = false;
+		lastExchangeState = 'pending';
 		pollHandle?.stop();
 		pollHandle = undefined;
 	}
@@ -57,6 +85,7 @@
 		runState = 'error';
 		runnerError = error;
 		perStep = Array.from({ length: stepCount }, () => 'skipped');
+		recordWalletRun(lastExchangeState, { run: 'error', perStep });
 	}
 
 	function startPolling(id: string) {
@@ -67,6 +96,10 @@
 				onUpdate: (response: ExchangePollResponse) => {
 					runState = response.derived.run;
 					perStep = response.derived.perStep;
+					lastExchangeState = response.exchange.state;
+					if (response.derived.run === 'complete' || response.derived.run === 'error') {
+						recordWalletRun(response.exchange.state, response.derived);
+					}
 				},
 				onError: (e: ExchangePollError) => {
 					setError({
@@ -90,6 +123,8 @@
 
 	async function initiate() {
 		runnerError = undefined;
+		recorded = false;
+		lastExchangeState = 'pending';
 		try {
 			const res = await fetch('/api/exchange-runner/create', { method: 'POST' });
 			if (!res.ok) {

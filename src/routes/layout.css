@@ -30,6 +30,33 @@
 	--live-foreground: hsl(0 0% 100%);
 	--live-soft: hsl(20 90% 92%);
 	--live-border: hsl(20 80% 60%);
+	/* Requirement (blue) — conformance levels (MUST/SHOULD/MAY). Red stays reserved for failures. */
+	--requirement: hsl(217 87% 45%);
+	--requirement-foreground: hsl(0 0% 100%);
+	--requirement-soft: hsl(217 80% 92%);
+	--requirement-border: hsl(217 55% 72%);
+	/* Success (green) — a completed/passed outcome. Reused for run-result "pass". */
+	--success: hsl(142 60% 33%);
+	--success-foreground: hsl(0 0% 100%);
+	--success-soft: hsl(142 48% 90%);
+	--success-border: hsl(142 42% 55%);
+	/* Run result — pass (green, aliases success), fail (red, aliases destructive), incomplete (neutral). */
+	--result-pass: var(--success);
+	--result-pass-foreground: var(--success-foreground);
+	--result-pass-soft: var(--success-soft);
+	--result-pass-border: var(--success-border);
+	--result-fail: var(--destructive);
+	--result-fail-foreground: var(--destructive-foreground);
+	--result-fail-soft: hsl(350 70% 93%);
+	--result-fail-border: hsl(350 58% 72%);
+	--result-incomplete: var(--muted-foreground);
+	--result-incomplete-soft: var(--muted);
+	--result-incomplete-border: var(--border);
+	/* Progress (warm flame) — in-flight runtime; aliases the live family. */
+	--progress: var(--live);
+	--progress-foreground: var(--live-foreground);
+	--progress-soft: var(--live-soft);
+	--progress-border: var(--live-border);
 	--border: hsl(220 13% 78%);
 	--input: hsl(220 13% 78%);
 	--ring: hsl(217 87% 45%);
@@ -65,6 +92,19 @@
 	--live-foreground: hsl(20 60% 12%);
 	--live-soft: hsl(20 50% 18%);
 	--live-border: hsl(22 80% 50%);
+	/* Requirement (blue) — dark surface. */
+	--requirement: hsl(217 87% 73%);
+	--requirement-foreground: hsl(234 16% 13%);
+	--requirement-soft: hsl(217 42% 22%);
+	--requirement-border: hsl(217 48% 45%);
+	/* Success (green) — dark surface. result-pass aliases resolve per-scope. */
+	--success: hsl(142 52% 62%);
+	--success-foreground: hsl(234 16% 13%);
+	--success-soft: hsl(142 28% 18%);
+	--success-border: hsl(142 38% 42%);
+	/* Run result — dark surface (fail/incomplete/progress alias and resolve per-scope). */
+	--result-fail-soft: hsl(350 38% 22%);
+	--result-fail-border: hsl(350 48% 48%);
 	--border: hsl(231 12% 25%);
 	--input: hsl(231 12% 25%);
 	--ring: hsl(217 87% 73%);
@@ -103,6 +143,29 @@
 	--color-live-foreground: var(--live-foreground);
 	--color-live-soft: var(--live-soft);
 	--color-live-border: var(--live-border);
+	--color-requirement: var(--requirement);
+	--color-requirement-foreground: var(--requirement-foreground);
+	--color-requirement-soft: var(--requirement-soft);
+	--color-requirement-border: var(--requirement-border);
+	--color-success: var(--success);
+	--color-success-foreground: var(--success-foreground);
+	--color-success-soft: var(--success-soft);
+	--color-success-border: var(--success-border);
+	--color-result-pass: var(--result-pass);
+	--color-result-pass-foreground: var(--result-pass-foreground);
+	--color-result-pass-soft: var(--result-pass-soft);
+	--color-result-pass-border: var(--result-pass-border);
+	--color-result-fail: var(--result-fail);
+	--color-result-fail-foreground: var(--result-fail-foreground);
+	--color-result-fail-soft: var(--result-fail-soft);
+	--color-result-fail-border: var(--result-fail-border);
+	--color-result-incomplete: var(--result-incomplete);
+	--color-result-incomplete-soft: var(--result-incomplete-soft);
+	--color-result-incomplete-border: var(--result-incomplete-border);
+	--color-progress: var(--progress);
+	--color-progress-foreground: var(--progress-foreground);
+	--color-progress-soft: var(--progress-soft);
+	--color-progress-border: var(--progress-border);
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);

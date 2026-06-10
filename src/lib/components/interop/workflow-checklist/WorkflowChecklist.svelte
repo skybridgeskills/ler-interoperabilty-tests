@@ -10,7 +10,7 @@
 		type WorkflowChecklist as WorkflowChecklistData
 	} from '$lib/interop/index.js';
 
-	import { requirementLevelVariant } from './requirement-level-badge.js';
+	import { requirementLevelClass, requirementLevelVariant } from './requirement-level-badge.js';
 
 	let {
 		checklist,
@@ -53,7 +53,10 @@
 								aria-label="static"
 							/>
 							<span class="flex flex-wrap items-baseline gap-2">
-								<Badge variant={requirementLevelVariant[req.level]}>{req.level}</Badge>
+								<Badge
+									variant={requirementLevelVariant[req.level]}
+									class={requirementLevelClass[req.level]}>{req.level}</Badge
+								>
 								<span class="text-body-md text-foreground">{req.text}</span>
 							</span>
 						</li>

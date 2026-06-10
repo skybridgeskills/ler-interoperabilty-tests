@@ -5,14 +5,25 @@ import { render } from 'vitest-browser-svelte';
 import Page from './+page.svelte';
 
 describe('/+page.svelte', () => {
-	it('renders the LandingPage heading and three role cards', async () => {
+	it('renders the console heading, role toggles, profile section, and checklist rows', async () => {
 		render(Page);
 
 		const heading = page.getByRole('heading', { level: 1 });
 		await expect.element(heading).toHaveTextContent('LER Interoperability Test Suite');
 
-		await expect.element(page.getByRole('link', { name: /^Wallets/ })).toBeInTheDocument();
-		await expect.element(page.getByRole('link', { name: /^Verifiers/ })).toBeInTheDocument();
-		await expect.element(page.getByRole('link', { name: /^Issuers/ })).toBeInTheDocument();
+		// Roles are interactive toggles (buttons), not links to role pages.
+		await expect.element(page.getByRole('button', { name: /Issuers/ })).toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: /Wallets/ })).toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: /Verifiers/ })).toBeInTheDocument();
+
+		// Profiles section is present.
+		await expect
+			.element(page.getByRole('heading', { name: 'Interoperability profiles' }))
+			.toBeInTheDocument();
+
+		// The workflows list renders checklist rows, each with an "Open checklist" link.
+		await expect
+			.element(page.getByRole('link', { name: /^Open checklist/ }).first())
+			.toBeInTheDocument();
 	});
 });

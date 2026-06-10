@@ -1,11 +1,20 @@
 <script lang="ts">
+	import { recordRun } from '$lib/client/run-history/index.js';
 	import { IssuerRunnerPanel } from '$lib/components/interop/issuer-runner/issuer-runner-panel/index.js';
 	import type { IssuerRunnerStatus } from '$lib/components/interop/issuer-runner/issuer-runner-panel/index.js';
 	import {
 		sampleCredentialsByResultType,
 		type SampleResultType
 	} from '$lib/interop/additive-profiles/open-skill-alignment/index.js';
+	import { issuerReportRunRecord } from '$lib/interop/index.js';
 	import type { IssuerRunnerReport } from '$lib/server/domain/issuer-runner/issuer-runner-report.js';
+
+	/** Number of failed MUST outcomes across all groups (mirrors RequirementReport). */
+	function failingMustCount(r: IssuerRunnerReport): number {
+		return r.groups
+			.flatMap((g) => g.outcomes)
+			.filter((o) => o.level === 'MUST' && o.status === 'fail').length;
+	}
 
 	let credentialText = $state<string>('');
 	let includeAdditive = $state<boolean>(false);
@@ -35,8 +44,20 @@
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ credential: parsed, includeAdditive })
 			});
-			report = (await res.json()) as IssuerRunnerReport;
+			const result = (await res.json()) as IssuerRunnerReport;
+			report = result;
 			status = res.ok ? 'done' : 'error';
+			// Record this completed verification (passed iff verified and no fatalError).
+			recordRun(
+				issuerReportRunRecord({
+					role: 'issuer',
+					workflow: 'direct-credential-issuance',
+					profile: 'ob3-direct-delivery',
+					verified: result.verified,
+					failingMustCount: failingMustCount(result),
+					fatalError: result.fatalError
+				})
+			);
 		} catch (e) {
 			report = {
 				verified: false,

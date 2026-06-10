@@ -107,6 +107,27 @@ Flash prevention: an inline script in `app.html` reads
 `+layout.svelte` `onMount` and the `ThemeToggle` keep the class in sync
 on subsequent navigations and OS-preference changes.
 
+## Client-side persistence
+
+The homepage console keeps two pieces of state in `localStorage`, isolated
+under `src/lib/client/`:
+
+- **Selection** (`client/selection/selection-store.svelte.ts`) — the user's
+  chosen roles/profiles, key `lits.selection.v1`. A Svelte 5 runes store;
+  hydrate from a browser `onMount` only (never during SSR). Unknown slugs are
+  validated away on read via `RoleSlug`/`ProfileSlug` schemas.
+- **Run history** (`client/run-history/run-history-store.ts`) — the latest 3
+  `TestRunRecord`s per `(role, workflow, profile)` combination, key
+  `lits.run-history.v1`. Pure model + status derivation live in
+  `interop/run-history/`; only the store touches `localStorage`. Reads
+  `safeParse` every entry and drop malformed ones — never throw to the UI.
+
+Both keys are `.v1`-suffixed so a future schema change can migrate rather than
+break. Retention is per-combination and isolated in `applyRetention()`, shaped
+to later preserve a `pinned` flag (reserved on `TestRunRecord`, unset in MVP)
+without an API change. See
+[`docs/adr/2026-06-10-run-history-local-persistence.md`](adr/2026-06-10-run-history-local-persistence.md).
+
 ## Test harness
 
 `vite.config.ts` declares three Vitest projects:

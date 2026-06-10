@@ -15,13 +15,13 @@
 		},
 		'in-flight': {
 			label: 'In progress',
-			dotClass: 'bg-live animate-pulse',
-			textClass: 'text-live'
+			dotClass: 'bg-progress animate-pulse',
+			textClass: 'text-progress'
 		},
 		complete: {
 			label: 'Done',
-			dotClass: 'bg-primary',
-			textClass: 'text-primary'
+			dotClass: 'bg-success',
+			textClass: 'text-success font-semibold'
 		},
 		skipped: {
 			label: 'Skipped',

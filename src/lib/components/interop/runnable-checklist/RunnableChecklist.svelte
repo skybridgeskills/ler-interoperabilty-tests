@@ -15,7 +15,10 @@
 	} from '$lib/interop/index.js';
 
 	import { StepRunStateIndicator } from '../exchange-runner/step-run-state-indicator/index.js';
-	import { requirementLevelVariant } from '../workflow-checklist/requirement-level-badge.js';
+	import {
+		requirementLevelClass,
+		requirementLevelVariant
+	} from '../workflow-checklist/requirement-level-badge.js';
 
 	let {
 		checklist,
@@ -54,7 +57,7 @@
 		{#if runState === 'awaiting-wallet' || runState === 'wallet-connected'}
 			<Badge class="border-live-border bg-live-soft text-live">Live · in flight</Badge>
 		{:else if runState === 'complete'}
-			<Badge variant="default">Run complete</Badge>
+			<Badge class="border-success-border bg-success-soft text-success">Run complete</Badge>
 		{:else if runState === 'error'}
 			<Badge variant="destructive">Run failed</Badge>
 		{/if}
@@ -93,7 +96,10 @@
 										aria-label="static"
 									/>
 									<span class="flex flex-wrap items-baseline gap-2">
-										<Badge variant={requirementLevelVariant[req.level]}>{req.level}</Badge>
+										<Badge
+											variant={requirementLevelVariant[req.level]}
+											class={requirementLevelClass[req.level]}>{req.level}</Badge
+										>
 										<span class="text-body-md text-foreground">{req.text}</span>
 									</span>
 								</li>
