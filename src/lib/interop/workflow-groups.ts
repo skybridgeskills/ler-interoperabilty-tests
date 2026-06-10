@@ -14,7 +14,7 @@ export const allWorkflowGroups: WorkflowGroup[] = [
 	{
 		slug: 'issue-to-wallet',
 		name: 'Issue to Wallet',
-		blurb: 'Protocol-based credential delivery from issuers to holder wallets.',
+		blurb: "Issue a credential to recognize a learner's skill or experience",
 		workflowSlugs: ['credential-issuance', 'credential-acceptance']
 	},
 	{

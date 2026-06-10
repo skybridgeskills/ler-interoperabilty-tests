@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { ThemeToggle } from '$lib/components/theme-toggle/index.js';
 
+	import flameLogo from '$lib/assets/flame-logo.svg';
+
 	import { resolve } from '$app/paths';
 </script>
 
@@ -9,6 +11,7 @@
 >
 	<div class="mx-auto flex h-14 max-w-7xl items-center gap-6 px-4">
 		<a href={resolve('/')} class="flex items-center gap-2">
+			<img src={flameLogo} alt="" class="h-7 w-7" />
 			<span class="text-headline-md leading-none text-primary">LIT</span>
 			<span class="text-label-md text-muted-foreground">Suite</span>
 		</a>
