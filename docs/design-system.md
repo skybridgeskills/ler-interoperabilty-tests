@@ -156,11 +156,15 @@ Defined in `layout.css` under `@utility`:
 
 ## Theme toggle
 
-`src/lib/components/theme-toggle/ThemeToggle.svelte` cycles
-`light → dark → system → light`. The choice persists in
-`localStorage.theme` and is applied by toggling the `.dark` class on
-`<html>`. An inline script in `app.html` mirrors the same logic before
-paint to prevent flash.
+`src/lib/components/theme-toggle/ThemeToggle.svelte` toggles between
+`light` and `dark`. The icon shows the current theme (sun = light, moon =
+dark); hover or keyboard focus reveals a full-button preview of the
+opposite theme's hovered outline style (icon + colors) via CSS. New
+visitors (or legacy `localStorage.theme = system`) follow the OS
+preference until the first click, which pins an explicit choice. The
+preference persists in `localStorage.theme` and is applied by toggling
+the `.dark` class on `<html>`. An inline script in `app.html` mirrors
+the same logic before paint to prevent flash.
 
 The `Components/ThemeToggle` Storybook story demonstrates the control
 in isolation and inside a card.
