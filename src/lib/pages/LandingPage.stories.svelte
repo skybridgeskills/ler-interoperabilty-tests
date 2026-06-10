@@ -12,7 +12,11 @@
 	if (typeof localStorage !== 'undefined') {
 		localStorage.setItem(
 			'lits.selection.v1',
-			JSON.stringify({ roles: ['issuer', 'wallet'], profiles: ['vcalm', 'ob3-direct-delivery'] })
+			JSON.stringify({
+				roles: ['issuer', 'wallet'],
+				profiles: ['vcalm', 'ob3-direct-delivery'],
+				additiveProfiles: ['data-integrity-cryptosuites']
+			})
 		);
 		const passed = issuerReportRunRecord({
 			role: 'issuer',

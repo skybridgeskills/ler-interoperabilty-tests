@@ -1,5 +1,5 @@
-import { additiveProfileBySlug, profileBySlug } from '$lib/interop/accessors.js';
-import { openSkillAlignment } from '$lib/interop/additive-profiles/open-skill-alignment/index.js';
+import { additiveProfilesForBaseProfile, profileBySlug } from '$lib/interop/accessors.js';
+import type { AdditiveProfileSlug } from '$lib/interop/additive-profile-schema.js';
 import type { WorkflowChecklist } from '$lib/interop/profile-schema.js';
 
 import { CheckRunner, type ChecklistInput } from './check-runner.js';
@@ -8,15 +8,19 @@ import type { VerifierCoreClient } from './verifier-core-client.js';
 
 export type IssuerRunnerVerifyInput = {
 	credential: unknown;
-	includeAdditive: boolean;
+	/** Additive profiles selected for inclusion in the report. */
+	additiveProfiles: AdditiveProfileSlug[];
 };
+
+const BASE_PROFILE_SLUG = 'ob3-direct-delivery';
 
 /**
  * The user-facing orchestrator wired up to the verify endpoint. Runs
  * `verifier-core` on the pasted credential, then runs the check-runner
- * against the OB 3.0 Direct Delivery issuer checklist plus the
- * Open Skill Alignment additive issuer checklist when opted in, and
- * returns a typed `IssuerRunnerReport`.
+ * against the OB 3.0 Direct Delivery issuer checklist plus an additive
+ * issuer checklist for each selected additive that declares an
+ * issuer × direct-credential-issuance checklist, and returns a typed
+ * `IssuerRunnerReport`.
  *
  * If `verifier-core` throws, the runner returns a report with
  * `fatalError` set and an empty `groups` array — the UI renders the
@@ -43,11 +47,13 @@ export function IssuerRunner({ verifierClient }: { verifierClient: VerifierCoreC
 			};
 		}
 
-		const checklists = buildChecklistInputs(input.includeAdditive);
+		const checklists = buildChecklistInputs(input.additiveProfiles);
 		return checkRunner.run({
 			credential: input.credential,
 			verifierResult,
-			includeAdditive: input.includeAdditive,
+			// Legacy flag: true when ANY additive is selected. Open-skill checks
+			// gate on it; newer additive checks ignore it (group-level inclusion).
+			includeAdditive: input.additiveProfiles.length > 0,
 			checklists
 		});
 	}
@@ -58,8 +64,8 @@ export type IssuerRunner = ReturnType<typeof IssuerRunner>;
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function buildChecklistInputs(includeAdditive: boolean): ChecklistInput[] {
-	const base = profileBySlug('ob3-direct-delivery')!;
+function buildChecklistInputs(selected: AdditiveProfileSlug[]): ChecklistInput[] {
+	const base = profileBySlug(BASE_PROFILE_SLUG)!;
 	const baseChecklist = findIssuerDirectIssuance(base.checklists);
 	const inputs: ChecklistInput[] = [
 		{
@@ -74,9 +80,13 @@ function buildChecklistInputs(includeAdditive: boolean): ChecklistInput[] {
 		}
 	];
 
-	if (includeAdditive) {
-		const additive = additiveProfileBySlug(openSkillAlignment.slug)!;
-		const additiveChecklist = findIssuerDirectIssuance(additive.checklists);
+	const selectedSet = new Set<AdditiveProfileSlug>(selected);
+	for (const additive of additiveProfilesForBaseProfile(BASE_PROFILE_SLUG)) {
+		if (!selectedSet.has(additive.slug)) continue;
+		const additiveChecklist = additive.checklists.find(
+			(c) => c.role === 'issuer' && c.workflow === 'direct-credential-issuance'
+		);
+		if (!additiveChecklist) continue;
 		inputs.push({
 			groupRef: {
 				kind: 'additive',

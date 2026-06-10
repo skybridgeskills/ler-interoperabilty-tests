@@ -1,12 +1,16 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	import { allLatestRuns, runCombinationKey } from '$lib/client/run-history/index.js';
 	import { selectionStore } from '$lib/client/selection/index.js';
+	import { AdditiveProfileSelector } from '$lib/components/interop/additive-profile-selector/index.js';
 	import { ChecklistRow } from '$lib/components/interop/checklist-row/index.js';
 	import { ProfileSelector } from '$lib/components/interop/profile-selector/index.js';
 	import { RoleSelector } from '$lib/components/interop/role-selector/index.js';
 	import {
+		additiveChecklistsForCombination,
+		allAdditiveProfiles,
 		allCombinations,
 		allProfiles,
 		allRoles,
@@ -16,6 +20,7 @@
 		roleBySlug,
 		sortCombinations,
 		workflowBySlug,
+		type ChecklistCombination,
 		type TestRunRecord
 	} from '$lib/interop/index.js';
 
@@ -33,6 +38,14 @@
 
 	const selection = $derived(selectionStore.selection);
 	const sortedCombos = $derived(sortCombinations(combos, selection));
+	const selectedAdditives = $derived(new SvelteSet(selectionStore.additiveProfiles));
+
+	/** Selected additive profiles that apply to a given combination. */
+	function appliedAdditivesFor(combo: ChecklistCombination) {
+		return additiveChecklistsForCombination(combo.profile, combo.role, combo.workflow)
+			.filter(({ additive }) => selectedAdditives.has(additive.slug))
+			.map(({ additive }) => ({ slug: additive.slug, name: additive.name }));
+	}
 </script>
 
 <section class="space-y-4">
@@ -66,6 +79,14 @@
 	/>
 </section>
 
+<section class="mt-12">
+	<AdditiveProfileSelector
+		profiles={allAdditiveProfiles}
+		selected={selectedAdditives}
+		onToggle={selectionStore.toggleAdditiveProfile}
+	/>
+</section>
+
 <section class="mt-16 space-y-4">
 	<header class="space-y-2">
 		<h2 class="text-headline-md">Workflows</h2>
@@ -87,6 +108,7 @@
 					selected={isCombinationSelected(combo, selection)}
 					latestRun={latestRuns.get(runCombinationKey(combo.role, combo.workflow, combo.profile))}
 					href={checklistHref(combo.role, combo.workflow, combo.profile)}
+					appliedAdditives={appliedAdditivesFor(combo)}
 				/>
 			{/if}
 		{/each}

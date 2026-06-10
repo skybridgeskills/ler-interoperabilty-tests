@@ -34,7 +34,7 @@ describe('isCombinationSelected', () => {
 	});
 
 	it('is false when neither is selected', () => {
-		expect(isCombinationSelected(issuerVcalm, selection(['wallet'], ['oid4-ecdsa']))).toBe(false);
+		expect(isCombinationSelected(issuerVcalm, selection(['wallet'], ['oid4']))).toBe(false);
 	});
 
 	it('is false for an empty selection', () => {
@@ -47,7 +47,7 @@ describe('sortCombinations', () => {
 		const unselected: ChecklistCombination = {
 			role: 'verifier',
 			workflow: 'credential-request-and-verification',
-			profile: 'oid4-ecdsa'
+			profile: 'oid4'
 		};
 		const combos = [unselected, issuerVcalm];
 		const sorted = sortCombinations(combos, selection(['issuer'], ['vcalm']));
@@ -70,7 +70,7 @@ describe('sortCombinations', () => {
 		const c: ChecklistCombination = {
 			role: 'issuer',
 			workflow: 'credential-issuance',
-			profile: 'oid4-ecdsa'
+			profile: 'oid4'
 		};
 		const d: ChecklistCombination = {
 			role: 'issuer',
@@ -80,7 +80,7 @@ describe('sortCombinations', () => {
 		const sorted = sortCombinations([a, b, c, d], selection([], []));
 		// issuer rows first; within issuer, credential-issuance before
 		// direct-credential-issuance; within credential-issuance, vcalm before
-		// oid4-ecdsa; verifier last.
+		// oid4; verifier last.
 		expect(sorted).toEqual([d, c, b, a]);
 	});
 
@@ -90,11 +90,11 @@ describe('sortCombinations', () => {
 			{
 				role: 'verifier',
 				workflow: 'credential-request-and-verification',
-				profile: 'oid4-ecdsa'
+				profile: 'oid4'
 			} as ChecklistCombination
 		];
 		const snapshot = [...input];
-		sortCombinations(input, selection(['verifier'], ['oid4-ecdsa']));
+		sortCombinations(input, selection(['verifier'], ['oid4']));
 		expect(input).toEqual(snapshot);
 	});
 

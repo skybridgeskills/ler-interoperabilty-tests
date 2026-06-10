@@ -21,10 +21,10 @@ async function callPost(body: unknown): Promise<{ status: number; payload: unkno
 }
 
 describe('POST /api/issuer-runner/verify', { timeout: 30_000 }, () => {
-	it('returns a passing report for a clean fixture (additive on)', async () => {
+	it('returns a passing report for a clean fixture (open-skill selected)', async () => {
 		const { status, payload } = await callPost({
 			credential: rawScoreFixture,
-			includeAdditive: true
+			additiveProfiles: ['open-skill-alignment']
 		});
 		expect(status).toBe(200);
 		const report = payload as { verified: boolean; groups: unknown[] };
@@ -32,10 +32,35 @@ describe('POST /api/issuer-runner/verify', { timeout: 30_000 }, () => {
 		expect(report.groups).toHaveLength(2);
 	});
 
-	it('returns a base-only report when includeAdditive is omitted', async () => {
+	it('includes both additive groups when both are selected', async () => {
+		const { status, payload } = await callPost({
+			credential: rawScoreFixture,
+			additiveProfiles: ['open-skill-alignment', 'data-integrity-cryptosuites']
+		});
+		expect(status).toBe(200);
+		const report = payload as {
+			groups: { checklist: { profileSlug: string } }[];
+		};
+		expect(report.groups).toHaveLength(3);
+		const slugs = report.groups.map((g) => g.checklist.profileSlug);
+		expect(slugs).toContain('data-integrity-cryptosuites');
+	});
+
+	it('returns a base-only report when additiveProfiles is omitted', async () => {
 		const { status, payload } = await callPost({ credential: rawScoreFixture });
 		expect(status).toBe(200);
 		expect((payload as { groups: unknown[] }).groups).toHaveLength(1);
+	});
+
+	it('400s on an invalid additive slug', async () => {
+		const { status, payload } = await callPost({
+			credential: rawScoreFixture,
+			additiveProfiles: ['not-a-real-additive']
+		});
+		expect(status).toBe(400);
+		expect((payload as { fatalError: { message: string } }).fatalError.message).toMatch(
+			/Bad request/
+		);
 	});
 
 	it('400s on non-JSON body', async () => {
@@ -44,8 +69,11 @@ describe('POST /api/issuer-runner/verify', { timeout: 30_000 }, () => {
 		expect((payload as { fatalError: { message: string } }).fatalError.message).toMatch(/JSON/);
 	});
 
-	it('400s on a malformed request shape (missing credential)', async () => {
-		const { status, payload } = await callPost({ includeAdditive: true });
+	it('400s on a malformed request shape (additiveProfiles not an array)', async () => {
+		const { status, payload } = await callPost({
+			credential: rawScoreFixture,
+			additiveProfiles: 'open-skill-alignment'
+		});
 		expect(status).toBe(400);
 		expect((payload as { fatalError: { message: string } }).fatalError.message).toMatch(
 			/Bad request/

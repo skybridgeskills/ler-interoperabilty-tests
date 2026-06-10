@@ -1,10 +1,10 @@
 import { WorkflowChecklist } from '../../profile-schema.js';
 
-/** Wallet (holder) × Credential Presentation × OID4-ECDSA. */
+/** Wallet (holder) × Credential Presentation × OID4. */
 export const walletCredentialPresentation = WorkflowChecklist({
 	role: 'wallet',
 	workflow: 'credential-presentation',
-	profile: 'oid4-ecdsa',
+	profile: 'oid4',
 	steps: [
 		{
 			title: 'Process the presentation request',
@@ -30,15 +30,15 @@ export const walletCredentialPresentation = WorkflowChecklist({
 		{
 			title: 'Create and send the presentation response',
 			summary:
-				'Build a verifiablePresentation containing the selected credentials, sign it with ECDSA, and POST it to the verifier’s OAuth 2.0-protected endpoint with the access token.',
+				'Build a verifiablePresentation containing the selected credentials, sign it with a cryptosuite declared by the data-integrity-cryptosuites additive profile, and POST it to the verifier’s OAuth 2.0-protected endpoint with the access token.',
 			requirements: [
 				{
 					level: 'MUST',
-					text: 'Create verifiable presentations with ECDSA signatures.'
+					text: 'Create verifiable presentations signed with a cryptosuite declared by the data-integrity-cryptosuites additive profile.'
 				},
 				{
 					level: 'MUST',
-					text: 'Generate and manage P-256 key pairs for credential subjects with resolvable did:key or did:web documents.'
+					text: 'Generate and manage credential-subject key pairs matching the chosen cryptosuite (see data-integrity-cryptosuites additive) with resolvable did:key or did:web documents.'
 				},
 				{
 					level: 'MUST',

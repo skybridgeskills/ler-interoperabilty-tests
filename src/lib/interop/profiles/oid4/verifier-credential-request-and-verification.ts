@@ -1,10 +1,10 @@
 import { WorkflowChecklist } from '../../profile-schema.js';
 
-/** Verifier × Credential Request and Verification × OID4-ECDSA. */
+/** Verifier × Credential Request and Verification × OID4. */
 export const verifierCredentialRequestAndVerification = WorkflowChecklist({
 	role: 'verifier',
 	workflow: 'credential-request-and-verification',
-	profile: 'oid4-ecdsa',
+	profile: 'oid4',
 	steps: [
 		{
 			title: 'Create presentation request',
@@ -36,7 +36,7 @@ export const verifierCredentialRequestAndVerification = WorkflowChecklist({
 		{
 			title: 'Receive presentation response and verify credentials',
 			summary:
-				'Validate the access token and the verifiablePresentation, resolve the holder DID, then for each credential verify the ecdsa-rdfc-2019 signature, schema, status, and issuer trust.',
+				'Validate the access token and the verifiablePresentation, resolve the holder DID, then for each credential verify the signature (in any cryptosuite declared by the data-integrity-cryptosuites additive profile), schema, status, and issuer trust.',
 			requirements: [
 				{ level: 'MUST', text: 'Handle presentation responses from wallets.' },
 				{ level: 'MUST', text: 'Validate presentation structure and format.' },
@@ -46,7 +46,10 @@ export const verifierCredentialRequestAndVerification = WorkflowChecklist({
 					text: 'Validate VCDM 2.0 + Open Badges 3.0 schema, required fields, and credential expiration on each credential.'
 				},
 				{ level: 'MUST', text: 'Implement comprehensive validation error handling.' },
-				{ level: 'MUST', text: 'Verify ecdsa-rdfc-2019 signatures.' },
+				{
+					level: 'MUST',
+					text: 'Verify credential proofs using every cryptosuite declared by the data-integrity-cryptosuites additive profile.'
+				},
 				{ level: 'MUST', text: 'Resolve issuer DIDs to obtain verification keys.' },
 				{ level: 'MUST', text: 'Validate proof creation dates and expiration.' },
 				{ level: 'MUST', text: 'Handle signature verification failures gracefully.' },

@@ -1,10 +1,10 @@
 import { WorkflowChecklist } from '../../profile-schema.js';
 
-/** Wallet (holder) × Credential Acceptance × OID4-ECDSA. */
+/** Wallet (holder) × Credential Acceptance × OID4. */
 export const walletCredentialAcceptance = WorkflowChecklist({
 	role: 'wallet',
 	workflow: 'credential-acceptance',
-	profile: 'oid4-ecdsa',
+	profile: 'oid4',
 	steps: [
 		{
 			title: 'Process the credential offer',
@@ -30,16 +30,16 @@ export const walletCredentialAcceptance = WorkflowChecklist({
 		{
 			title: 'Request and receive the credential',
 			summary:
-				'Call the issuer’s OAuth 2.0-protected credential endpoint with the access token. Verify the ecdsa-rdfc-2019 signature, resolve the issuer DID, validate dates, and check the Bitstring Status List.',
+				'Call the issuer’s OAuth 2.0-protected credential endpoint with the access token. Verify the credential signature in any cryptosuite declared by the data-integrity-cryptosuites additive profile, resolve the issuer DID, validate dates, and check the Bitstring Status List.',
 			requirements: [
 				{ level: 'MUST', text: 'Process credential responses.' },
 				{
 					level: 'MUST',
-					text: 'Verify ecdsa-rdfc-2019 signatures on credentials received from issuers.'
+					text: 'Verify credential signatures using every cryptosuite declared by the data-integrity-cryptosuites additive profile.'
 				},
 				{
 					level: 'MUST',
-					text: 'Resolve issuer DIDs (did:web / did:key) to DID documents with a P-256 verification method.'
+					text: 'Resolve issuer DIDs (did:web / did:key) to a DID document with a verification method matching the credential proof’s cryptosuite (see data-integrity-cryptosuites additive).'
 				},
 				{
 					level: 'MUST',
@@ -70,7 +70,7 @@ export const walletCredentialAcceptance = WorkflowChecklist({
 				},
 				{
 					level: 'MUST',
-					text: 'Generate and manage P-256 key pairs for credential subjects with resolvable did:key or did:web documents.'
+					text: 'Generate and manage credential-subject key pairs matching the chosen cryptosuite (see data-integrity-cryptosuites additive) with resolvable did:key or did:web documents.'
 				},
 				{ level: 'MUST', text: 'Store credentials for later presentation.' },
 				{

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { dataIntegrityCryptosuites } from '$lib/interop/additive-profiles/data-integrity-cryptosuites/index.js';
 import { rawScoreFixture } from '$lib/interop/additive-profiles/open-skill-alignment/fixtures/raw-score.js';
 import { openSkillAlignment } from '$lib/interop/additive-profiles/open-skill-alignment/index.js';
 import { profileBySlug } from '$lib/interop/index.js';
@@ -14,6 +15,9 @@ const baseChecklist = ob3.checklists.find(
 	(c) => c.role === 'issuer' && c.workflow === 'direct-credential-issuance'
 )!;
 const additiveChecklist = openSkillAlignment.checklists.find(
+	(c) => c.role === 'issuer' && c.workflow === 'direct-credential-issuance'
+)!;
+const diChecklist = dataIntegrityCryptosuites.checklists.find(
 	(c) => c.role === 'issuer' && c.workflow === 'direct-credential-issuance'
 )!;
 
@@ -32,6 +36,21 @@ const additiveGroupRef: ChecklistGroupRef = {
 	workflow: 'direct-credential-issuance',
 	role: 'issuer'
 };
+
+const diGroupRef: ChecklistGroupRef = {
+	kind: 'additive',
+	profileSlug: 'data-integrity-cryptosuites',
+	profileName: dataIntegrityCryptosuites.name,
+	workflow: 'direct-credential-issuance',
+	role: 'issuer'
+};
+
+const DI_CRYPTOSUITE_ID =
+	'data-integrity-cryptosuites.issuer.direct-credential-issuance.producer.cryptosuite-supported';
+const DI_DID_METHOD_ID =
+	'data-integrity-cryptosuites.issuer.direct-credential-issuance.producer.did-method';
+const DI_KEY_TYPE_ID =
+	'data-integrity-cryptosuites.issuer.direct-credential-issuance.producer.key-type-matches';
 
 describe('CheckRunner.run', () => {
 	it('reports verified=true and all MUSTs passing for a clean fixture (additive on)', () => {
@@ -130,5 +149,41 @@ describe('CheckRunner.run', () => {
 		// an explicit `fail` on a MUST. n/a means "couldn't check from
 		// the credential alone" and is treated as benign.
 		expect(report.verified).toBe(true);
+	});
+
+	it('evaluates the data-integrity additive group per-outcome for an eddsa credential', () => {
+		const report = runner.run({
+			credential: rawScoreFixture,
+			verifierResult: { verified: true },
+			includeAdditive: true,
+			checklists: [
+				{ groupRef: baseGroupRef, checklist: baseChecklist },
+				{ groupRef: diGroupRef, checklist: diChecklist }
+			]
+		});
+		const diGroup = report.groups.find(
+			(g) => g.checklist.profileSlug === 'data-integrity-cryptosuites'
+		)!;
+		expect(diGroup).toBeDefined();
+		const byId = new Map(diGroup.outcomes.map((o) => [o.id, o]));
+		expect(byId.get(DI_CRYPTOSUITE_ID)?.status).toBe('pass');
+		expect(byId.get(DI_DID_METHOD_ID)?.status).toBe('pass');
+		// key-type-matches is intentionally unregistered → n/a.
+		expect(byId.get(DI_KEY_TYPE_ID)?.status).toBe('n/a');
+		expect(report.verified).toBe(true);
+	});
+
+	it('fails the DI cryptosuite-supported check for a non-bundle suite', () => {
+		const broken = JSON.parse(JSON.stringify(rawScoreFixture));
+		broken.proof.cryptosuite = 'bbs-2023';
+		const report = runner.run({
+			credential: broken,
+			verifierResult: { verified: true },
+			includeAdditive: true,
+			checklists: [{ groupRef: diGroupRef, checklist: diChecklist }]
+		});
+		const outcome = report.groups[0].outcomes.find((o) => o.id === DI_CRYPTOSUITE_ID);
+		expect(outcome?.status).toBe('fail');
+		expect(report.verified).toBe(false);
 	});
 });

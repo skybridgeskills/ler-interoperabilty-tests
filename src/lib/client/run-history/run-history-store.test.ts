@@ -93,7 +93,7 @@ describe('latestRunFor', () => {
 	});
 
 	it('returns undefined for a combination with no runs', () => {
-		expect(latestRunFor('verifier', 'credential-presentation', 'oid4-ecdsa')).toBeUndefined();
+		expect(latestRunFor('verifier', 'credential-presentation', 'oid4')).toBeUndefined();
 	});
 });
 

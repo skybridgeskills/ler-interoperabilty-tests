@@ -56,3 +56,18 @@
 		<ChecklistRow {combination} {href} selected={false} />
 	</div>
 </Story>
+
+<Story name="With applied additives" asChild>
+	<div class="max-w-2xl space-y-3 bg-background p-6">
+		<ChecklistRow
+			{combination}
+			{href}
+			selected
+			latestRun={passed}
+			appliedAdditives={[
+				{ slug: 'data-integrity-cryptosuites', name: 'Data Integrity Cryptosuites' },
+				{ slug: 'open-skill-alignment', name: 'Open Skill Alignment' }
+			]}
+		/>
+	</div>
+</Story>

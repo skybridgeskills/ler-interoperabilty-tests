@@ -1,10 +1,10 @@
 import { WorkflowChecklist } from '../../profile-schema.js';
 
-/** Issuer × Credential Issuance × OID4-ECDSA. */
+/** Issuer × Credential Issuance × OID4. */
 export const issuerCredentialIssuance = WorkflowChecklist({
 	role: 'issuer',
 	workflow: 'credential-issuance',
-	profile: 'oid4-ecdsa',
+	profile: 'oid4',
 	steps: [
 		{
 			title: 'Provide credential offer',
@@ -34,7 +34,7 @@ export const issuerCredentialIssuance = WorkflowChecklist({
 		{
 			title: 'Process credential request and deliver credential',
 			summary:
-				'Validate the access token, build the Open Badges 3.0 credential, sign it with ecdsa-rdfc-2019, allocate a status-list index, and respond with a credential response.',
+				'Validate the access token, build the Open Badges 3.0 credential, sign it with a supported cryptosuite (see the data-integrity-cryptosuites additive), allocate a status-list index, and respond with a credential response.',
 			requirements: [
 				{
 					level: 'MUST',
@@ -46,11 +46,15 @@ export const issuerCredentialIssuance = WorkflowChecklist({
 				},
 				{
 					level: 'MUST',
-					text: 'Use a Data Integrity Proof with `ecdsa-rdfc-2019`, including proof creation date and verification-method reference.'
+					text: 'Use a Data Integrity Proof whose cryptosuite is declared by the data-integrity-cryptosuites additive profile, including proof creation date and verification-method reference.'
 				},
 				{
 					level: 'MUST',
 					text: 'Maintain a current Bitstring Status List signed with the issuer key and reference it from `credentialStatus`.'
+				},
+				{
+					level: 'MUST',
+					text: 'Use a did:web or did:key issuer identifier whose verification method matches the chosen cryptosuite (key-type per data-integrity-cryptosuites additive) and resolves correctly.'
 				},
 				{
 					level: 'MUST',

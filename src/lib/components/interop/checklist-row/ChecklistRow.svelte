@@ -1,5 +1,12 @@
 <script lang="ts">
-	import type { Profile, Role, TestRunRecord, Workflow } from '$lib/interop/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import type {
+		AdditiveProfileSlug,
+		Profile,
+		Role,
+		TestRunRecord,
+		Workflow
+	} from '$lib/interop/index.js';
 
 	import { RoleBadge } from '../role-badge/index.js';
 	import { RunResultBadge } from '../run-result-badge/index.js';
@@ -13,12 +20,15 @@
 		combination,
 		selected,
 		latestRun,
-		href
+		href,
+		appliedAdditives = []
 	}: {
 		combination: { role: Role; workflow: Workflow; profile: Profile };
 		selected: boolean;
 		latestRun?: TestRunRecord;
 		href: string;
+		/** Selected additive profiles that apply to this row's combination. */
+		appliedAdditives?: { slug: AdditiveProfileSlug; name: string }[];
 	} = $props();
 </script>
 
@@ -33,7 +43,12 @@
 		<p class={`truncate text-body-md ${selected ? 'text-foreground' : 'text-muted-foreground'}`}>
 			{combination.workflow.name}
 		</p>
-		<p class="truncate text-label-md text-muted-foreground">{combination.profile.name}</p>
+		<div class="flex flex-wrap items-center gap-1.5">
+			<span class="truncate text-label-md text-muted-foreground">{combination.profile.name}</span>
+			{#each appliedAdditives as additive (additive.slug)}
+				<Badge variant="outline" class="text-[0.7rem]">+ {additive.name}</Badge>
+			{/each}
+		</div>
 	</div>
 
 	<RunResultBadge record={latestRun} />

@@ -19,8 +19,8 @@
 	<div class="mb-8 rounded-md border border-primary/40 bg-primary/10 p-4">
 		<p class="text-label-md text-primary uppercase">Live test runner</p>
 		<p class="mt-1 text-body-md text-foreground">
-			Paste a delivered credential and run automated checks against this checklist plus the optional
-			open-skill-alignment additive profile.
+			Paste a delivered credential and run automated checks against this checklist plus any optional
+			additive profiles you select.
 		</p>
 		<div class="mt-3">
 			<Button href={runnerHref}>Run this →</Button>
@@ -33,4 +33,5 @@
 	profile={data.profile}
 	workflow={data.workflow}
 	role={data.role}
+	additives={data.additives}
 />

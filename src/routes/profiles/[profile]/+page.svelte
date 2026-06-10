@@ -3,6 +3,7 @@
 	import { RoleBadge } from '$lib/components/interop/role-badge/index.js';
 	import {
 		checklistHref,
+		type Profile,
 		profileBySlug,
 		profileHref,
 		profileWorkflows,
@@ -14,15 +15,25 @@
 
 	const baseRows = $derived(data.kind === 'base' ? profileWorkflows(data.profile) : []);
 
-	const additiveRows = $derived(
-		data.kind === 'additive'
-			? data.profile.checklists.map((c) => ({
-					workflow: workflowBySlug(c.workflow)!,
-					role: roleBySlug(c.role)!,
-					stepCount: c.steps.length
-				}))
-			: []
-	);
+	const additiveRows = $derived.by(() => {
+		if (data.kind !== 'additive') return [];
+		const baseSlugs = data.profile.appliesToBaseProfiles;
+		return data.profile.checklists.map((c) => {
+			// One link per applicable base profile that has this (role, workflow);
+			// each base checklist page renders the combined view including this additive.
+			const bases = baseSlugs
+				.map((slug) => profileBySlug(slug))
+				.filter((p): p is Profile => p !== undefined)
+				.filter((p) => p.checklists.some((bc) => bc.role === c.role && bc.workflow === c.workflow))
+				.map((p) => ({ name: p.name, href: checklistHref(c.role, c.workflow, p.slug) }));
+			return {
+				workflow: workflowBySlug(c.workflow)!,
+				role: roleBySlug(c.role)!,
+				stepCount: c.steps.length,
+				bases
+			};
+		});
+	});
 
 	const compatibleBaseProfiles = $derived(
 		data.kind === 'additive'
@@ -116,7 +127,9 @@
 		</p>
 		<ul class="space-y-2">
 			{#each additiveRows as row (row.workflow.slug + row.role.slug)}
-				<li class="flex items-start justify-between gap-4 rounded-md border border-border p-4">
+				<li
+					class="flex flex-wrap items-start justify-between gap-4 rounded-md border border-border p-4"
+				>
 					<div class="space-y-1">
 						<div class="flex flex-wrap items-center gap-2">
 							<span class="text-body-md font-medium text-foreground">{row.workflow.name}</span>
@@ -127,6 +140,16 @@
 							{row.stepCount === 1 ? 'step' : 'steps'}
 						</p>
 					</div>
+					{#if row.bases.length}
+						<div class="flex flex-wrap items-center gap-x-3 gap-y-1 self-center">
+							<span class="text-label-md text-muted-foreground">Open in:</span>
+							{#each row.bases as base (base.href)}
+								<a class="text-label-md text-primary hover:underline" href={base.href}>
+									{base.name} →
+								</a>
+							{/each}
+						</div>
+					{/if}
 				</li>
 			{/each}
 		</ul>

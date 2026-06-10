@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { ThemeToggle } from '$lib/components/theme-toggle/index.js';
-
 	import flameLogo from '$lib/assets/flame-logo.svg';
+	import { ThemeToggle } from '$lib/components/theme-toggle/index.js';
 
 	import { resolve } from '$app/paths';
 </script>

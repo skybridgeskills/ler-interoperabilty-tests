@@ -59,6 +59,35 @@
 						message: '1 alignment.targetUrl(s) all match the CTDL Credential Registry allowlist.'
 					}
 				]
+			},
+			{
+				checklist: {
+					kind: 'additive',
+					profileSlug: 'data-integrity-cryptosuites',
+					profileName: 'Data Integrity Cryptosuites',
+					workflow: 'direct-credential-issuance',
+					role: 'issuer'
+				},
+				outcomes: [
+					{
+						id: 'data-integrity-cryptosuites.issuer.direct-credential-issuance.producer.cryptosuite-supported',
+						level: 'MUST',
+						status: 'pass',
+						message: 'proof.cryptosuite `eddsa-rdfc-2022` is in the bundle.'
+					},
+					{
+						id: 'data-integrity-cryptosuites.issuer.direct-credential-issuance.producer.did-method',
+						level: 'MUST',
+						status: 'pass',
+						message: 'Issuer uses did:key.'
+					},
+					{
+						id: 'data-integrity-cryptosuites.issuer.direct-credential-issuance.producer.key-type-matches',
+						level: 'MUST',
+						status: 'n/a',
+						message: 'No automated check registered for this requirement yet.'
+					}
+				]
 			}
 		]
 	};
@@ -67,7 +96,7 @@
 <Story name="Idle" asChild>
 	<div class="max-w-3xl bg-background p-6">
 		<IssuerRunnerPanel
-			data={{ credentialText: '', includeAdditive: false, status: 'idle' }}
+			data={{ credentialText: '', selectedAdditives: [], status: 'idle' }}
 			actions={noopActions}
 		/>
 	</div>
@@ -78,7 +107,7 @@
 		<IssuerRunnerPanel
 			data={{
 				credentialText: '{ "@context": [], "type": ["VerifiableCredential"] }',
-				includeAdditive: true,
+				selectedAdditives: ['open-skill-alignment', 'data-integrity-cryptosuites'],
 				status: 'running'
 			}}
 			actions={noopActions}
@@ -91,7 +120,7 @@
 		<IssuerRunnerPanel
 			data={{
 				credentialText: '{ "type": ["VerifiableCredential","OpenBadgeCredential"] }',
-				includeAdditive: true,
+				selectedAdditives: ['open-skill-alignment', 'data-integrity-cryptosuites'],
 				status: 'done',
 				report: passingAdditiveReport
 			}}
