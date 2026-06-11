@@ -82,4 +82,67 @@ describe('FakeTransactionServiceClient', () => {
 		const re = await client.getExchange(exchangeId);
 		expect(re.variables?.leak).toBeUndefined();
 	});
+
+	describe('OID4VCI advance hooks', () => {
+		const oid4vciOf = (record: { variables?: Record<string, unknown> }) =>
+			record.variables?.oid4vci as Record<string, unknown> | undefined;
+
+		it('advanceOid4vciOfferFetched stamps preAuthorizedCode, state stays pending', async () => {
+			const client = FakeTransactionServiceClient();
+			const { exchangeId } = await client.createExchange({ retrievalId: 'x' });
+			client.advanceOid4vciOfferFetched(exchangeId);
+			const ex = await client.getExchange(exchangeId);
+			expect(ex.state).toBe('pending');
+			expect(oid4vciOf(ex)?.preAuthorizedCode).toEqual(expect.stringMatching(/^fake-preauth-/));
+		});
+
+		it('advanceOid4vciTokenIssued sets codeUsed + accessToken, persists prior fields, still pending', async () => {
+			const client = FakeTransactionServiceClient();
+			const { exchangeId } = await client.createExchange({ retrievalId: 'x' });
+			client.advanceOid4vciOfferFetched(exchangeId);
+			client.advanceOid4vciTokenIssued(exchangeId);
+			const ex = await client.getExchange(exchangeId);
+			expect(ex.state).toBe('pending');
+			expect(oid4vciOf(ex)?.codeUsed).toBe(true);
+			expect(oid4vciOf(ex)?.accessToken).toEqual(expect.stringMatching(/^fake-access-/));
+			// prior field persists
+			expect(oid4vciOf(ex)?.preAuthorizedCode).toEqual(expect.stringMatching(/^fake-preauth-/));
+		});
+
+		it('advanceOid4vciNonceIssued sets cNonce', async () => {
+			const client = FakeTransactionServiceClient();
+			const { exchangeId } = await client.createExchange({ retrievalId: 'x' });
+			client.advanceOid4vciOfferFetched(exchangeId);
+			client.advanceOid4vciTokenIssued(exchangeId);
+			client.advanceOid4vciNonceIssued(exchangeId);
+			const ex = await client.getExchange(exchangeId);
+			expect(ex.state).toBe('pending');
+			expect(oid4vciOf(ex)?.cNonce).toEqual(expect.stringMatching(/^fake-cnonce-/));
+		});
+
+		it('advanceOid4vciComplete flips to complete, merges vars, persists prior oid4vci fields', async () => {
+			const client = FakeTransactionServiceClient();
+			const { exchangeId } = await client.createExchange({ retrievalId: 'x' });
+			client.advanceOid4vciOfferFetched(exchangeId);
+			client.advanceOid4vciTokenIssued(exchangeId);
+			client.advanceOid4vciNonceIssued(exchangeId);
+			client.advanceOid4vciComplete(exchangeId, { signedVc: { id: 'urn:uuid:vc' } });
+			const ex = await client.getExchange(exchangeId);
+			expect(ex.state).toBe('complete');
+			expect(ex.variables?.signedVc).toEqual({ id: 'urn:uuid:vc' });
+			expect(oid4vciOf(ex)?.nonceUsed).toBe(true);
+			expect(oid4vciOf(ex)?.cNonce).toEqual(expect.stringMatching(/^fake-cnonce-/));
+			expect(oid4vciOf(ex)?.accessToken).toEqual(expect.stringMatching(/^fake-access-/));
+		});
+
+		it('returned oid4vci records remain clones', async () => {
+			const client = FakeTransactionServiceClient();
+			const { exchangeId } = await client.createExchange({ retrievalId: 'x' });
+			client.advanceOid4vciOfferFetched(exchangeId);
+			const ex = await client.getExchange(exchangeId);
+			(ex.variables?.oid4vci as Record<string, unknown>).leak = 'nope';
+			const re = await client.getExchange(exchangeId);
+			expect((re.variables?.oid4vci as Record<string, unknown>).leak).toBeUndefined();
+		});
+	});
 });

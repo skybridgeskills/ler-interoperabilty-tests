@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 
 	import {
 		pollExchange,
@@ -7,10 +7,7 @@
 		type ExchangePollResponse
 	} from '$lib/client/exchange-runner/index.js';
 	import { recordRun } from '$lib/client/run-history/index.js';
-	import {
-		ExchangeRunnerPanel,
-		type ExchangeProtocolId
-	} from '$lib/components/interop/exchange-runner/index.js';
+	import { ExchangeRunnerPanel } from '$lib/components/interop/exchange-runner/index.js';
 	import { RunnableChecklist } from '$lib/components/interop/runnable-checklist/index.js';
 	import {
 		combinationFor,
@@ -22,10 +19,18 @@
 		workflowBySlug
 	} from '$lib/interop/index.js';
 
+	// The runnable wallet-acceptance page, parametrized by profile. `profile`
+	// is fixed for the lifetime of the route mount, so deriving the
+	// combination/step-count/labels as plain consts is correct.
+	let { profile = 'vcalm' }: { profile?: 'vcalm' | 'oid4' } = $props();
+
 	const role = roleBySlug('wallet')!;
 	const workflow = workflowBySlug('credential-acceptance')!;
-	const combo = combinationFor('wallet', 'credential-acceptance', 'vcalm')!;
-	const stepCount = combo.checklist.steps.length;
+	const combo = $derived(combinationFor('wallet', 'credential-acceptance', profile)!);
+	const stepCount = $derived(combo.checklist.steps.length);
+
+	const isOid4 = $derived(profile === 'oid4');
+	const headerLabel = $derived(isOid4 ? 'Live · OID4VCI offer' : 'Live · interaction URL');
 
 	type CreateExchangeBody = {
 		exchangeId: string;
@@ -35,11 +40,13 @@
 	type RunnerError = { message: string; hint?: string };
 
 	let exchangeId = $state<string | undefined>(undefined);
+	// The single protocol link this profile presents (VCALM `iu` or the OID4VCI deep link).
 	let interactionUrl = $state<string | undefined>(undefined);
-	let oid4vciDeepLink = $state<string | undefined>(undefined);
-	let selectedProtocol = $state<ExchangeProtocolId>('vcalm');
 	let runState = $state<ChecklistRunState>('idle');
-	let perStep = $state<StepRunState[]>(Array.from({ length: stepCount }, () => 'pending'));
+	// Seeded once from the fixed-per-mount step count; thereafter mutated by polling.
+	let perStep = $state<StepRunState[]>(
+		untrack(() => Array.from({ length: stepCount }, () => 'pending'))
+	);
 	let runnerError = $state<RunnerError | undefined>(undefined);
 
 	let pollHandle: { stop: () => void } | undefined;
@@ -59,7 +66,7 @@
 			exchangeRunRecord({
 				role: 'wallet',
 				workflow: 'credential-acceptance',
-				profile: 'vcalm',
+				profile,
 				exchangeId,
 				exchangeState,
 				derived
@@ -70,8 +77,6 @@
 	function setIdle() {
 		exchangeId = undefined;
 		interactionUrl = undefined;
-		oid4vciDeepLink = undefined;
-		selectedProtocol = 'vcalm';
 		runState = 'idle';
 		perStep = Array.from({ length: stepCount }, () => 'pending');
 		runnerError = undefined;
@@ -137,8 +142,18 @@
 			}
 			const data = (await res.json()) as CreateExchangeBody;
 			exchangeId = data.exchangeId;
-			interactionUrl = data.protocols.iu;
-			oid4vciDeepLink = data.protocols.OID4VCI;
+			if (isOid4) {
+				if (!data.protocols.OID4VCI) {
+					setError({
+						message: 'The transaction service did not return an OID4VCI credential offer.',
+						hint: 'Point TRANSACTION_SERVICE_URL at an OID4VCI-capable transaction service (e.g. the local feature/oid4vp build).'
+					});
+					return;
+				}
+				interactionUrl = data.protocols.OID4VCI;
+			} else {
+				interactionUrl = data.protocols.iu;
+			}
 			runState = 'awaiting-wallet';
 			const restPending: StepRunState[] = Array.from({ length: stepCount - 1 }, () => 'pending');
 			perStep = ['in-flight', ...restPending];
@@ -160,8 +175,7 @@
 		run: runState,
 		perStep,
 		interactionUrl,
-		oid4vciDeepLink,
-		selectedProtocol,
+		headerLabel,
 		exchangeId,
 		error: runnerError
 	});
@@ -181,10 +195,7 @@
 			actions={{
 				onInitiate: initiate,
 				onRetry: initiate,
-				onReset: setIdle,
-				onSelectProtocol: (next) => {
-					selectedProtocol = next;
-				}
+				onReset: setIdle
 			}}
 		/>
 	{/snippet}

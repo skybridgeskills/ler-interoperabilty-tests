@@ -1,22 +1,20 @@
-import type { ExchangeProtocolId } from '$lib/components/interop/exchange-runner/protocol-selector/index.js';
 import type { ChecklistRunState, StepRunState } from '$lib/interop/index.js';
 
-export type { ExchangeProtocolId };
+/**
+ * Protocol identifier used by the page to select which single link + header
+ * label a runner presents. Lowercase JS-style identifier; the wire field on
+ * the protocols object is uppercase (`OID4VCI`), handled at the page boundary.
+ */
+export type ExchangeProtocolId = 'vcalm' | 'oid4vci';
 
-/** Snapshot the panel renders. */
+/** Snapshot the panel renders. Each runner presents exactly one protocol. */
 export type ExchangeRunnerPanelData = {
 	run: ChecklistRunState;
 	perStep: StepRunState[];
-	/** VCALM `iu` interaction URL (always rendered when present). */
+	/** The single protocol link to present (VCALM `iu` OR the OID4VCI deep link). */
 	interactionUrl?: string;
-	/**
-	 * OID4VCI 1.0 deep link (`openid-credential-offer://…`). Present only
-	 * when the connected service supports OID4VCI; absent for legacy
-	 * containers — the protocol selector hides itself in that case.
-	 */
-	oid4vciDeepLink?: string;
-	/** Which protocol the right column is currently rendering. Defaults to `'vcalm'`. */
-	selectedProtocol?: ExchangeProtocolId;
+	/** Header label for the QR card, e.g. `'Live · interaction URL'` or `'Live · OID4VCI offer'`. */
+	headerLabel?: string;
 	exchangeId?: string;
 	error?: { message: string; hint?: string };
 };
@@ -25,5 +23,4 @@ export type ExchangeRunnerActions = {
 	onInitiate: () => void | Promise<void>;
 	onRetry?: () => void | Promise<void>;
 	onReset?: () => void | Promise<void>;
-	onSelectProtocol?: (next: ExchangeProtocolId) => void;
 };

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { InteractionQrCard } from '$lib/components/interop/exchange-runner/interaction-qr-card/index.js';
-	import { ProtocolSelector } from '$lib/components/interop/exchange-runner/protocol-selector/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 
 	import type {
@@ -21,14 +20,6 @@
 	} = $props();
 
 	let busy = $state(false);
-
-	const selectedProtocol = $derived(data.selectedProtocol ?? 'vcalm');
-	const activeUrl = $derived(
-		selectedProtocol === 'oid4vci' ? data.oid4vciDeepLink : data.interactionUrl
-	);
-	const headerLabel = $derived(
-		selectedProtocol === 'oid4vci' ? 'Live · OID4VCI offer' : 'Live · interaction URL'
-	);
 
 	async function initiate() {
 		if (busy) return;
@@ -98,14 +89,10 @@
 			{/if}
 		</div>
 	{:else if data.interactionUrl}
-		<ProtocolSelector
-			oid4vciAvailable={!!data.oid4vciDeepLink}
-			value={selectedProtocol}
-			onChange={(next) => actions.onSelectProtocol?.(next)}
+		<InteractionQrCard
+			interactionUrl={data.interactionUrl}
+			headerLabel={data.headerLabel ?? 'Live · interaction URL'}
 		/>
-		{#if activeUrl}
-			<InteractionQrCard interactionUrl={activeUrl} {headerLabel} />
-		{/if}
 		{#if data.exchangeId}
 			<p class="text-label-md font-mono text-muted-foreground">exchange · {data.exchangeId}</p>
 		{/if}
