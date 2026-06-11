@@ -1,8 +1,9 @@
 import { WorkflowChecklist } from '../../profile-schema.js';
 
 /**
- * Verifier × Credential Request and Verification × VCALM — additive
- * layer for the data-integrity-cryptosuites bundle.
+ * Verifier × Credential Request and Verification — additive layer for the
+ * data-integrity-cryptosuites bundle (applies to the vcalm + oid4 exchange
+ * profiles by role+workflow).
  *
  * Consumer-only: the verifier verifies the holder VP proof and the
  * issuer VC proofs embedded inside it. Both proofs MAY use either

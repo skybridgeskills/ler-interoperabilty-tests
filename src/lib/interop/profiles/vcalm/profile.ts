@@ -26,6 +26,11 @@ export const vcalmProfileMeta = {
 			label: 'Cryptographic Suite',
 			value: 'See data-integrity-cryptosuites additive (EdDSA or ECDSA)'
 		},
+		{
+			label: 'Key Proof of Possession',
+			value:
+				'DIDAuthentication verifiablePresentation secured with a Data Integrity proof (proofPurpose: authentication); cryptosuite per the data-integrity-cryptosuites additive.'
+		},
 		{ label: 'Credential Format', value: 'W3C Verifiable Credentials Data Model 2.0' },
 		{ label: 'Credential Schema', value: 'Open Badges 3.0' },
 		{ label: 'Status Method', value: 'Bitstring Status List' },

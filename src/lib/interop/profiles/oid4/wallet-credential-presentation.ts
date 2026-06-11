@@ -34,6 +34,10 @@ export const walletCredentialPresentation = WorkflowChecklist({
 			requirements: [
 				{
 					level: 'MUST',
+					text: 'Build the verifiablePresentation as a Data Integrity presentation (`di_vp` / `ldp_vp`), not a JWT VP.'
+				},
+				{
+					level: 'MUST',
 					text: 'Create verifiable presentations signed with a cryptosuite declared by the data-integrity-cryptosuites additive profile.'
 				},
 				{

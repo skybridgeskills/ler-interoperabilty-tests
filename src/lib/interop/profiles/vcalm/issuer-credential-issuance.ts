@@ -56,6 +56,10 @@ export const issuerCredentialIssuance = WorkflowChecklist({
 			requirements: [
 				{
 					level: 'MUST',
+					text: 'Validate the holder’s DIDAuthentication verifiablePresentation: a Data Integrity proof with `proofPurpose` `authentication`, a `challenge` matching the issued `verifiablePresentationRequest`, and holder control of the verification-method key — before binding `credentialSubject.id`.'
+				},
+				{
+					level: 'MUST',
 					text: 'Generate W3C Verifiable Credentials Data Model 2.0-compliant credentials.'
 				},
 				{

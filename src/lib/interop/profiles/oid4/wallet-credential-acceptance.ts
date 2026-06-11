@@ -32,6 +32,14 @@ export const walletCredentialAcceptance = WorkflowChecklist({
 			summary:
 				'Call the issuer’s OAuth 2.0-protected credential endpoint with the access token. Verify the credential signature in any cryptosuite declared by the data-integrity-cryptosuites additive profile, resolve the issuer DID, validate dates, and check the Bitstring Status List.',
 			requirements: [
+				{
+					level: 'MUST',
+					text: 'Present a `di_vp` key proof in the Credential Request: a W3C Verifiable Presentation secured with a Data Integrity proof (`proofPurpose` `authentication`, `domain` set to the Credential Issuer Identifier, `challenge` set to the issuer `c_nonce`), signed with a cryptosuite listed in the issuer’s `proof_signing_alg_values_supported`.'
+				},
+				{
+					level: 'MUST',
+					text: 'NOT rely on a JWT-only key proof: the OID4 base requires a `di_vp` key proof of possession.'
+				},
 				{ level: 'MUST', text: 'Process credential responses.' },
 				{
 					level: 'MUST',

@@ -25,6 +25,11 @@ export const oid4ProfileMeta = {
 			label: 'Cryptographic Suite',
 			value: 'See data-integrity-cryptosuites additive (EdDSA or ECDSA)'
 		},
+		{
+			label: 'Key Proof of Possession',
+			value:
+				'OID4VCI di_vp (Data Integrity VP) key proofs; proof_signing_alg_values_supported per the data-integrity-cryptosuites additive. JWT-only key proofs are out of profile.'
+		},
 		{ label: 'Credential Format', value: 'W3C Verifiable Credentials Data Model 2.0' },
 		{ label: 'Credential Schema', value: 'Open Badges 3.0' },
 		{ label: 'Status Method', value: 'Bitstring Status List' },

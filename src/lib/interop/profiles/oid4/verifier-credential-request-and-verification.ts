@@ -16,6 +16,10 @@ export const verifierCredentialRequestAndVerification = WorkflowChecklist({
 					level: 'MUST',
 					text: 'Generate presentation requests with proper scopes asking for specific credential types.'
 				},
+				{
+					level: 'MUST',
+					text: 'Request a Data Integrity verifiable presentation (`di_vp` / `ldp_vp`) format in the OID4VP presentation request, not a JWT VP.'
+				},
 				{ level: 'MUST', text: 'Provide a presentation request endpoint.' },
 				{ level: 'MUST', text: 'Encrypt web-service endpoints with at least TLS 1.2.' }
 			]

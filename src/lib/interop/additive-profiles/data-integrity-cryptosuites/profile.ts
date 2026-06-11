@@ -35,6 +35,10 @@ export const dataIntegrityCryptosuitesMeta = {
 		'identifiers MUST use did:web or did:key with a verification method matching the ' +
 		'chosen cryptosuite. Producers (issuers signing credentials, wallets signing ' +
 		'presentations) MUST support at least one option; consumers (verifiers — including ' +
-		'issuers during DID-auth) MUST support every option in the bundle.',
+		'issuers during DID-auth) MUST support every option in the bundle. The same ' +
+		'cryptosuites are what an OID4 issuer advertises as the di_vp ' +
+		'proof_signing_alg_values_supported, so the bundle secures both the credential’s ' +
+		'own Data Integrity proof and the key-proof verifiable presentation (OID4 di_vp / ' +
+		'VCALM DIDAuthentication).',
 	appliesToBaseProfiles: ['vcalm', 'oid4', 'ob3-direct-delivery'] satisfies ProfileSlug[]
 };

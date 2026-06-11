@@ -12,6 +12,18 @@ export const issuerCredentialIssuance = WorkflowChecklist({
 				'Create an OID4VCI credential offer when the user has earned a badge. Expose it via QR code, deep link, or copy-paste, including the credential issuer metadata endpoint or pre-authorized code.',
 			requirements: [
 				{ level: 'MUST', text: 'Provide a credential issuer metadata endpoint.' },
+				{
+					level: 'MUST',
+					text: 'Advertise OID4VCI issuer metadata whose `credential_configurations_supported` includes a `proof_types_supported` object containing `di_vp` (Data Integrity verifiable-presentation key proofs).'
+				},
+				{
+					level: 'MUST',
+					text: 'List `proof_signing_alg_values_supported` for the `di_vp` proof type covering the supported cryptosuites (see the data-integrity-cryptosuites additive profile).'
+				},
+				{
+					level: 'MUST',
+					text: 'NOT require a JWT-only key proof type: this profile requires `di_vp` key proofs of possession.'
+				},
 				{ level: 'MUST', text: 'Support the OID4VCI authorization code flow.' },
 				{ level: 'MUST', text: 'Support the OID4VCI pre-authorized code flow.' },
 				{ level: 'MUST', text: 'Encrypt web-service endpoints with at least TLS 1.2.' }
@@ -55,6 +67,14 @@ export const issuerCredentialIssuance = WorkflowChecklist({
 				{
 					level: 'MUST',
 					text: 'Use a did:web or did:key issuer identifier whose verification method matches the chosen cryptosuite (key-type per data-integrity-cryptosuites additive) and resolves correctly.'
+				},
+				{
+					level: 'MUST',
+					text: 'Require a `di_vp` key proof in the Credential Request `proofs` and validate its W3C VP Data Integrity proof: `proofPurpose` is `authentication`, `domain` equals the Credential Issuer Identifier, and `challenge` equals the issued `c_nonce`.'
+				},
+				{
+					level: 'MUST',
+					text: 'Verify the holder controls the key referenced by the `di_vp` proof’s `verificationMethod` before binding `credentialSubject.id`.'
 				},
 				{
 					level: 'MUST',
