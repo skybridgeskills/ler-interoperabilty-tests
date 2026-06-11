@@ -79,7 +79,15 @@
 		"vitest-browser-svelte": "^2.0.1"
 	},
 	"dependencies": {
+		"@digitalbazaar/ecdsa-rdfc-2019-cryptosuite": "^1.3.0",
+		"@digitalbazaar/ed25519-multikey": "^1.3.1",
+		"@digitalbazaar/eddsa-rdfc-2022-cryptosuite": "^1.3.0",
 		"@digitalcredentials/verifier-core": "1.0.0-beta.11",
+		"@interop/data-integrity-proof": "^3.3.1",
+		"@interop/did-method-key": "^7.3.1",
+		"@interop/ecdsa-multikey": "^2.3.0",
+		"@interop/security-document-loader": "^9.3.0",
+		"@interop/vc": "^11.0.3",
 		"clsx": "^2.1.1",
 		"pino": "^10.0.0",
 		"pino-pretty": "^13.0.0",
