@@ -32,7 +32,7 @@
 			selected={none}
 			onToggle={toggler(none)}
 			builderNote="Cover the profiles your product needs to interoperate with."
-			buyerNote="Pick the profiles your ecosystem requires, then ask vendors to prove them."
+			evaluatorNote="Pick the profiles your ecosystem requires, then ask the platform or implementation to demonstrate them."
 		/>
 	</div>
 </Story>

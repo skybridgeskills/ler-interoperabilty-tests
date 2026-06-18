@@ -5,7 +5,7 @@
 
 	const statusConfig: Record<RunStatus, ResultConfig> = {
 		passed: {
-			label: 'Passed',
+			label: 'Meets requirements',
 			class: 'border-result-pass-border bg-result-pass-soft text-result-pass'
 		},
 		failed: {

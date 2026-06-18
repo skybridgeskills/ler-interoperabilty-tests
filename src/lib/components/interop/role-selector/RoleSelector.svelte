@@ -15,7 +15,7 @@
 		heading = 'Pick your role',
 		description,
 		builderNote,
-		buyerNote
+		evaluatorNote
 	}: {
 		roles: Role[];
 		selected: Set<RoleSlug>;
@@ -23,7 +23,7 @@
 		heading?: string;
 		description?: string;
 		builderNote?: string;
-		buyerNote?: string;
+		evaluatorNote?: string;
 	} = $props();
 </script>
 
@@ -35,8 +35,8 @@
 		{/if}
 	</header>
 
-	{#if builderNote && buyerNote}
-		<AudienceNote builder={builderNote} buyer={buyerNote} />
+	{#if builderNote && evaluatorNote}
+		<AudienceNote builder={builderNote} evaluator={evaluatorNote} />
 	{/if}
 
 	<div class="grid gap-3 sm:grid-cols-3">

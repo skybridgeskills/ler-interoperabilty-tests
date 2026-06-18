@@ -32,8 +32,8 @@
 			selected={none}
 			onToggle={toggler(none)}
 			description="Choose the role(s) you build or evaluate. Wallets play the holder role."
-			builderNote="Pick the role(s) your product plays."
-			buyerNote="Pick the role you're evaluating a vendor for."
+			builderNote="Pick the role(s) your product plays: issuer, wallet, verifier, or some combination."
+			evaluatorNote="Pick the role(s) you need a platform, vendor, or implementation to demonstrate."
 		/>
 	</div>
 </Story>

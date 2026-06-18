@@ -1,15 +1,15 @@
 <script lang="ts">
 	/**
-	 * Reusable dual-audience explainer: one line for builders, one for buyers.
-	 * Purely presentational — no logic.
+	 * Reusable dual-audience explainer: one line for builders, one for
+	 * evaluators. Purely presentational — no logic.
 	 */
 	let {
 		builder,
-		buyer,
+		evaluator,
 		title
 	}: {
 		builder: string;
-		buyer: string;
+		evaluator: string;
 		title?: string;
 	} = $props();
 </script>
@@ -24,8 +24,8 @@
 			<p class="text-body-md text-muted-foreground">{builder}</p>
 		</div>
 		<div class="space-y-1">
-			<p class="text-label-md text-muted-foreground">For buyers</p>
-			<p class="text-body-md text-muted-foreground">{buyer}</p>
+			<p class="text-label-md text-muted-foreground">For evaluators</p>
+			<p class="text-body-md text-muted-foreground">{evaluator}</p>
 		</div>
 	</div>
 </div>

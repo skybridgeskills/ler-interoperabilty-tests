@@ -16,7 +16,7 @@
 		heading = 'Interoperability profiles',
 		description = 'A profile is a set of standards and options — every parameter you need to do one thing with credentials. Which profiles do you want to cover?',
 		builderNote,
-		buyerNote
+		evaluatorNote
 	}: {
 		profiles: Profile[];
 		selected: Set<ProfileSlug>;
@@ -24,7 +24,7 @@
 		heading?: string;
 		description?: string;
 		builderNote?: string;
-		buyerNote?: string;
+		evaluatorNote?: string;
 	} = $props();
 </script>
 
@@ -36,8 +36,8 @@
 		{/if}
 	</header>
 
-	{#if builderNote && buyerNote}
-		<AudienceNote builder={builderNote} buyer={buyerNote} />
+	{#if builderNote && evaluatorNote}
+		<AudienceNote builder={builderNote} evaluator={evaluatorNote} />
 	{/if}
 
 	<div class="grid gap-3 sm:grid-cols-3">
