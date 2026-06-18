@@ -6,7 +6,7 @@
 </script>
 
 <header
-	class="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+	class="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/60"
 >
 	<div class="mx-auto flex h-14 max-w-7xl items-center gap-6 px-4">
 		<a href={resolve('/')} class="flex items-center gap-2">

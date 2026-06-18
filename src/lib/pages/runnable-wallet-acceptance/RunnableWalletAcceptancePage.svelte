@@ -19,6 +19,7 @@
 		walletRunRecord,
 		workflowBySlug
 	} from '$lib/interop/index.js';
+	import type { ProfileSlug } from '$lib/interop/profile-schema.js';
 	import type { IssuerRunnerReport } from '$lib/server/domain/issuer-runner/issuer-runner-report.js';
 
 	import { TestWalletPanel } from './test-wallet-panel/index.js';
@@ -26,7 +27,7 @@
 	// The runnable wallet-acceptance page, parametrized by profile. `profile`
 	// is fixed for the lifetime of the route mount, so deriving the
 	// combination/step-count/labels as plain consts is correct.
-	let { profile = 'vcalm' }: { profile?: 'vcalm' | 'oid4' } = $props();
+	let { profile = 'vcalm' }: { profile?: ProfileSlug } = $props();
 
 	const role = roleBySlug('wallet')!;
 	const workflow = workflowBySlug('credential-acceptance')!;

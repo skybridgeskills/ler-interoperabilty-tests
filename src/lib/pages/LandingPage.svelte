@@ -145,7 +145,9 @@
 					>
 						›
 					</span>
-					<span class="text-title-lg text-foreground">Other available checklists</span>
+					<span class="text-title-lg text-foreground"
+						>{hasSelection ? 'Other available checklists' : 'Available checklists'}</span
+					>
 				</span>
 				<p class="max-w-prose pl-6 text-body-md text-muted-foreground">
 					These checklists are not part of your current selection. Expand this section to view
