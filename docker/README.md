@@ -40,12 +40,20 @@ resolve from the file's own directory).
 ```sh
 pnpm dev:services          # start both services in the foreground
 pnpm dev:services:down     # stop and remove containers (state survives)
-pnpm turbo dev:full        # SvelteKit dev + Storybook + services in parallel
+pnpm dev:full              # SvelteKit dev + Storybook + services in parallel
 ```
+
+`pnpm dev:full` runs the services through `scripts/dev-services.sh`, a
+wrapper around `docker compose up` that traps the shutdown signal and
+runs `docker compose stop` on exit. This guarantees the containers stop
+when you quit the turbo session (ctrl-c / quit turbo / close terminal),
+however turbo terminates the task. Teardown uses `stop` (not `down`), so
+containers restart fast and state under `docker/.data/` survives.
 
 `pnpm turbo dev` (without `:full`) keeps the suite-only flow — useful
 when you're only working on UI / storybook and don't need the live
-runner.
+runner. `pnpm dev:services` / `pnpm dev:services:down` remain the manual
+foreground fallback for running the compose stack on its own.
 
 ## Reset state
 

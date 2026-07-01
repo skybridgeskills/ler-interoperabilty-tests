@@ -4,7 +4,6 @@ services:
   signing-service:
     image: skybridgeskills/dcc-signing-service@sha256:ea486bc5c71f78cb93057fafad95885a1a33fd911aee348faee111283f158050
     container_name: lits-signing-service
-    restart: unless-stopped
     ports:
       - '4006:4006'
     environment:
@@ -15,7 +14,6 @@ services:
   transaction-service:
     image: skybridgeskills/dcc-transaction-service@sha256:bdc718e04bec809246429b31ec13ab35f521e5c7bbff211be25f434a06334109
     container_name: lits-transaction-service
-    restart: unless-stopped
     depends_on:
       - signing-service
     ports:

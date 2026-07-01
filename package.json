@@ -25,7 +25,8 @@
 		"dev": "vite dev",
 		"dev:services": "docker compose -f docker/compose.dev.yml --env-file .env up",
 		"dev:services:down": "docker compose -f docker/compose.dev.yml down",
-		"dev:full": "turbo run dev storybook dev:services --concurrency=10"
+		"dev:services:managed": "bash scripts/dev-services.sh",
+		"dev:full": "turbo run dev storybook dev:services:managed --concurrency=10"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.4.0",
