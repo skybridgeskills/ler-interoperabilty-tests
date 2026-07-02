@@ -14,6 +14,21 @@
 			<dt class="text-label-md text-muted-foreground">Version</dt>
 			<dd class="font-mono text-foreground">{profile.version}</dd>
 		</div>
+		{#if profile.url}
+			<div class="flex flex-col">
+				<dt class="text-label-md text-muted-foreground">Profile URL</dt>
+				<dd>
+					<a
+						class="break-all text-primary hover:underline"
+						href={profile.url}
+						rel="noopener noreferrer"
+						target="_blank"
+					>
+						{profile.url}
+					</a>
+				</dd>
+			</div>
+		{/if}
 		<div class="flex flex-col">
 			<dt class="text-label-md text-muted-foreground">Status</dt>
 			<dd class="text-foreground">{profile.status}</dd>

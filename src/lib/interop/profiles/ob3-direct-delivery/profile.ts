@@ -7,6 +7,7 @@ export const ob3DirectDeliveryProfileMeta = {
 	name: 'OB 3.0 Direct Delivery Profile',
 	version: '0.1',
 	status: "Editor's Draft",
+	url: 'https://interoperability.learningmobilitycollaborative.org/profiles/ob-3.0-direct-delivery/',
 	lastUpdated: '2026-02-15',
 	description:
 		'Direct credential issuance and verification using EdDSA-signed Open Badges 3.0 credentials delivered as JSON files or copy-paste text, without an exchange protocol. Recipient identifiers are email addresses.',

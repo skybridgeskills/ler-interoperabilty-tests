@@ -58,6 +58,34 @@
 	<p class="max-w-prose text-body-md text-muted-foreground">{data.profile.description}</p>
 </section>
 
+{#if data.kind === 'additive'}
+	<dl class="mt-8 space-y-2 text-body-md">
+		<div class="flex flex-col">
+			<dt class="text-label-md text-muted-foreground">Profile ID</dt>
+			<dd class="font-mono text-foreground">{data.profile.id}</dd>
+		</div>
+		<div class="flex flex-col">
+			<dt class="text-label-md text-muted-foreground">Version</dt>
+			<dd class="font-mono text-foreground">{data.profile.version}</dd>
+		</div>
+		{#if data.profile.url}
+			<div class="flex flex-col">
+				<dt class="text-label-md text-muted-foreground">Profile URL</dt>
+				<dd>
+					<a
+						class="break-all text-primary hover:underline"
+						href={data.profile.url}
+						rel="noopener noreferrer"
+						target="_blank"
+					>
+						{data.profile.url}
+					</a>
+				</dd>
+			</div>
+		{/if}
+	</dl>
+{/if}
+
 {#if data.kind === 'base'}
 	<ProfileSummary profile={data.profile} />
 

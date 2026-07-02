@@ -15,6 +15,7 @@ export const vcalmProfileMeta = {
 	name: 'VCALM Profile',
 	version: '0.2',
 	status: "Editor's Draft",
+	url: 'https://interoperability.learningmobilitycollaborative.org/profiles/vcalm-eddsa/',
 	lastUpdated: '2026-05-16',
 	description:
 		'Browser-based credential exchange using VCALM Exchanges over Open Badges 3.0 credentials. ' +

@@ -14,6 +14,7 @@ export const oid4ProfileMeta = {
 	name: 'OID4 Profile',
 	version: '0.2',
 	status: "Editor's Draft",
+	url: 'https://interoperability.learningmobilitycollaborative.org/profiles/oid4-ecdsa/',
 	lastUpdated: '2026-06-10',
 	description:
 		'OAuth 2.0-based credential exchange using OID4VCI / OID4VP over Open Badges 3.0 ' +

@@ -85,6 +85,7 @@ export const Profile = ZodFactory(
 		name: z.string(),
 		version: z.string(),
 		status: z.string(),
+		url: z.string().url().optional(),
 		lastUpdated: z.string(),
 		description: z.string(),
 		keyComponents: z.array(ProfileKeyComponent.schema),
