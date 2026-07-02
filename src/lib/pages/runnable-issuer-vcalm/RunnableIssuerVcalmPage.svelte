@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { recordRun } from '$lib/client/run-history/index.js';
+	import { IssuerFlowWalletPanel } from '$lib/components/interop/issuer-flow-runner/index.js';
 	import {
-		IssuerFlowWalletPanel,
-		RequirementOutcomeRow
-	} from '$lib/components/interop/issuer-flow-runner/index.js';
+		RequirementStatusRow,
+		outcomeToRequirementStatus
+	} from '$lib/components/interop/requirement-status-row/index.js';
 	import { RunnableChecklist } from '$lib/components/interop/runnable-checklist/index.js';
 	import {
 		combinationFor,
@@ -175,10 +176,12 @@
 		/>
 	{/snippet}
 	{#snippet requirementState({ requirement, stepIndex })}
-		<RequirementOutcomeRow
+		<RequirementStatusRow
 			{requirement}
-			outcome={requirement.id ? outcomesById[requirement.id] : undefined}
-			raw={done ? rawForStep(stepIndex) : undefined}
+			status={outcomeToRequirementStatus(
+				requirement.id ? outcomesById[requirement.id] : undefined,
+				done ? rawForStep(stepIndex) : undefined
+			)}
 		/>
 	{/snippet}
 </RunnableChecklist>

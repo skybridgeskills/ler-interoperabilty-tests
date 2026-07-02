@@ -8,6 +8,10 @@
 	} from '$lib/client/exchange-runner/index.js';
 	import { recordRun } from '$lib/client/run-history/index.js';
 	import { ExchangeRunnerPanel } from '$lib/components/interop/exchange-runner/index.js';
+	import {
+		RequirementStatusRow,
+		stepStateToRequirementStatus
+	} from '$lib/components/interop/requirement-status-row/index.js';
 	import { RunnableChecklist } from '$lib/components/interop/runnable-checklist/index.js';
 	import {
 		combinationFor,
@@ -39,6 +43,26 @@
 	};
 
 	type RunnerError = { message: string; hint?: string };
+
+	// Honest, step-level copy for each requirement row's `<details>` disclosure.
+	// The external-wallet flow observes progress at the step level only, so every
+	// requirement in a step shares its parent step's status — the copy says so
+	// rather than implying a per-requirement guarantee we don't have.
+	const stepDetailCopy: Record<StepRunState, string | undefined> = {
+		pending:
+			'Waiting for the wallet to reach this step. Progress is tracked per step, so all of this step’s requirements share its status.',
+		'in-flight':
+			'The wallet is working through this step. Progress is tracked per step, so all of this step’s requirements share its status.',
+		complete: undefined,
+		failed: 'The exchange ended in an invalid state at this step.',
+		skipped: 'The run errored before reaching this step.'
+	};
+
+	/** Step-derived status view for every requirement in the step at `stepIndex`. */
+	function requirementStatusForStep(stepIndex: number) {
+		const state = perStep[stepIndex] ?? 'pending';
+		return stepStateToRequirementStatus(state, { message: stepDetailCopy[state] });
+	}
 
 	let exchangeId = $state<string | undefined>(undefined);
 	// The single protocol link this profile presents (VCALM `iu` or the OID4VCI deep link).
@@ -209,5 +233,8 @@
 				onReset: setIdle
 			}}
 		/>
+	{/snippet}
+	{#snippet requirementState({ requirement, stepIndex })}
+		<RequirementStatusRow {requirement} status={requirementStatusForStep(stepIndex)} />
 	{/snippet}
 </RunnableChecklist>

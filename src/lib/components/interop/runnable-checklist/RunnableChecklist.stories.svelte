@@ -9,6 +9,10 @@
 	} from '$lib/interop/index.js';
 
 	import { ExchangeRunnerPanel } from '../exchange-runner/index.js';
+	import {
+		RequirementStatusRow,
+		stepStateToRequirementStatus
+	} from '../requirement-status-row/index.js';
 
 	import { RunnableChecklist } from './index.js';
 
@@ -41,6 +45,12 @@
 	const oid4AwaitingPerStep: StepRunState[] = ['in-flight', 'pending', 'pending', 'pending'];
 	const oid4vciUrl =
 		'openid-credential-offer://?credential_offer_uri=http%3A%2F%2Flocalhost%3A4004%2Fworkflows%2Fclaim%2Fexchanges%2Fexample-uuid-1234%2Fopenid%2Fcredential-offer';
+
+	// Step-derived requirement status, mirroring what `RunnableWalletAcceptancePage`
+	// passes: every requirement in a step shares its parent step's run state.
+	function statusFor(steps: StepRunState[], stepIndex: number) {
+		return stepStateToRequirementStatus(steps[stepIndex] ?? 'pending');
+	}
 </script>
 
 <Story name="Idle" asChild>
@@ -55,6 +65,9 @@
 		>
 			{#snippet rightColumn()}
 				<ExchangeRunnerPanel data={{ run: 'idle', perStep: allPending }} actions={noopActions} />
+			{/snippet}
+			{#snippet requirementState({ requirement, stepIndex })}
+				<RequirementStatusRow {requirement} status={statusFor(allPending, stepIndex)} />
 			{/snippet}
 		</RunnableChecklist>
 	</div>
@@ -81,6 +94,9 @@
 					actions={noopActions}
 				/>
 			{/snippet}
+			{#snippet requirementState({ requirement, stepIndex })}
+				<RequirementStatusRow {requirement} status={statusFor(awaitingPerStep, stepIndex)} />
+			{/snippet}
 		</RunnableChecklist>
 	</div>
 </Story>
@@ -105,6 +121,9 @@
 					}}
 					actions={noopActions}
 				/>
+			{/snippet}
+			{#snippet requirementState({ requirement, stepIndex })}
+				<RequirementStatusRow {requirement} status={statusFor(connectedPerStep, stepIndex)} />
 			{/snippet}
 		</RunnableChecklist>
 	</div>
@@ -132,6 +151,9 @@
 					actions={noopActions}
 				/>
 			{/snippet}
+			{#snippet requirementState({ requirement, stepIndex })}
+				<RequirementStatusRow {requirement} status={statusFor(oid4AwaitingPerStep, stepIndex)} />
+			{/snippet}
 		</RunnableChecklist>
 	</div>
 </Story>
@@ -151,6 +173,9 @@
 					data={{ run: 'complete', perStep: allComplete, exchangeId: 'example-uuid-1234' }}
 					actions={{ ...noopActions, onReset: () => {} }}
 				/>
+			{/snippet}
+			{#snippet requirementState({ requirement, stepIndex })}
+				<RequirementStatusRow {requirement} status={statusFor(allComplete, stepIndex)} />
 			{/snippet}
 		</RunnableChecklist>
 	</div>
@@ -178,6 +203,9 @@
 					}}
 					actions={noopActions}
 				/>
+			{/snippet}
+			{#snippet requirementState({ requirement, stepIndex })}
+				<RequirementStatusRow {requirement} status={statusFor(allSkipped, stepIndex)} />
 			{/snippet}
 		</RunnableChecklist>
 	</div>
