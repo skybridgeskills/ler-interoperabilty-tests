@@ -156,5 +156,5 @@
 <footer class="mt-16 text-label-md text-muted-foreground">
 	Source: see the
 	<a class="text-primary hover:underline" href={profileHref(profile.slug)}>{profile.name}</a>
-	specification.
+	requirements.
 </footer>

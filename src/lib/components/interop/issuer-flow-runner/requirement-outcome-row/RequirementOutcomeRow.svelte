@@ -79,7 +79,7 @@
 				{/if}
 				{#if rawJson}
 					<pre
-						class="text-label-sm mt-1 max-h-72 overflow-auto rounded bg-muted p-2 text-foreground">{rawJson}</pre>
+						class="text-label-sm mt-1 max-h-72 overflow-auto rounded bg-muted p-2 text-foreground normal-case">{rawJson}</pre>
 				{/if}
 			</details>
 		{/if}
