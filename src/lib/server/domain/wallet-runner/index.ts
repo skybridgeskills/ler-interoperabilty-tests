@@ -5,3 +5,6 @@ export {
 } from './exchange-checker.js';
 export { walletCheckRegistry } from './checks/index.js';
 export type { WalletCheckCtx, WalletCheckFn, WalletExchangeView } from './wallet-check.js';
+export { runIssuerFlowChecks } from './issuer-flow-check.js';
+export type { IssuerFlowCheckCtx, IssuerFlowCheckFn } from './issuer-flow-check.js';
+export { vcalmIssuerFlowChecks } from './checks/vcalm-issuer-flow.js';
