@@ -1,7 +1,11 @@
 import { z } from 'zod';
 
 import { ProfileSlug, RoleSlug, WorkflowSlug } from '$lib/interop/profile-schema.js';
-import type { RunStateDerivation } from '$lib/interop/runner-state.js';
+import {
+	ChecklistRunState,
+	StepRunState,
+	type RunStateDerivation
+} from '$lib/interop/runner-state.js';
 import { ZodFactory } from '$lib/util/zod-factory.js';
 
 /** Outcome of a single recorded test run. */
@@ -14,8 +18,8 @@ const ExchangeRunPayload = z.object({
 	exchangeId: z.string().optional(),
 	exchangeState: z.enum(['pending', 'active', 'complete', 'invalid']),
 	derived: z.object({
-		run: z.enum(['idle', 'awaiting-wallet', 'wallet-connected', 'complete', 'error']),
-		perStep: z.array(z.enum(['pending', 'in-flight', 'complete', 'skipped']))
+		run: ChecklistRunState.schema,
+		perStep: z.array(StepRunState.schema)
 	})
 });
 export type ExchangeRunPayload = z.infer<typeof ExchangeRunPayload>;

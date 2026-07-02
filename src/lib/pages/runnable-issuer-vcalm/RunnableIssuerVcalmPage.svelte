@@ -67,13 +67,20 @@
 		perStep = Array.from({ length: stepCount }, () => 'pending');
 	}
 
-	/** Steps before the stop point complete; the stop step is skipped; the rest stay pending. */
-	function stepStatesFor(blockedAt: number | undefined, ok: boolean): StepRunState[] {
-		return Array.from({ length: stepCount }, (_, i) => {
-			if (ok) return 'complete';
-			if (blockedAt === undefined) return 'skipped';
-			if (i < blockedAt - 1) return 'complete';
-			if (i === blockedAt - 1) return 'skipped';
+	/**
+	 * Derive each step's indicator status from its requirements' outcomes: `failed` if any
+	 * requirement failed, `complete` when all its requirements resolved without a failure, and
+	 * `pending` when none have run yet (i.e. the flow stopped before reaching this step).
+	 */
+	function deriveStepStates(): StepRunState[] {
+		return combo.checklist.steps.map((step) => {
+			const outs = step.requirements
+				.map((r) => (r.id ? outcomesById[r.id] : undefined))
+				.filter((o): o is CheckOutcome => !!o);
+			if (outs.some((o) => o.status === 'fail')) return 'failed';
+			if (step.requirements.length > 0 && outs.length === step.requirements.length)
+				return 'complete';
+			if (outs.length > 0) return 'in-flight';
 			return 'pending';
 		});
 	}
@@ -119,9 +126,8 @@
 			failingMustCount = data.failingMustCount;
 			done = true;
 
-			const ok = !data.blocked && data.verified;
-			runState = ok ? 'complete' : 'error';
-			perStep = stepStatesFor(data.stoppedAtStep, ok);
+			runState = !data.blocked && data.verified ? 'complete' : 'error';
+			perStep = deriveStepStates();
 
 			recordRun(
 				issuerReportRunRecord({

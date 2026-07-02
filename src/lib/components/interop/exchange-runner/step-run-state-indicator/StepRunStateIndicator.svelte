@@ -27,6 +27,11 @@
 			label: 'Skipped',
 			dotClass: 'bg-muted-foreground/30',
 			textClass: 'text-muted-foreground line-through decoration-muted-foreground/40'
+		},
+		failed: {
+			label: 'Failed',
+			dotClass: 'bg-destructive',
+			textClass: 'text-destructive font-semibold'
 		}
 	};
 </script>

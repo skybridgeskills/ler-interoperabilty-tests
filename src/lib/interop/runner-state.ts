@@ -12,7 +12,9 @@ export const ChecklistRunState = ZodFactory(
 export type ChecklistRunState = ReturnType<typeof ChecklistRunState>;
 
 /** State of a single step in the right column. */
-export const StepRunState = ZodFactory(z.enum(['pending', 'in-flight', 'complete', 'skipped']));
+export const StepRunState = ZodFactory(
+	z.enum(['pending', 'in-flight', 'complete', 'skipped', 'failed'])
+);
 export type StepRunState = ReturnType<typeof StepRunState>;
 
 /**

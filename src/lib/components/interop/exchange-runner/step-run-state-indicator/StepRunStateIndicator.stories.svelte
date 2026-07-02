@@ -15,5 +15,6 @@
 		<StepRunStateIndicator state="in-flight" />
 		<StepRunStateIndicator state="complete" />
 		<StepRunStateIndicator state="skipped" />
+		<StepRunStateIndicator state="failed" />
 	</div>
 </Story>
