@@ -131,23 +131,7 @@ export const ob3DirectDeliveryIssuerChecks: Record<string, CheckFn> = {
 		return { status: 'pass', message: 'Bitstring Status List entry present.' };
 	},
 
-	'ob3-direct-delivery.issuer-did-method': ({ credential }) => {
-		const issuer = (credential as Record<string, unknown> | null)?.issuer;
-		const id =
-			typeof issuer === 'string'
-				? issuer
-				: typeof (issuer as Record<string, unknown> | null)?.id === 'string'
-					? (issuer as { id: string }).id
-					: undefined;
-		if (!id) return { status: 'fail', message: '`issuer.id` MUST be present.' };
-		if (id.startsWith('did:web:') || id.startsWith('did:key:')) {
-			return { status: 'pass', message: `Issuer uses ${id.split(':').slice(0, 2).join(':')}.` };
-		}
-		return {
-			status: 'fail',
-			message: 'Issuer DID MUST use the `did:web` or `did:key` method.'
-		};
-	},
+	'ob3-direct-delivery.issuer-did-method': ({ credential }) => issuerDidMethodCheck(credential),
 
 	'ob3-direct-delivery.valid-until-optional': ({ credential }) => {
 		const validUntil = (credential as Record<string, unknown> | null)?.validUntil;
@@ -189,6 +173,29 @@ export const ob3DirectDeliveryIssuerChecks: Record<string, CheckFn> = {
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
+/**
+ * Shared issuer DID-method check: `issuer` may be a string or an object
+ * with an `id`; the identifier MUST use `did:web` or `did:key`. Reused
+ * by the data-integrity-cryptosuites additive issuer check.
+ */
+function issuerDidMethodCheck(credential: unknown): CheckResult {
+	const issuer = (credential as Record<string, unknown> | null)?.issuer;
+	const id =
+		typeof issuer === 'string'
+			? issuer
+			: typeof (issuer as Record<string, unknown> | null)?.id === 'string'
+				? (issuer as { id: string }).id
+				: undefined;
+	if (!id) return { status: 'fail', message: '`issuer.id` MUST be present.' };
+	if (id.startsWith('did:web:') || id.startsWith('did:key:')) {
+		return { status: 'pass', message: `Issuer uses ${id.split(':').slice(0, 2).join(':')}.` };
+	}
+	return {
+		status: 'fail',
+		message: 'Issuer DID MUST use the `did:web` or `did:key` method.'
+	};
+}
+
 function subjectOf(credential: unknown): Record<string, unknown> | undefined {
 	const cred = credential as Record<string, unknown> | null;
 	const subject = cred?.credentialSubject;
@@ -198,8 +205,8 @@ function subjectOf(credential: unknown): Record<string, unknown> | undefined {
 	return subject as Record<string, unknown>;
 }
 
-// Re-export the helper for the additive-profile checks.
-export { subjectOf };
+// Re-export helpers for the additive-profile checks.
+export { subjectOf, issuerDidMethodCheck };
 
 // Re-export the type so the registry can be typed without circular imports.
 export type { CheckCtx, CheckResult };

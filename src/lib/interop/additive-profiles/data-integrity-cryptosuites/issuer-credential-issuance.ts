@@ -1,8 +1,9 @@
 import { WorkflowChecklist } from '../../profile-schema.js';
 
 /**
- * Issuer × Credential Issuance × VCALM — additive layer for the
- * data-integrity-cryptosuites bundle.
+ * Issuer × Credential Issuance — additive layer for the
+ * data-integrity-cryptosuites bundle (applies to the vcalm + oid4 exchange
+ * profiles by role+workflow).
  *
  * Split into two steps. The "Producer" step covers the issuer's
  * VC-signing obligations (pick ≥1 option). The "Consumer" step covers

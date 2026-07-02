@@ -15,18 +15,23 @@
 		},
 		'in-flight': {
 			label: 'In progress',
-			dotClass: 'bg-live animate-pulse',
-			textClass: 'text-live'
+			dotClass: 'bg-progress animate-pulse',
+			textClass: 'text-progress'
 		},
 		complete: {
 			label: 'Done',
-			dotClass: 'bg-primary',
-			textClass: 'text-primary'
+			dotClass: 'bg-success',
+			textClass: 'text-success font-semibold'
 		},
 		skipped: {
 			label: 'Skipped',
 			dotClass: 'bg-muted-foreground/30',
 			textClass: 'text-muted-foreground line-through decoration-muted-foreground/40'
+		},
+		failed: {
+			label: 'Failed',
+			dotClass: 'bg-destructive',
+			textClass: 'text-destructive font-semibold'
 		}
 	};
 </script>

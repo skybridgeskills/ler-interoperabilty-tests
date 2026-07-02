@@ -6,5 +6,7 @@ export * from './workflow-groups.js';
 export * from './accessors.js';
 export * from './checklist-href.js';
 export * from './runner-state.js';
+export * from './run-history/index.js';
+export * from './selection/index.js';
 export { allProfiles } from './profiles/all-profiles.js';
 export { allAdditiveProfiles } from './additive-profiles/all-additive-profiles.js';

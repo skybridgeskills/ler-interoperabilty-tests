@@ -15,7 +15,10 @@
 	} from '$lib/interop/index.js';
 
 	import { StepRunStateIndicator } from '../exchange-runner/step-run-state-indicator/index.js';
-	import { requirementLevelVariant } from '../workflow-checklist/requirement-level-badge.js';
+	import {
+		requirementLevelClass,
+		requirementLevelVariant
+	} from '../workflow-checklist/requirement-level-badge.js';
 
 	let {
 		checklist,
@@ -26,7 +29,8 @@
 		perStep,
 		topOfPage,
 		rightColumn,
-		stepState
+		stepState,
+		requirementState
 	}: {
 		checklist: WorkflowChecklistData;
 		profile: Profile;
@@ -37,6 +41,20 @@
 		topOfPage?: Snippet;
 		rightColumn: Snippet;
 		stepState?: Snippet<[{ stepIndex: number; stepRunState: StepRunState }]>;
+		/**
+		 * Optional per-requirement renderer. When provided, the left column renders this snippet
+		 * for each requirement instead of the static disabled checkbox — used by runnable pages to
+		 * light requirements up with live pass/fail/warn/pending status inline.
+		 */
+		requirementState?: Snippet<
+			[
+				{
+					requirement: WorkflowChecklistData['steps'][number]['requirements'][number];
+					stepIndex: number;
+					reqIndex: number;
+				}
+			]
+		>;
 	} = $props();
 
 	const stepCount = $derived(checklist.steps.length);
@@ -54,7 +72,7 @@
 		{#if runState === 'awaiting-wallet' || runState === 'wallet-connected'}
 			<Badge class="border-live-border bg-live-soft text-live">Live · in flight</Badge>
 		{:else if runState === 'complete'}
-			<Badge variant="default">Run complete</Badge>
+			<Badge class="border-success-border bg-success-soft text-success">Run complete</Badge>
 		{:else if runState === 'error'}
 			<Badge variant="destructive">Run failed</Badge>
 		{/if}
@@ -84,19 +102,28 @@
 					<p class="max-w-prose text-body-md text-muted-foreground">{step.summary}</p>
 					{#if step.requirements.length}
 						<ul class="space-y-2 pl-6">
-							{#each step.requirements as req (req.text)}
-								<li class="flex items-start gap-3">
-									<input
-										type="checkbox"
-										disabled
-										class="mt-1 size-4 shrink-0 rounded border-border bg-card"
-										aria-label="static"
-									/>
-									<span class="flex flex-wrap items-baseline gap-2">
-										<Badge variant={requirementLevelVariant[req.level]}>{req.level}</Badge>
-										<span class="text-body-md text-foreground">{req.text}</span>
-									</span>
-								</li>
+							{#each step.requirements as req, j (req.text)}
+								{#if requirementState}
+									<li>
+										{@render requirementState({ requirement: req, stepIndex: i, reqIndex: j })}
+									</li>
+								{:else}
+									<li class="flex items-start gap-3">
+										<input
+											type="checkbox"
+											disabled
+											class="mt-1 size-4 shrink-0 rounded border-border bg-card"
+											aria-label="static"
+										/>
+										<span class="flex flex-wrap items-baseline gap-2">
+											<Badge
+												variant={requirementLevelVariant[req.level]}
+												class={requirementLevelClass[req.level]}>{req.level}</Badge
+											>
+											<span class="text-body-md text-foreground">{req.text}</span>
+										</span>
+									</li>
+								{/if}
 							{/each}
 						</ul>
 					{/if}
@@ -129,5 +156,5 @@
 <footer class="mt-16 text-label-md text-muted-foreground">
 	Source: see the
 	<a class="text-primary hover:underline" href={profileHref(profile.slug)}>{profile.name}</a>
-	specification.
+	requirements.
 </footer>

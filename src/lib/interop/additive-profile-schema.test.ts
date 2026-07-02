@@ -27,6 +27,23 @@ describe('AdditiveProfile', () => {
 		});
 		expect(p.slug).toBe('open-skill-alignment');
 		expect(p.appliesToBaseProfiles).toEqual(['ob3-direct-delivery']);
+		expect(p.url).toBeUndefined();
+	});
+
+	it('parses a profile with a valid url', () => {
+		const p = AdditiveProfile({
+			id: 'open-skill-alignment-v1',
+			slug: 'open-skill-alignment',
+			name: 'Open Skill Alignment',
+			version: '0.1',
+			status: 'draft',
+			url: 'https://example.com/profiles/open-skill-alignment/',
+			lastUpdated: '2026-05-15',
+			description: 'Adds skill-alignment data to OpenBadgeCredentials.',
+			appliesToBaseProfiles: ['ob3-direct-delivery'],
+			checklists: []
+		});
+		expect(p.url).toBe('https://example.com/profiles/open-skill-alignment/');
 	});
 
 	it('rejects an empty appliesToBaseProfiles array', () => {

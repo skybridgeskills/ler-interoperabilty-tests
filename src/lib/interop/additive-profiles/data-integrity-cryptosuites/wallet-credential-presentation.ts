@@ -1,8 +1,9 @@
 import { WorkflowChecklist } from '../../profile-schema.js';
 
 /**
- * Wallet × Credential Presentation × VCALM — additive layer for the
- * data-integrity-cryptosuites bundle.
+ * Wallet × Credential Presentation — additive layer for the
+ * data-integrity-cryptosuites bundle (applies to the vcalm + oid4 exchange
+ * profiles by role+workflow).
  *
  * Producer-only: the wallet signs the VP it sends to the verifier.
  * Embedded VCs keep whatever cryptosuite their issuers chose — the

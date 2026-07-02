@@ -1,3 +1,4 @@
+import { dataIntegrityCryptosuitesIssuerChecks } from './data-integrity-cryptosuites-issuer.js';
 import { ob3DirectDeliveryIssuerChecks } from './ob3-direct-delivery-issuer.js';
 import { openSkillAlignmentIssuerChecks } from './open-skill-alignment-issuer.js';
 import type { CheckFn } from './types.js';
@@ -10,7 +11,8 @@ import type { CheckFn } from './types.js';
  */
 export const checkRegistry: Record<string, CheckFn> = {
 	...ob3DirectDeliveryIssuerChecks,
-	...openSkillAlignmentIssuerChecks
+	...openSkillAlignmentIssuerChecks,
+	...dataIntegrityCryptosuitesIssuerChecks
 };
 
 export type { CheckCtx, CheckFn, CheckResult, VerifierCoreResultLite } from './types.js';

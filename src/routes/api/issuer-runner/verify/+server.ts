@@ -23,7 +23,7 @@ export const POST = async ({ request }: { request: Request }) => {
 	} catch {
 		return fatal(
 			'Request body is not valid JSON.',
-			'Send a JSON object with `credential` and optional `includeAdditive`.'
+			'Send a JSON object with `credential` and optional `additiveProfiles`.'
 		);
 	}
 
@@ -35,7 +35,7 @@ export const POST = async ({ request }: { request: Request }) => {
 	try {
 		const report = await issuerRunner.verify({
 			credential: parsed.data.credential,
-			includeAdditive: parsed.data.includeAdditive ?? false
+			additiveProfiles: parsed.data.additiveProfiles ?? []
 		});
 		return json(report);
 	} catch (e) {

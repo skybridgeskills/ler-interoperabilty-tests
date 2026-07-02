@@ -105,10 +105,12 @@ src/
 
 ## Theming
 
-Tokyo Night palette with light + dark modes. The `ThemeToggle` cycles
-`light → dark → system → light`; choice is persisted in `localStorage`
-and applied by toggling the `.dark` class on `<html>`. An inline script in
-`app.html` applies the persisted theme before paint to avoid flash.
+Tokyo Night palette with light + dark modes. The `ThemeToggle` switches
+between light and dark (icon shows current theme, hover/focus previews
+the next); new visitors follow the OS until the first click. Choice is
+persisted in `localStorage` and applied by toggling the `.dark` class on
+`<html>`. An inline script in `app.html` applies the persisted theme
+before paint to avoid flash.
 
 Full palette + semantic tokens: [`docs/design-system.md`](docs/design-system.md).
 

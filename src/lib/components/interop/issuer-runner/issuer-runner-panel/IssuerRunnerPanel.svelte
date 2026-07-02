@@ -14,7 +14,7 @@
 <div class="space-y-8">
 	<CredentialPasteForm
 		value={data.credentialText}
-		includeAdditive={data.includeAdditive}
+		selectedAdditives={data.selectedAdditives}
 		status={data.status}
 		onChange={actions.onCredentialChange}
 		onToggleAdditive={actions.onToggleAdditive}

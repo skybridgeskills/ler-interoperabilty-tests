@@ -31,8 +31,7 @@
 				run: 'awaiting-wallet',
 				perStep: ['in-flight', 'pending', 'pending', 'pending', 'pending'],
 				interactionUrl: vcalmUrl,
-				oid4vciDeepLink: oid4vciUrl,
-				selectedProtocol: 'vcalm',
+				headerLabel: 'Live · interaction URL',
 				exchangeId: 'example-uuid-1234'
 			}}
 			actions={noopActions}
@@ -45,41 +44,9 @@
 		<ExchangeRunnerPanel
 			data={{
 				run: 'awaiting-wallet',
-				perStep: ['in-flight', 'pending', 'pending', 'pending', 'pending'],
-				interactionUrl: vcalmUrl,
-				oid4vciDeepLink: oid4vciUrl,
-				selectedProtocol: 'oid4vci',
-				exchangeId: 'example-uuid-1234'
-			}}
-			actions={noopActions}
-		/>
-	</div>
-</Story>
-
-<Story name="Awaiting wallet — VCALM only (legacy container)" asChild>
-	<div class="max-w-md bg-background p-6">
-		<ExchangeRunnerPanel
-			data={{
-				run: 'awaiting-wallet',
-				perStep: ['in-flight', 'pending', 'pending', 'pending', 'pending'],
-				interactionUrl: vcalmUrl,
-				selectedProtocol: 'vcalm',
-				exchangeId: 'example-uuid-1234'
-			}}
-			actions={noopActions}
-		/>
-	</div>
-</Story>
-
-<Story name="Wallet connected — VCALM" asChild>
-	<div class="max-w-md bg-background p-6">
-		<ExchangeRunnerPanel
-			data={{
-				run: 'wallet-connected',
-				perStep: ['complete', 'complete', 'in-flight', 'pending', 'pending'],
-				interactionUrl: vcalmUrl,
-				oid4vciDeepLink: oid4vciUrl,
-				selectedProtocol: 'vcalm',
+				perStep: ['in-flight', 'pending', 'pending', 'pending'],
+				interactionUrl: oid4vciUrl,
+				headerLabel: 'Live · OID4VCI offer',
 				exchangeId: 'example-uuid-1234'
 			}}
 			actions={noopActions}
@@ -92,10 +59,9 @@
 		<ExchangeRunnerPanel
 			data={{
 				run: 'wallet-connected',
-				perStep: ['complete', 'complete', 'in-flight', 'pending', 'pending'],
-				interactionUrl: vcalmUrl,
-				oid4vciDeepLink: oid4vciUrl,
-				selectedProtocol: 'oid4vci',
+				perStep: ['complete', 'complete', 'in-flight', 'pending'],
+				interactionUrl: oid4vciUrl,
+				headerLabel: 'Live · OID4VCI offer',
 				exchangeId: 'example-uuid-1234'
 			}}
 			actions={noopActions}
@@ -108,7 +74,7 @@
 		<ExchangeRunnerPanel
 			data={{
 				run: 'complete',
-				perStep: ['complete', 'complete', 'complete', 'complete', 'complete'],
+				perStep: ['complete', 'complete', 'complete', 'complete'],
 				exchangeId: 'example-uuid-1234'
 			}}
 			actions={{ ...noopActions, onReset: () => {} }}
@@ -121,7 +87,7 @@
 		<ExchangeRunnerPanel
 			data={{
 				run: 'error',
-				perStep: ['skipped', 'skipped', 'skipped', 'skipped', 'skipped'],
+				perStep: ['skipped', 'skipped', 'skipped', 'skipped'],
 				error: {
 					message: 'Cannot reach the local DCC transaction service.',
 					hint: 'Run `pnpm turbo dev:full` to start the dependency services.'

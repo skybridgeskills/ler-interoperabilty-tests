@@ -1,6 +1,12 @@
 import { error } from '@sveltejs/kit';
 
-import { allCombinations, combinationFor, roleBySlug, workflowBySlug } from './accessors.js';
+import {
+	additiveChecklistsForCombination,
+	allCombinations,
+	combinationFor,
+	roleBySlug,
+	workflowBySlug
+} from './accessors.js';
 import { ProfileSlug, RoleSlug, WorkflowSlug } from './profile-schema.js';
 
 export type ChecklistRouteParams = { workflow: string; profile: string };
@@ -32,6 +38,13 @@ export function loadChecklist(
 		role: roleBySlug(roleParse.data)!,
 		workflow: workflowBySlug(workflowParse.data)!,
 		profile: combo.profile,
-		checklist: combo.checklist
+		checklist: combo.checklist,
+		// Applicable additive checklist(s) for this (profile, role, workflow),
+		// rendered as combined-view sections beneath the base checklist.
+		additives: additiveChecklistsForCombination(
+			profileParse.data,
+			roleParse.data,
+			workflowParse.data
+		)
 	};
 }

@@ -1,8 +1,10 @@
 import { WorkflowChecklist } from '../../profile-schema.js';
 
 /**
- * Wallet × Credential Acceptance × VCALM — additive layer for the
- * data-integrity-cryptosuites bundle.
+ * Wallet × Credential Acceptance — additive layer for the
+ * data-integrity-cryptosuites bundle (applies to the vcalm + oid4 exchange
+ * profiles by role+workflow). For OID4 the producer VP is the di_vp key proof;
+ * for VCALM it is the DIDAuthentication VP.
  *
  * Producer step: the wallet signs the DID-auth VP it posts back (≥1
  * option). Consumer step: the wallet verifies the issuer-signed VC it

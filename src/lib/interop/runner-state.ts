@@ -12,7 +12,9 @@ export const ChecklistRunState = ZodFactory(
 export type ChecklistRunState = ReturnType<typeof ChecklistRunState>;
 
 /** State of a single step in the right column. */
-export const StepRunState = ZodFactory(z.enum(['pending', 'in-flight', 'complete', 'skipped']));
+export const StepRunState = ZodFactory(
+	z.enum(['pending', 'in-flight', 'complete', 'skipped', 'failed'])
+);
 export type StepRunState = ReturnType<typeof StepRunState>;
 
 /**
@@ -30,6 +32,26 @@ export type RunStateDerivation = {
 	run: ChecklistRunState;
 	perStep: StepRunState[];
 };
+
+/**
+ * Runtime state the OID4VCI 1.0 pre-authorized-code flow records under
+ * `variables.oid4vci`. Unlike VCALM, that flow never flips the exchange to
+ * `active`; progress is observable only through these fields (presence is
+ * used as a coarse "this stage happened" proxy).
+ */
+type Oid4vciState = {
+	preAuthorizedCode?: string;
+	codeUsed?: boolean;
+	accessToken?: string;
+	cNonce?: string;
+	nonceUsed?: boolean;
+};
+
+/** Read `variables.oid4vci` as an object, or `undefined` for non-OID4VCI exchanges. */
+function oid4vciStateOf(exchange: RunnerExchangeView): Oid4vciState | undefined {
+	const v = exchange.variables?.oid4vci;
+	return v && typeof v === 'object' ? (v as Oid4vciState) : undefined;
+}
 
 /**
  * Map a transaction-service exchange record + step count to the
@@ -55,6 +77,30 @@ export function deriveRunStateFromExchange(
 
 	if (exchange.state === 'complete') {
 		return { run: 'complete', perStep: filledArray(stepCount, 'complete') };
+	}
+
+	// OID4VCI exchanges stay `pending` until completion, so map progress from
+	// `variables.oid4vci` instead of the state machine. `complete`/`invalid`
+	// (protocol-agnostic) are handled above; this branch covers the in-flight
+	// stages. Non-OID4VCI exchanges fall through to the VCALM/DIDAuth logic.
+	const oid4vci = oid4vciStateOf(exchange);
+	if (oid4vci) {
+		if (oid4vci.cNonce || oid4vci.codeUsed || oid4vci.accessToken) {
+			// Token redeemed (and maybe nonce fetched) → requesting credential.
+			return {
+				run: 'wallet-connected',
+				perStep: stepStates(stepCount, Math.min(stepCount - 1, 2))
+			};
+		}
+		if (oid4vci.preAuthorizedCode) {
+			// Offer fetched, no token yet → authorization/token step in flight.
+			return {
+				run: 'wallet-connected',
+				perStep: stepStates(stepCount, Math.min(stepCount - 1, 1))
+			};
+		}
+		// `oid4vci` object exists but empty → awaiting first wallet contact.
+		return { run: 'awaiting-wallet', perStep: stepStates(stepCount, 0) };
 	}
 
 	const hasHolderDid = !!exchange.variables?.holderDid || !!exchange.variables?.didAuthHolderDid;

@@ -5,9 +5,13 @@
  *   defensively narrow what they touch).
  * - `verifierResult` — the result returned by `verifier-core` (lite
  *   shape; full type lives in phase 04's verifier-core-client).
- * - `includeAdditive` — `true` when the runner-page additive toggle
- *   is on; additive-profile checks gate on this and return `'n/a'`
- *   when off.
+ * - `includeAdditive` — **legacy.** Predates per-additive selection.
+ *   Set to `selected.length > 0` (i.e. `true` when ANY additive is
+ *   selected) for back-compat with the open-skill-alignment checks,
+ *   which still gate on it and return `'n/a'` when off. Newer additive
+ *   checks (e.g. data-integrity-cryptosuites) ignore it: their group is
+ *   only included when that specific additive is selected, so the guard
+ *   is redundant for them.
  */
 export type CheckCtx = {
 	credential: unknown;

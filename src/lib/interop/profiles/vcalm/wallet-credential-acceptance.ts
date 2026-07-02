@@ -48,6 +48,14 @@ export const walletCredentialAcceptance = WorkflowChecklist({
 				},
 				{
 					level: 'MUST',
+					text: 'Secure the DIDAuthentication verifiablePresentation with a Data Integrity proof whose `proofPurpose` is `authentication` and whose `challenge` is the value from the `verifiablePresentationRequest`.'
+				},
+				{
+					level: 'MUST',
+					text: 'Prove control of the credential-subject DID’s verification-method key referenced by the VP proof.'
+				},
+				{
+					level: 'MUST',
 					text: 'Generate and manage credential-subject key pairs matching the chosen cryptosuite (see data-integrity-cryptosuites additive) with resolvable did:key or did:web documents.'
 				}
 			]

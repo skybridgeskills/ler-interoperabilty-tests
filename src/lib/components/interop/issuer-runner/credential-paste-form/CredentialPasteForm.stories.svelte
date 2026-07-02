@@ -18,7 +18,7 @@
 
 <Story name="Empty" asChild>
 	<div class="max-w-2xl bg-background p-6">
-		<CredentialPasteForm value="" includeAdditive={false} status="idle" {...noopActions} />
+		<CredentialPasteForm value="" selectedAdditives={[]} status="idle" {...noopActions} />
 	</div>
 </Story>
 
@@ -26,7 +26,7 @@
 	<div class="max-w-2xl bg-background p-6">
 		<CredentialPasteForm
 			value={'{ "@context": [], "type": ["VerifiableCredential"] }'}
-			includeAdditive={true}
+			selectedAdditives={['open-skill-alignment', 'data-integrity-cryptosuites']}
 			status="idle"
 			{...noopActions}
 		/>
@@ -37,7 +37,7 @@
 	<div class="max-w-2xl bg-background p-6">
 		<CredentialPasteForm
 			value={'{ "@context": [] }'}
-			includeAdditive={true}
+			selectedAdditives={['open-skill-alignment']}
 			status="running"
 			{...noopActions}
 		/>

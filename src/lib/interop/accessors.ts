@@ -86,3 +86,25 @@ export function additiveProfilesForBaseProfile(base: string): AdditiveProfile[] 
 		(p.appliesToBaseProfiles as readonly string[]).includes(base)
 	);
 }
+
+/**
+ * Additive checklists that apply to a base (profile, role, workflow).
+ *
+ * An additive contributes to a combination iff it applies to the base
+ * profile (`appliesToBaseProfiles`) AND declares a checklist for that
+ * (role, workflow). Matching ignores the additive checklist's own
+ * `profile` field by design — the same checklist can layer on multiple
+ * base profiles (e.g. the 4 DI exchange checklists apply to both vcalm
+ * and oid4). This accessor is the single source of truth for additive
+ * application used by the combined-view UI and the issuer runner.
+ */
+export function additiveChecklistsForCombination(
+	base: ProfileSlug,
+	role: RoleSlug,
+	workflow: WorkflowSlug
+): { additive: AdditiveProfile; checklist: WorkflowChecklist }[] {
+	return additiveProfilesForBaseProfile(base).flatMap((additive) => {
+		const checklist = additive.checklists.find((c) => c.role === role && c.workflow === workflow);
+		return checklist ? [{ additive, checklist }] : [];
+	});
+}

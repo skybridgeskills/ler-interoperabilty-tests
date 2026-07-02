@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+	additiveChecklistsForCombination,
 	additiveProfileBySlug,
 	additiveProfilesForBaseProfile,
 	allCombinations,
@@ -30,8 +31,8 @@ describe('per-profile checklist composition', () => {
 		]);
 	});
 
-	it('oid4-ecdsa has the same 4 checklists', () => {
-		const p = profileBySlug('oid4-ecdsa')!;
+	it('oid4 has the same 4 checklists', () => {
+		const p = profileBySlug('oid4')!;
 		expect(p.checklists.map((c) => `${c.role}/${c.workflow}`).sort()).toEqual([
 			'issuer/credential-issuance',
 			'verifier/credential-request-and-verification',
@@ -64,7 +65,7 @@ describe('combinationFor', () => {
 describe('profilesForCombination', () => {
 	it('returns the 2 protocol profiles for wallet × credential-presentation', () => {
 		const slugs = profilesForCombination('wallet', 'credential-presentation').map((p) => p.slug);
-		expect(slugs.sort()).toEqual(['oid4-ecdsa', 'vcalm']);
+		expect(slugs.sort()).toEqual(['oid4', 'vcalm']);
 	});
 
 	it('returns ob3-direct-delivery for verifier × direct-credential-verification', () => {
@@ -133,9 +134,10 @@ describe('additive profile accessors', () => {
 	it('resolves data-integrity-cryptosuites by slug', () => {
 		const p = additiveProfileBySlug('data-integrity-cryptosuites');
 		expect(p?.slug).toBe('data-integrity-cryptosuites');
-		expect(p?.appliesToBaseProfiles).toContain('vcalm');
+		expect(p?.appliesToBaseProfiles).toEqual(['vcalm', 'oid4', 'ob3-direct-delivery']);
 		expect(p?.checklists.map((c) => `${c.role}/${c.workflow}`).sort()).toEqual([
 			'issuer/credential-issuance',
+			'issuer/direct-credential-issuance',
 			'verifier/credential-request-and-verification',
 			'wallet/credential-acceptance',
 			'wallet/credential-presentation'
@@ -146,9 +148,9 @@ describe('additive profile accessors', () => {
 		expect(additiveProfileBySlug('not-a-slug')).toBeUndefined();
 	});
 
-	it('lists open-skill-alignment as applicable to ob3-direct-delivery', () => {
+	it('lists both additives as applicable to ob3-direct-delivery', () => {
 		const list = additiveProfilesForBaseProfile('ob3-direct-delivery').map((p) => p.slug);
-		expect(list).toEqual(['open-skill-alignment']);
+		expect(list).toEqual(['open-skill-alignment', 'data-integrity-cryptosuites']);
 	});
 
 	it('lists data-integrity-cryptosuites as applicable to vcalm', () => {
@@ -156,7 +158,45 @@ describe('additive profile accessors', () => {
 		expect(list).toEqual(['data-integrity-cryptosuites']);
 	});
 
-	it('returns an empty array for a base profile with no additive profiles', () => {
-		expect(additiveProfilesForBaseProfile('oid4-ecdsa')).toEqual([]);
+	it('lists data-integrity-cryptosuites as applicable to oid4', () => {
+		const list = additiveProfilesForBaseProfile('oid4').map((p) => p.slug);
+		expect(list).toEqual(['data-integrity-cryptosuites']);
+	});
+});
+
+describe('additiveChecklistsForCombination', () => {
+	it('applies the DI exchange issuer checklist to vcalm', () => {
+		const result = additiveChecklistsForCombination('vcalm', 'issuer', 'credential-issuance');
+		const di = result.find((r) => r.additive.slug === 'data-integrity-cryptosuites');
+		expect(di).toBeDefined();
+		expect(di?.checklist.steps).toHaveLength(2);
+	});
+
+	it('applies the same DI exchange checklist to oid4 (matched by role+workflow)', () => {
+		const result = additiveChecklistsForCombination('oid4', 'wallet', 'credential-acceptance');
+		const di = result.find((r) => r.additive.slug === 'data-integrity-cryptosuites');
+		expect(di).toBeDefined();
+		expect(di?.checklist.role).toBe('wallet');
+		expect(di?.checklist.workflow).toBe('credential-acceptance');
+	});
+
+	it('applies the producer-only DI checklist to ob3-direct-delivery issuance', () => {
+		const result = additiveChecklistsForCombination(
+			'ob3-direct-delivery',
+			'issuer',
+			'direct-credential-issuance'
+		);
+		const di = result.find((r) => r.additive.slug === 'data-integrity-cryptosuites');
+		expect(di).toBeDefined();
+		expect(di?.checklist.steps).toHaveLength(1);
+	});
+
+	it('does not apply DI where it has no checklist for the (role, workflow)', () => {
+		const result = additiveChecklistsForCombination(
+			'ob3-direct-delivery',
+			'verifier',
+			'direct-credential-verification'
+		);
+		expect(result.find((r) => r.additive.slug === 'data-integrity-cryptosuites')).toBeUndefined();
 	});
 });

@@ -24,6 +24,7 @@ export const AdditiveProfile = ZodFactory(
 		name: z.string(),
 		version: z.string(),
 		status: z.string(),
+		url: z.string().url().optional(),
 		lastUpdated: z.string(),
 		description: z.string(),
 		appliesToBaseProfiles: z.array(ProfileSlug.schema).min(1),

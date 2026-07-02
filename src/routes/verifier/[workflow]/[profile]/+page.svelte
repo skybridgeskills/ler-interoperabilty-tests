@@ -9,4 +9,5 @@
 	profile={data.profile}
 	workflow={data.workflow}
 	role={data.role}
+	additives={data.additives}
 />

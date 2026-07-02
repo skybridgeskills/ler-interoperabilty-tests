@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { additiveProfilesForBaseProfile } from '$lib/interop/accessors.js';
+	import type { AdditiveProfileSlug } from '$lib/interop/additive-profile-schema.js';
 	import type { SampleResultType } from '$lib/interop/additive-profiles/open-skill-alignment/index.js';
 
 	let {
 		value,
-		includeAdditive,
+		selectedAdditives,
 		status,
 		onChange,
 		onToggleAdditive,
@@ -12,10 +14,10 @@
 		onVerify
 	}: {
 		value: string;
-		includeAdditive: boolean;
+		selectedAdditives: AdditiveProfileSlug[];
 		status: 'idle' | 'running' | 'done' | 'error';
 		onChange: (next: string) => void;
-		onToggleAdditive: (next: boolean) => void;
+		onToggleAdditive: (slug: AdditiveProfileSlug, next: boolean) => void;
 		onLoadSample: (resultType: SampleResultType) => void;
 		onVerify: () => void;
 	} = $props();
@@ -26,8 +28,11 @@
 		{ label: 'Rubric', resultType: 'RubricCriterionLevel' }
 	];
 
+	const applicableAdditives = additiveProfilesForBaseProfile('ob3-direct-delivery');
+
 	const busy = $derived(status === 'running');
 	const canVerify = $derived(value.trim().length > 0 && !busy);
+	const selected = $derived(new Set(selectedAdditives));
 </script>
 
 <section class="space-y-4">
@@ -60,19 +65,24 @@
 	</div>
 
 	<div class="flex flex-wrap items-center justify-between gap-3">
-		<label
-			class="flex cursor-pointer items-center gap-2 text-body-md text-foreground"
-			for="include-additive"
-		>
-			<input
-				id="include-additive"
-				type="checkbox"
-				class="size-4 rounded border-border text-primary"
-				checked={includeAdditive}
-				onchange={(e) => onToggleAdditive((e.currentTarget as HTMLInputElement).checked)}
-			/>
-			<span>Include open skill alignment requirements</span>
-		</label>
+		<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+			{#each applicableAdditives as additive (additive.slug)}
+				<label
+					class="flex cursor-pointer items-center gap-2 text-body-md text-foreground"
+					for={`include-additive-${additive.slug}`}
+				>
+					<input
+						id={`include-additive-${additive.slug}`}
+						type="checkbox"
+						class="size-4 rounded border-border text-primary"
+						checked={selected.has(additive.slug)}
+						onchange={(e) =>
+							onToggleAdditive(additive.slug, (e.currentTarget as HTMLInputElement).checked)}
+					/>
+					<span>Include {additive.name} requirements</span>
+				</label>
+			{/each}
+		</div>
 
 		<Button type="button" disabled={!canVerify} onclick={onVerify}>
 			{busy ? 'Verifying…' : 'Verify'}

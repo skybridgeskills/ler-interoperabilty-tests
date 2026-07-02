@@ -10,9 +10,11 @@
 			docs: {
 				description: {
 					component:
-						'Cycles light → dark → system → light. Persists choice to ' +
-						'localStorage and toggles `.dark` on `<html>`. Click the toggle ' +
-						'to see the surrounding background and text adjust.'
+						'Toggles between light and dark. The icon shows the current theme; ' +
+						'hover or keyboard focus previews the opposite theme button chrome. ' +
+						'First-time visitors ' +
+						'follow the OS preference until they click. Persists `light` or `dark` ' +
+						'to localStorage and toggles `.dark` on `<html>`.'
 				}
 			}
 		}
@@ -26,9 +28,10 @@
 		<p class="text-label-md text-muted-foreground">Theme toggle</p>
 		<ThemeToggle />
 		<p class="max-w-prose text-body-md">
-			The button cycles through three states: <code class="font-mono">light</code>,
-			<code class="font-mono">dark</code>, and
-			<code class="font-mono">system</code>. The choice is persisted in
+			The icon reflects the active theme (sun = light, moon = dark). Hover or Tab-focus to peek at
+			the opposite theme's hovered button style. Click toggles between
+			<code class="font-mono">light</code> and <code class="font-mono">dark</code>; new visitors
+			follow the OS until the first click. The choice is persisted in
 			<code class="font-mono">localStorage.theme</code> and applied by toggling the
 			<code class="font-mono">.dark</code> class on
 			<code class="font-mono">&lt;html&gt;</code>.
@@ -42,7 +45,7 @@
 	>
 		<div>
 			<p class="text-title-lg leading-tight">Appearance</p>
-			<p class="text-body-md text-muted-foreground">Match system or pick a side.</p>
+			<p class="text-body-md text-muted-foreground">Switch between light and dark.</p>
 		</div>
 		<ThemeToggle />
 	</div>

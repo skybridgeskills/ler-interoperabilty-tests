@@ -74,6 +74,15 @@
 			"interactive": true
 		},
 
+		// Managed variant used by dev:full — wraps compose up with a signal trap
+		// (scripts/dev-services.sh) so the containers are stopped when the turbo
+		// session ends, however turbo terminates the task.
+		"dev:services:managed": {
+			"cache": false,
+			"persistent": true,
+			"interactive": true
+		},
+
 		// =============================================================================================
 		// Build tasks
 

@@ -2,12 +2,17 @@ import { checklistEntriesFor, loadChecklist } from '$lib/interop/checklist-loade
 
 export const prerender = true;
 
-// `wallet/credential-acceptance/vcalm` is shadowed by the runnable
-// route (which is dynamic at request time). Exclude it from prerender
-// entries so SvelteKit doesn't try to bake a static copy at the same path.
+// `wallet/credential-acceptance/{vcalm,oid4}` and `wallet/credential-presentation/oid4`
+// are shadowed by their runnable routes (dynamic at request time). Exclude them
+// from prerender entries so SvelteKit doesn't try to bake a static copy at the
+// same paths.
 export const entries = () =>
 	checklistEntriesFor('wallet').filter(
-		(e) => !(e.workflow === 'credential-acceptance' && e.profile === 'vcalm')
+		(e) =>
+			!(
+				e.workflow === 'credential-acceptance' &&
+				(e.profile === 'vcalm' || e.profile === 'oid4')
+			) && !(e.workflow === 'credential-presentation' && e.profile === 'oid4')
 	);
 
 export function load({ params }: { params: { workflow: string; profile: string } }) {

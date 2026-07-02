@@ -55,4 +55,69 @@ describe('deriveRunStateFromExchange', () => {
 		);
 		expect(r.perStep).toEqual(['complete', 'in-flight']);
 	});
+
+	describe('OID4VCI (variables.oid4vci present)', () => {
+		it('empty oid4vci object → awaiting-wallet, step 1 in-flight', () => {
+			const r = deriveRunStateFromExchange({ state: 'pending', variables: { oid4vci: {} } }, 4);
+			expect(r.run).toBe('awaiting-wallet');
+			expect(r.perStep).toEqual(['in-flight', 'pending', 'pending', 'pending']);
+		});
+
+		it('preAuthorizedCode only → wallet-connected, step 2 in-flight', () => {
+			const r = deriveRunStateFromExchange(
+				{ state: 'pending', variables: { oid4vci: { preAuthorizedCode: 'fake-preauth' } } },
+				4
+			);
+			expect(r.run).toBe('wallet-connected');
+			expect(r.perStep).toEqual(['complete', 'in-flight', 'pending', 'pending']);
+		});
+
+		it('accessToken (token redeemed) → wallet-connected, step 3 in-flight', () => {
+			const r = deriveRunStateFromExchange(
+				{
+					state: 'pending',
+					variables: {
+						oid4vci: {
+							preAuthorizedCode: 'fake-preauth',
+							codeUsed: true,
+							accessToken: 'fake-access'
+						}
+					}
+				},
+				4
+			);
+			expect(r.run).toBe('wallet-connected');
+			expect(r.perStep).toEqual(['complete', 'complete', 'in-flight', 'pending']);
+		});
+
+		it('cNonce present (requesting credential) → step 3 in-flight', () => {
+			const r = deriveRunStateFromExchange(
+				{ state: 'pending', variables: { oid4vci: { accessToken: 'a', cNonce: 'fake-cnonce' } } },
+				4
+			);
+			expect(r.run).toBe('wallet-connected');
+			expect(r.perStep).toEqual(['complete', 'complete', 'in-flight', 'pending']);
+		});
+
+		it('complete with an oid4vci object → all complete', () => {
+			const r = deriveRunStateFromExchange(
+				{
+					state: 'complete',
+					variables: { oid4vci: { accessToken: 'a', cNonce: 'n', nonceUsed: true } }
+				},
+				4
+			);
+			expect(r.run).toBe('complete');
+			expect(r.perStep).toEqual(['complete', 'complete', 'complete', 'complete']);
+		});
+
+		it('invalid with an oid4vci object → all skipped', () => {
+			const r = deriveRunStateFromExchange(
+				{ state: 'invalid', variables: { oid4vci: { preAuthorizedCode: 'p' } } },
+				4
+			);
+			expect(r.run).toBe('error');
+			expect(r.perStep).toEqual(['skipped', 'skipped', 'skipped', 'skipped']);
+		});
+	});
 });

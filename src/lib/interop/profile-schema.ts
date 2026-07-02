@@ -23,7 +23,7 @@ export const WorkflowSlug = ZodFactory(
 export type WorkflowSlug = ReturnType<typeof WorkflowSlug>;
 
 /** URL slug for one of the three interoperability profiles. */
-export const ProfileSlug = ZodFactory(z.enum(['vcalm', 'oid4-ecdsa', 'ob3-direct-delivery']));
+export const ProfileSlug = ZodFactory(z.enum(['vcalm', 'oid4', 'ob3-direct-delivery']));
 export type ProfileSlug = ReturnType<typeof ProfileSlug>;
 
 /**
@@ -85,6 +85,7 @@ export const Profile = ZodFactory(
 		name: z.string(),
 		version: z.string(),
 		status: z.string(),
+		url: z.string().url().optional(),
 		lastUpdated: z.string(),
 		description: z.string(),
 		keyComponents: z.array(ProfileKeyComponent.schema),
