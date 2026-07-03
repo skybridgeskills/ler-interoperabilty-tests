@@ -16,7 +16,7 @@ const outcome = (id: string, ctx: Oid4IssuerFlowObservations) =>
 	run(ctx).outcomes.find((o) => o.id === `${P}${id}`);
 
 describe('oid4IssuerFlowChecks', () => {
-	it('passes every MUST and marks the auth-code / error-handling clauses n/a on the happy path', async () => {
+	it('passes every MUST on the happy path (pre-authorized-code only; no auth-code clauses)', async () => {
 		const { observations } = await FakeOid4IssuerFlow().runIssuerFlow('offer://x');
 		const { report, outcomes } = run(observations);
 
@@ -29,7 +29,6 @@ describe('oid4IssuerFlowChecks', () => {
 		expect(outcome('di-vp-signing-algs', observations)?.status).toBe('pass');
 		expect(outcome('not-jwt-only-proof', observations)?.status).toBe('pass');
 		expect(outcome('pre-authorized-code-flow', observations)?.status).toBe('pass');
-		expect(outcome('token-endpoint-pre-authorized', observations)?.status).toBe('pass');
 		expect(outcome('tls', observations)?.status).toBe('pass');
 		expect(outcome('tls-credential', observations)?.status).toBe('pass');
 		expect(outcome('di-proof', observations)?.status).toBe('pass');
@@ -39,11 +38,18 @@ describe('oid4IssuerFlowChecks', () => {
 		expect(outcome('credential-endpoint', observations)?.status).toBe('pass');
 		expect(outcome('valid-until', observations)?.status).toBe('pass');
 
-		// The four clauses a happy-path pre-auth drive cannot positively verify.
-		expect(outcome('authorization-code-flow', observations)?.status).toBe('n/a');
-		expect(outcome('authorization-endpoint', observations)?.status).toBe('n/a');
-		expect(outcome('auth-endpoint-authorization-code', observations)?.status).toBe('n/a');
-		expect(outcome('authorization-error-handling', observations)?.status).toBe('n/a');
+		// No authorization-code / authorization-endpoint clauses exist any more, and there are no n/a
+		// outcomes on a clean run.
+		expect(outcomes.some((o) => o.status === 'n/a')).toBe(false);
+		for (const removed of [
+			'authorization-code-flow',
+			'authorization-endpoint',
+			'auth-endpoint-authorization-code',
+			'token-endpoint-pre-authorized',
+			'authorization-error-handling'
+		]) {
+			expect(outcomes.some((o) => o.id === `${P}${removed}`)).toBe(false);
+		}
 	});
 
 	it('leaves step-3 requirements pending when the run is blocked at step 2 (no token)', () => {
@@ -62,10 +68,9 @@ describe('oid4IssuerFlowChecks', () => {
 		};
 		const { outcomes } = run(ctx);
 
-		// Step 1 metadata + step 2 auth resolve; the pre-auth token clauses fail.
+		// Step 1 metadata resolves; the pre-auth token clause fails.
 		expect(outcome('metadata-endpoint', ctx)?.status).toBe('pass');
 		expect(outcome('pre-authorized-code-flow', ctx)?.status).toBe('fail');
-		expect(outcome('authorization-endpoint', ctx)?.status).toBe('n/a');
 		// Step-3 credential requirements never ran → omitted (pending).
 		expect(outcomes.some((o) => o.id === `${P}binds-verified-holder`)).toBe(false);
 		expect(outcomes.some((o) => o.id === `${P}di-proof`)).toBe(false);

@@ -13,10 +13,8 @@ import type { Oid4IssuerFlowObservations } from '$lib/server/domain/wallet-clien
  * driver and returns `undefined` until its step has run (rendered as *pending*). Step-3 credential
  * checks reuse the OB 3.0 issuer check logic (`ob3-direct-delivery-issuer.ts`).
  *
- * The test wallet exercises the pre-authorized-code happy path, so the Authorization-Code /
- * authorization-endpoint / error-handling clauses resolve `n/a` (they need an auth-code or a
- * negative probe — out of scope), gated so they resolve once their step has run rather than staying
- * perpetually pending.
+ * The profile standardizes OID4VCI issuance on the pre-authorized-code flow; there are no
+ * authorization-code clauses.
  */
 const P = 'oid4.issuer.credential-issuance.';
 
@@ -26,7 +24,6 @@ type Oid4Check = (ctx: Oid4IssuerFlowObservations) => CheckResult | undefined;
 
 const pass = (message: string): CheckResult => ({ status: 'pass', message });
 const fail = (message: string): CheckResult => ({ status: 'fail', message });
-const na = (message: string): CheckResult => ({ status: 'n/a', message });
 
 /** Step 1 was attempted once the driver recorded the pasted offer URL. */
 const step1Ran = (ctx: Oid4IssuerFlowObservations) => ctx.offerUrl !== undefined;
@@ -98,48 +95,17 @@ export const oid4IssuerFlowChecks: Record<string, Oid4Check> = {
 			: fail('No `di_vp` proof type is offered; this profile requires `di_vp` key proofs.');
 	},
 
-	[`${P}authorization-code-flow`]: (ctx) =>
-		step1Ran(ctx)
-			? na(
-					'The test wallet exercises the pre-authorized-code flow; Authorization-Code-flow support needs an Authorization-Code-flow probe (out of scope).'
-				)
-			: undefined,
+	[`${P}tls`]: tlsCheck,
 
+	// ── Step 2 — issue an access token (pre-authorized-code) ─────────────────────
 	[`${P}pre-authorized-code-flow`]: (ctx) => {
 		if (!ctx.token) return undefined;
 		return ctx.token.redeemed
-			? pass('The pre-authorized code was redeemed for an access token.')
-			: fail('The pre-authorized code was not redeemed for an access token.');
-	},
-
-	[`${P}tls`]: tlsCheck,
-
-	// ── Step 2 — handle authorization request ────────────────────────────────────
-	[`${P}authorization-endpoint`]: (ctx) =>
-		ctx.offer || ctx.asMeta
-			? na(
-					'The test wallet uses the pre-authorized-code flow; the OAuth authorization endpoint is not exercised (needs an Authorization-Code-flow probe).'
+			? pass(
+					'The token endpoint accepted the pre-authorized-code grant and issued an access token.'
 				)
-			: undefined,
-
-	[`${P}auth-endpoint-authorization-code`]: (ctx) =>
-		ctx.offer || ctx.asMeta
-			? na(
-					'Authorization-code-flow support is not exercised by the pre-authorized-code drive (needs an Authorization-Code-flow probe).'
-				)
-			: undefined,
-
-	[`${P}token-endpoint-pre-authorized`]: (ctx) => {
-		if (!ctx.token) return undefined;
-		return ctx.token.redeemed
-			? pass('The token endpoint accepted the pre-authorized-code grant.')
 			: fail('The token endpoint did not accept the pre-authorized-code grant.');
 	},
-
-	[`${P}authorization-error-handling`]: (ctx) =>
-		ctx.offer || ctx.asMeta
-			? na('Error handling and status codes need a negative probe (out of scope).')
-			: undefined,
 
 	// ── Step 3 — process credential request and deliver ──────────────────────────
 	[`${P}vcdm-2`]: (ctx) =>
