@@ -65,7 +65,7 @@
 
 <section class="mt-4">
 	<p class="text-body-sm max-w-prose text-muted-foreground">
-		New here? Standards compliance isn’t the same as interoperability.
+		Standards compliance isn’t the same as interoperability.
 		<a href={resolve('/about')} class="text-primary hover:underline">
 			Read about what this tool does →
 		</a>
