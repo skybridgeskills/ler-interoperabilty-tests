@@ -9,20 +9,20 @@ export const walletCredentialPresentation = WorkflowChecklist({
 		{
 			title: 'Process the presentation request',
 			summary:
-				'Open the verifier’s OID4VP presentation request (QR / deep link / copy-paste) and identify which stored credentials match.',
+				'Receive the verifier’s OID4VP Authorization Request and identify which stored credentials match its query.',
 			requirements: [
-				{ level: 'MUST', text: 'Implement the OID4VP v1.0 specification.' },
-				{ level: 'MUST', text: 'Handle presentation requests from verifiers.' },
+				{
+					level: 'MUST',
+					text: 'Receive and parse the verifier’s OID4VP Authorization Request (its `presentation_definition` / DCQL query) and identify matching stored credentials.'
+				},
 				{ level: 'MUST', text: 'Require secure transport (TLS) for OID4VP endpoints.' }
 			]
 		},
 		{
-			title: 'Complete authorization',
+			title: 'Select credentials and obtain user consent',
 			summary:
-				'Run the OAuth 2.0 authorization flow and obtain an access token after the user selects which credentials to share.',
+				'Let the user select which stored credentials to share and obtain explicit consent before building the presentation.',
 			requirements: [
-				{ level: 'MUST', text: 'Implement OAuth 2.0 client functionality.' },
-				{ level: 'MUST', text: 'Support authorization-code flow.' },
 				{ level: 'MUST', text: 'Implement explicit user-consent mechanisms.' },
 				{ level: 'MUST', text: 'Provide a credential presentation interface.' }
 			]
@@ -30,7 +30,7 @@ export const walletCredentialPresentation = WorkflowChecklist({
 		{
 			title: 'Create and send the presentation response',
 			summary:
-				'Build a verifiablePresentation containing the selected credentials, sign it with a cryptosuite declared by the data-integrity-cryptosuites additive profile, and POST it to the verifier’s OAuth 2.0-protected endpoint with the access token.',
+				'Build a `di_vp` verifiablePresentation of the selected credentials, sign it with a cryptosuite declared by the data-integrity-cryptosuites additive profile, and return it to the verifier as the `vp_token` (e.g. via `direct_post`).',
 			requirements: [
 				{
 					level: 'MUST',
@@ -53,11 +53,11 @@ export const walletCredentialPresentation = WorkflowChecklist({
 		{
 			title: 'Complete presentation delivery',
 			summary:
-				'Confirm the presentation response was delivered. The verifier handles the verification step.',
+				'Return the `vp_token` to the verifier’s response endpoint and confirm delivery. The verifier performs verification.',
 			requirements: [
 				{
 					level: 'MUST',
-					text: 'Preserve original credential proofs and signatures when including credentials in presentations.'
+					text: 'Deliver the `vp_token` to the verifier’s response endpoint (e.g. `direct_post`) and handle the delivery response.'
 				}
 			]
 		}

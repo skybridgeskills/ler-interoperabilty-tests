@@ -4,12 +4,10 @@ import { WorkflowChecklist } from '../../profile-schema.js';
  * Issuer × Credential Issuance × OID4.
  *
  * Requirement `id`s are namespaced `oid4.issuer.credential-issuance.*` and drive the test-wallet
- * issuer-flow check registry (`server/domain/wallet-runner/checks/oid4-issuer-flow.ts`). The test
- * wallet exercises the OID4VCI 1.0 **pre-authorized-code** happy path, so clauses it cannot
- * honestly verify that way are reframed to resolve `n/a`: Authorization-Code-flow support and the
- * OAuth authorization endpoint (need an Authorization-Code-flow probe), and the error-handling /
- * status-code clauses (need a negative probe) — both out of scope, like the VCALM ProblemDetails
- * clauses.
+ * issuer-flow check registry (`server/domain/wallet-runner/checks/oid4-issuer-flow.ts`). This
+ * profile standardizes OID4VCI 1.0 issuance on the **pre-authorized-code** flow; the
+ * authorization-code grant is intentionally not part of the profile. The `credential-endpoint`
+ * clause notes that its error-handling half is not negatively probed on the happy path.
  */
 export const issuerCredentialIssuance = WorkflowChecklist({
 	role: 'issuer',
@@ -42,16 +40,6 @@ export const issuerCredentialIssuance = WorkflowChecklist({
 					text: 'NOT require a JWT-only key proof type: this profile requires `di_vp` key proofs of possession.'
 				},
 				{
-					id: 'oid4.issuer.credential-issuance.authorization-code-flow',
-					level: 'MUST',
-					text: 'Support the OID4VCI authorization code flow. The test wallet exercises the pre-authorized-code flow, so this clause is reported as not-automatically-verified here (it needs an Authorization-Code-flow probe).'
-				},
-				{
-					id: 'oid4.issuer.credential-issuance.pre-authorized-code-flow',
-					level: 'MUST',
-					text: 'Support the OID4VCI pre-authorized code flow.'
-				},
-				{
 					id: 'oid4.issuer.credential-issuance.tls',
 					level: 'MUST',
 					text: 'Encrypt web-service endpoints with at least TLS 1.2.'
@@ -59,29 +47,14 @@ export const issuerCredentialIssuance = WorkflowChecklist({
 			]
 		},
 		{
-			title: 'Handle authorization request',
+			title: 'Issue an access token',
 			summary:
-				'Receive the holder’s authorization request. Authenticate or validate the pre-authorized code, then issue an authorization code or access token.',
+				'Accept the pre-authorized code at the token endpoint and issue an access token (and a `c_nonce`).',
 			requirements: [
 				{
-					id: 'oid4.issuer.credential-issuance.authorization-endpoint',
+					id: 'oid4.issuer.credential-issuance.pre-authorized-code-flow',
 					level: 'MUST',
-					text: 'Implement an OAuth 2.0-protected authorization endpoint. The test wallet exercises the pre-authorized-code flow, so the authorization endpoint is not exercised here (it needs an Authorization-Code-flow probe).'
-				},
-				{
-					id: 'oid4.issuer.credential-issuance.auth-endpoint-authorization-code',
-					level: 'MUST',
-					text: 'Support authorization-code flow. The test wallet exercises the pre-authorized-code flow, so this clause is reported as not-automatically-verified here (it needs an Authorization-Code-flow probe).'
-				},
-				{
-					id: 'oid4.issuer.credential-issuance.token-endpoint-pre-authorized',
-					level: 'MUST',
-					text: 'Support pre-authorized-code flow.'
-				},
-				{
-					id: 'oid4.issuer.credential-issuance.authorization-error-handling',
-					level: 'MUST',
-					text: 'Implement proper error handling and status codes. Error handling and status codes need a negative probe (out of scope), so this clause is reported as not-automatically-verified here.'
+					text: 'Support the OID4VCI pre-authorized-code flow: accept the `pre-authorized_code` at the token endpoint and issue an access token.'
 				}
 			]
 		},
