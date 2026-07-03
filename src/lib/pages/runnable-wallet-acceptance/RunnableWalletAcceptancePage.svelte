@@ -49,8 +49,7 @@
 	// requirement in a step shares its parent step's status — the copy says so
 	// rather than implying a per-requirement guarantee we don't have.
 	const stepDetailCopy: Record<StepRunState, string | undefined> = {
-		pending:
-			'Waiting for the wallet to reach this step. Progress is tracked per step, so all of this step’s requirements share its status.',
+		pending: undefined,
 		'in-flight':
 			'The wallet is working through this step. Progress is tracked per step, so all of this step’s requirements share its status.',
 		complete: undefined,
