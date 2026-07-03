@@ -1,5 +1,9 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+
 	import { recordRun } from '$lib/client/run-history/index.js';
+	import { selectionStore } from '$lib/client/selection/index.js';
+	import { AdditiveChecklistSection } from '$lib/components/interop/additive-checklist-section/index.js';
 	import { IssuerFlowWalletPanel } from '$lib/components/interop/issuer-flow-runner/index.js';
 	import {
 		RequirementStatusRow,
@@ -7,6 +11,7 @@
 	} from '$lib/components/interop/requirement-status-row/index.js';
 	import { RunnableChecklist } from '$lib/components/interop/runnable-checklist/index.js';
 	import {
+		additiveChecklistsForCombination,
 		combinationFor,
 		issuerReportRunRecord,
 		roleBySlug,
@@ -49,6 +54,15 @@
 	const workflow = workflowBySlug('credential-issuance')!;
 	const combo = combinationFor('issuer', 'credential-issuance', 'oid4')!;
 	const stepCount = combo.checklist.steps.length;
+	const additives = additiveChecklistsForCombination(
+		combo.profile.slug,
+		'issuer',
+		'credential-issuance'
+	);
+
+	onMount(() => {
+		selectionStore.hydrate();
+	});
 
 	let offerUrl = $state('');
 	let cryptosuite = $state<Cryptosuite>('eddsa-rdfc-2022');
@@ -202,3 +216,17 @@
 		/>
 	{/snippet}
 </RunnableChecklist>
+
+{#if additives.length}
+	<section class="space-y-6">
+		{#each additives as { additive, checklist: additiveChecklist } (additive.slug)}
+			<AdditiveChecklistSection
+				{additive}
+				checklist={additiveChecklist}
+				baseProfileName={combo.profile.name}
+				selected={selectionStore.isAdditiveProfileSelected(additive.slug)}
+				onToggle={selectionStore.toggleAdditiveProfile}
+			/>
+		{/each}
+	</section>
+{/if}

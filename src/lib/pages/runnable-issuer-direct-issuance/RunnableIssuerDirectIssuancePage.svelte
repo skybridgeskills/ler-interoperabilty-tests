@@ -3,6 +3,7 @@
 
 	import { recordRun } from '$lib/client/run-history/index.js';
 	import { selectionStore } from '$lib/client/selection/index.js';
+	import { AdditiveChecklistSection } from '$lib/components/interop/additive-checklist-section/index.js';
 	import { IssuerRunnerPanel } from '$lib/components/interop/issuer-runner/issuer-runner-panel/index.js';
 	import type { IssuerRunnerStatus } from '$lib/components/interop/issuer-runner/issuer-runner-panel/index.js';
 	import type { AdditiveProfileSlug } from '$lib/interop/additive-profile-schema.js';
@@ -10,7 +11,11 @@
 		sampleCredentialsByResultType,
 		type SampleResultType
 	} from '$lib/interop/additive-profiles/open-skill-alignment/index.js';
-	import { issuerReportRunRecord } from '$lib/interop/index.js';
+	import {
+		additiveChecklistsForCombination,
+		combinationFor,
+		issuerReportRunRecord
+	} from '$lib/interop/index.js';
 	import type { IssuerRunnerReport } from '$lib/server/domain/issuer-runner/issuer-runner-report.js';
 
 	/** Number of failed MUST outcomes across all groups (mirrors RequirementReport). */
@@ -19,6 +24,13 @@
 			.flatMap((g) => g.outcomes)
 			.filter((o) => o.level === 'MUST' && o.status === 'fail').length;
 	}
+
+	const combo = combinationFor('issuer', 'direct-credential-issuance', 'ob3-direct-delivery')!;
+	const additives = additiveChecklistsForCombination(
+		'ob3-direct-delivery',
+		'issuer',
+		'direct-credential-issuance'
+	);
 
 	let credentialText = $state<string>('');
 	const selectedAdditives = $derived([...selectionStore.additiveProfiles]);
@@ -115,3 +127,17 @@
 		}}
 	/>
 </section>
+
+{#if additives.length}
+	<section class="space-y-6">
+		{#each additives as { additive, checklist: additiveChecklist } (additive.slug)}
+			<AdditiveChecklistSection
+				{additive}
+				checklist={additiveChecklist}
+				baseProfileName={combo.profile.name}
+				selected={selectionStore.isAdditiveProfileSelected(additive.slug)}
+				onToggle={selectionStore.toggleAdditiveProfile}
+			/>
+		{/each}
+	</section>
+{/if}
