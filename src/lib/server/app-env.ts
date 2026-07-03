@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const BaseEnv = z.object({
-	CONTEXT: z.enum(['dev', 'test']).default('dev'),
+	CONTEXT: z.enum(['dev', 'test', 'hosted']).default('dev'),
 	LOG_LEVEL: z.string().optional()
 });
 export type BaseEnv = z.infer<typeof BaseEnv>;

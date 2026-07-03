@@ -10,7 +10,7 @@
 	import RequirementStatusRow from './RequirementStatusRow.svelte';
 
 	const { Story } = defineMeta({
-		title: 'Components/RequirementStatusRow',
+		title: 'Interop/RequirementStatusRow',
 		component: RequirementStatusRow
 	});
 

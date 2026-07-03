@@ -11,10 +11,9 @@ export const verifierCredentialRequestAndVerification = WorkflowChecklist({
 			summary:
 				'Build an OID4VP presentation request asking for credentials of type `OpenBadgeCredential`, with proper scopes. Expose it via QR code, deep link, or copy-paste.',
 			requirements: [
-				{ level: 'MUST', text: 'Implement the OID4VP v1.0 specification.' },
 				{
 					level: 'MUST',
-					text: 'Generate presentation requests with proper scopes asking for specific credential types.'
+					text: 'Build an OID4VP Authorization Request with a `presentation_definition` / DCQL query for `OpenBadgeCredential` credentials.'
 				},
 				{
 					level: 'MUST',
@@ -25,31 +24,20 @@ export const verifierCredentialRequestAndVerification = WorkflowChecklist({
 			]
 		},
 		{
-			title: 'Handle authorization request',
+			title: 'Receive and verify the presentation',
 			summary:
-				'Receive the holder wallet’s authorization request, authenticate, and issue an authorization code.',
+				'Receive the wallet’s `vp_token` at the response endpoint, then validate the presentation and, for each credential, verify the signature (in any cryptosuite declared by the data-integrity-cryptosuites additive profile), schema, expiration, and status.',
 			requirements: [
 				{
 					level: 'MUST',
-					text: 'Implement an OAuth 2.0-protected authorization endpoint.'
+					text: 'Provide a response endpoint (e.g. `direct_post`) that receives the presentation `vp_token`.'
 				},
-				{ level: 'MUST', text: 'Support authorization-code flow.' },
-				{ level: 'MUST', text: 'Implement proper error handling and status codes.' }
-			]
-		},
-		{
-			title: 'Receive presentation response and verify credentials',
-			summary:
-				'Validate the access token and the verifiablePresentation, resolve the holder DID, then for each credential verify the signature (in any cryptosuite declared by the data-integrity-cryptosuites additive profile), schema, status, and issuer trust.',
-			requirements: [
-				{ level: 'MUST', text: 'Handle presentation responses from wallets.' },
 				{ level: 'MUST', text: 'Validate presentation structure and format.' },
 				{ level: 'MUST', text: 'Extract credentials from presentations.' },
 				{
 					level: 'MUST',
 					text: 'Validate VCDM 2.0 + Open Badges 3.0 schema, required fields, and credential expiration on each credential.'
 				},
-				{ level: 'MUST', text: 'Implement comprehensive validation error handling.' },
 				{
 					level: 'MUST',
 					text: 'Verify credential proofs using every cryptosuite declared by the data-integrity-cryptosuites additive profile.'
@@ -59,17 +47,17 @@ export const verifierCredentialRequestAndVerification = WorkflowChecklist({
 				{ level: 'MUST', text: 'Handle signature verification failures gracefully.' },
 				{ level: 'MUST', text: 'Implement Bitstring Status List verification.' },
 				{ level: 'MUST', text: 'Validate status-list signature and freshness.' },
-				{ level: 'MUST', text: 'Handle status-service unavailability.' },
-				{ level: 'MUST', text: 'Cache status information appropriately.' },
+				{ level: 'MUST', text: 'Encrypt web-service endpoints with at least TLS 1.2.' },
+				{ level: 'SHOULD', text: 'Handle status-service unavailability.' },
+				{ level: 'SHOULD', text: 'Cache status information appropriately.' },
 				{
-					level: 'MUST',
+					level: 'SHOULD',
 					text: 'Integrate with trust registries to query issuer authorization and revocation.'
 				},
 				{
-					level: 'MUST',
+					level: 'SHOULD',
 					text: 'Implement protection against replay attacks, credential forgery, and status-list manipulation.'
 				},
-				{ level: 'MUST', text: 'Encrypt web-service endpoints with at least TLS 1.2.' },
 				{ level: 'SHOULD', text: 'Implement proper error logging and reporting.' },
 				{ level: 'SHOULD', text: 'Maintain current trust registry data.' }
 			]

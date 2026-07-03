@@ -43,6 +43,32 @@ export {
 	vcalmIssuerFlow,
 	type VcalmIssuerFlowCtx
 } from './provide-vcalm-issuer-flow.js';
+export {
+	Oid4IssuerFlowDriver,
+	type Oid4IssuerFlow,
+	type Oid4IssuerFlowObservations,
+	type Oid4IssuerFlowRunResult,
+	type Oid4StepObservation
+} from './drivers/oid4-issuer-flow.js';
+export { FakeOid4IssuerFlow } from './fake-oid4-issuer-flow.js';
+export {
+	provideRealOid4IssuerFlow,
+	provideFakeOid4IssuerFlow,
+	oid4IssuerFlow,
+	type Oid4IssuerFlowCtx
+} from './provide-oid4-issuer-flow.js';
+export {
+	PRE_AUTH_GRANT,
+	preAuthorizedCodeOf,
+	wellKnownMetadataUrl,
+	parseOfferLink,
+	fetchOffer,
+	getJson,
+	postForm,
+	extractCredential,
+	type CredentialOffer,
+	type ParsedOfferLink
+} from './oid4vci/index.js';
 export type {
 	ProtocolDriver,
 	AcceptanceResult,

@@ -1,7 +1,11 @@
 import type { ExchangeRunnerConfig } from './domain/exchange-runner/exchange-runner-config.js';
 import type { TransactionServiceClient } from './domain/exchange-runner/transaction-service-client.js';
 import type { IssuerRunner } from './domain/issuer-runner/issuer-runner.js';
-import type { VcalmIssuerFlow, WalletClient } from './domain/wallet-client/index.js';
+import type {
+	Oid4IssuerFlow,
+	VcalmIssuerFlow,
+	WalletClient
+} from './domain/wallet-client/index.js';
 import type { IdService } from './services/id-service/id-service.js';
 import type { LoggerService } from './services/logging/logger-service.js';
 import type { TimeService } from './services/time-service/time-service.js';
@@ -21,6 +25,7 @@ export interface AppContext {
 	issuerRunner: IssuerRunner;
 	walletClient: WalletClient;
 	vcalmIssuerFlow: VcalmIssuerFlow;
+	oid4IssuerFlow: Oid4IssuerFlow;
 }
 
 /**

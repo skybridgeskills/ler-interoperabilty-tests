@@ -2,6 +2,7 @@ import type { AppContext } from './app-context.js';
 import { provideFakeTransactionServiceClient } from './domain/exchange-runner/index.js';
 import { provideFakeIssuerRunner } from './domain/issuer-runner/index.js';
 import {
+	provideFakeOid4IssuerFlow,
 	provideFakeVcalmIssuerFlow,
 	provideFakeWalletClient
 } from './domain/wallet-client/index.js';
@@ -15,6 +16,7 @@ export function TestAppContext(_env: Record<string, unknown>): AppContext {
 	const issuerRunner = provideFakeIssuerRunner();
 	const walletClient = provideFakeWalletClient();
 	const vcalmIssuerFlow = provideFakeVcalmIssuerFlow();
+	const oid4IssuerFlow = provideFakeOid4IssuerFlow();
 	return {
 		logger: SilentLoggerService(),
 		timeService: FakeTimeService(new Date('2026-05-09T00:00:00Z')),
@@ -22,6 +24,7 @@ export function TestAppContext(_env: Record<string, unknown>): AppContext {
 		...exchangeRunner,
 		...issuerRunner,
 		...walletClient,
-		...vcalmIssuerFlow
+		...vcalmIssuerFlow,
+		...oid4IssuerFlow
 	};
 }

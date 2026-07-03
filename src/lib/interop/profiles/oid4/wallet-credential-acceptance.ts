@@ -11,19 +11,22 @@ export const walletCredentialAcceptance = WorkflowChecklist({
 			summary:
 				'Open the OID4VCI credential offer (QR / deep link / copy-paste), discover the credential issuer metadata endpoint, and fetch its configuration.',
 			requirements: [
-				{ level: 'MUST', text: 'Implement the OID4VCI v1.0 specification.' },
-				{ level: 'MUST', text: 'Handle credential issuer metadata discovery.' },
+				{
+					level: 'MUST',
+					text: 'Discover the credential issuer metadata from the offer’s Credential Issuer Identifier (the OID4VCI `/.well-known/openid-credential-issuer` endpoint).'
+				},
 				{ level: 'MUST', text: 'Require secure transport (TLS) for OID4VCI endpoints.' }
 			]
 		},
 		{
-			title: 'Complete authorization and token exchange',
+			title: 'Redeem the pre-authorized code for an access token',
 			summary:
-				'Run the OAuth 2.0 authorization-code flow (or pre-authorized-code flow) to obtain an access token. Ask the user for consent.',
+				'Redeem the pre-authorized code at the issuer’s token endpoint for an access token and a `c_nonce`, prompting the user for consent.',
 			requirements: [
-				{ level: 'MUST', text: 'Implement OAuth 2.0 client functionality.' },
-				{ level: 'MUST', text: 'Support authorization-code flow.' },
-				{ level: 'MUST', text: 'Support pre-authorized-code flow.' },
+				{
+					level: 'MUST',
+					text: 'Support the OID4VCI pre-authorized-code flow: redeem the `pre-authorized_code` at the token endpoint for an access token.'
+				},
 				{ level: 'MUST', text: 'Implement explicit user-consent mechanisms.' }
 			]
 		},

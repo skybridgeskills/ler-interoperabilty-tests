@@ -1,6 +1,15 @@
 import type { WalletCrypto, WalletCryptosuite } from '$lib/server/domain/wallet-crypto/index.js';
 import type { WalletExchangeView } from '$lib/server/domain/wallet-runner/index.js';
 
+import {
+	PRE_AUTH_GRANT,
+	extractCredential,
+	fetchOffer,
+	getJson,
+	postForm,
+	preAuthorizedCodeOf,
+	wellKnownMetadataUrl
+} from '../oid4vci/index.js';
 import type {
 	AcceptanceDriverInput,
 	AcceptanceResult,
@@ -8,8 +17,6 @@ import type {
 } from '../protocol-driver.js';
 
 type FetchLike = typeof fetch;
-
-const PRE_AUTH_GRANT = 'urn:ietf:params:oauth:grant-type:pre-authorized_code';
 
 /**
  * OID4VCI 1.0 pre-authorized-code holder driver. Parses the credential offer, discovers issuer
@@ -36,17 +43,21 @@ export function Oid4vciAcceptanceDriver(deps: {
 		}
 		const offer = await fetchOffer(doFetch, offerLink);
 		const issuer = String(offer.credential_issuer);
-		const preAuthCode = offer.grants?.[PRE_AUTH_GRANT]?.['pre-authorized_code'];
+		const preAuthCode = preAuthorizedCodeOf(offer);
 		if (!preAuthCode) throw new Error('Credential offer has no pre-authorized_code.');
 		const configurationId = offer.credential_configuration_ids?.[0];
 
 		// 2. Issuer + authorization-server metadata.
-		const issuerMeta = await getJson(doFetch, `${issuer}/.well-known/openid-credential-issuer`);
+		const issuerMeta = await getJson(
+			doFetch,
+			wellKnownMetadataUrl(issuer, 'openid-credential-issuer')
+		);
 		const credentialEndpoint = String(issuerMeta.credential_endpoint);
 		const nonceEndpoint = issuerMeta.nonce_endpoint as string | undefined;
-		const asMeta = await getJson(doFetch, `${issuer}/.well-known/oauth-authorization-server`).catch(
-			() => ({}) as Record<string, unknown>
-		);
+		const asMeta = await getJson(
+			doFetch,
+			wellKnownMetadataUrl(issuer, 'oauth-authorization-server')
+		).catch(() => ({}) as Record<string, unknown>);
 		const tokenEndpoint = (asMeta.token_endpoint as string | undefined) ?? `${issuer}/token`;
 
 		// 3. Redeem the pre-authorized code for an access token (+ maybe a c_nonce).
@@ -103,62 +114,4 @@ export function Oid4vciAcceptanceDriver(deps: {
 	}
 
 	return { runAcceptance };
-}
-
-// ── helpers ──────────────────────────────────────────────────────────────────
-
-type CredentialOffer = {
-	credential_issuer: string;
-	credential_configuration_ids?: string[];
-	grants?: Record<string, { 'pre-authorized_code'?: string }>;
-};
-
-/** Resolve `openid-credential-offer://?credential_offer_uri=…` to the offer object. */
-async function fetchOffer(doFetch: FetchLike, link: string): Promise<CredentialOffer> {
-	const marker = 'credential_offer_uri=';
-	const idx = link.indexOf(marker);
-	if (idx === -1) throw new Error('OID4VCI offer link has no credential_offer_uri.');
-	const offerUri = decodeURIComponent(link.slice(idx + marker.length));
-	return getJson(doFetch, offerUri) as Promise<CredentialOffer>;
-}
-
-async function getJson(
-	doFetch: FetchLike,
-	url: string,
-	opts: { method?: string; accessToken?: string; json?: unknown } = {}
-): Promise<Record<string, unknown>> {
-	const headers: Record<string, string> = { Accept: 'application/json' };
-	if (opts.accessToken) headers.Authorization = `Bearer ${opts.accessToken}`;
-	if (opts.json !== undefined) headers['Content-Type'] = 'application/json';
-	const res = await doFetch(url, {
-		method: opts.method ?? (opts.json !== undefined ? 'POST' : 'GET'),
-		headers,
-		body: opts.json !== undefined ? JSON.stringify(opts.json) : undefined
-	});
-	if (!res.ok) throw new Error(`OID4VCI request to ${url} responded ${res.status}.`);
-	return (await res.json()) as Record<string, unknown>;
-}
-
-async function postForm(
-	doFetch: FetchLike,
-	url: string,
-	form: Record<string, string>
-): Promise<Record<string, unknown>> {
-	const res = await doFetch(url, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
-		body: new URLSearchParams(form)
-	});
-	if (!res.ok) throw new Error(`OID4VCI token request responded ${res.status}.`);
-	return (await res.json()) as Record<string, unknown>;
-}
-
-/** Pull the issued VC from an OID4VCI credential response (single or `credentials[]` form). */
-function extractCredential(response: Record<string, unknown>): unknown {
-	if (response.credential) return response.credential;
-	const credentials = response.credentials as Array<{ credential?: unknown }> | undefined;
-	if (Array.isArray(credentials) && credentials.length) {
-		return credentials[0]?.credential ?? credentials[0];
-	}
-	return undefined;
 }

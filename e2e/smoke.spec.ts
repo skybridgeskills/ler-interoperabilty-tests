@@ -8,6 +8,15 @@ test('landing page renders heading + nav cards', async ({ page }) => {
 	await expect(page.getByRole('link', { name: 'Wallet', exact: true })).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Verifier', exact: true })).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Issuer', exact: true })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'About', exact: true })).toBeVisible();
+});
+
+test('About nav link opens the about page', async ({ page }) => {
+	await page.goto('/');
+	await page.getByRole('link', { name: 'About', exact: true }).click();
+	await expect(page.getByRole('heading', { level: 1 })).toContainText(
+		'About the LER Interoperability Test Suite'
+	);
 });
 
 test('/health returns 200 with status ok', async ({ request }) => {
