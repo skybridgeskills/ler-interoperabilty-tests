@@ -27,6 +27,13 @@ describe('buildAppContext', () => {
 		// Real id service produces a v4-shaped UUID
 		expect(ctx.idService.uuid()).toMatch(/^[0-9a-f-]{36}$/i);
 	});
+
+	it('builds the hosted context when CONTEXT=hosted', async () => {
+		const ctx = await buildAppContext({ CONTEXT: 'hosted', LOG_LEVEL: 'silent' });
+		expect(typeof ctx.logger.info).toBe('function');
+		// Real id service produces a v4-shaped UUID
+		expect(ctx.idService.uuid()).toMatch(/^[0-9a-f-]{36}$/i);
+	});
 });
 
 describe('appContext()', () => {

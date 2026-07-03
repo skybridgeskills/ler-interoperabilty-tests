@@ -17,6 +17,10 @@ export async function buildAppContext(env: Record<string, unknown>): Promise<App
 			const { TestAppContext } = await import('./test-app-context.js');
 			return TestAppContext(env);
 		}
+		case 'hosted': {
+			const { HostedAppContext } = await import('./hosted-app-context.js');
+			return HostedAppContext(env);
+		}
 		default: {
 			const _never: never = CONTEXT;
 			throw new Error(`Unknown CONTEXT: ${_never}`);

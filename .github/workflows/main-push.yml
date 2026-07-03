@@ -1,0 +1,81 @@
+name: Main push
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  tag-next-version:
+    runs-on: ubuntu-latest
+    outputs:
+      app_version: ${{ steps.version.outputs.app_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate and push tag
+        env:
+          BRANCH: main
+          CI: 'true'
+        run: ./scripts/tag-next-version.sh
+
+      - name: Get release version
+        id: version
+        run: echo "app_version=$(./scripts/print-release-version.sh)" >> "$GITHUB_OUTPUT"
+
+  create-release:
+    needs: [tag-next-version]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch tags
+        run: git fetch --prune --prune-tags origin
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APP_VERSION: ${{ needs.tag-next-version.outputs.app_version }}
+        run: |
+          gh release create "v${APP_VERSION}" \
+            --title "Release ${APP_VERSION}" \
+            --generate-notes \
+            --latest
+
+  trigger-monorepo-bump:
+    needs: [tag-next-version, create-release]
+    runs-on: ubuntu-latest
+    # Non-blocking: this is a no-op until the deployment automation credentials
+    # (MONOREPO_APP_ID / MONOREPO_APP_PRIVATE_KEY) are configured on this repo.
+    continue-on-error: true
+    steps:
+      - name: Generate GitHub App token
+        id: generate-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.MONOREPO_APP_ID }}
+          private-key: ${{ secrets.MONOREPO_APP_PRIVATE_KEY }}
+          owner: skybridgeskills
+          repositories: skybridgeskills-monorepo
+
+      - name: Trigger version bump in the downstream deployment repo
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+          APP_VERSION: ${{ needs.tag-next-version.outputs.app_version }}
+        run: |
+          gh workflow run ler-tests-bump-version.yml \
+            --repo skybridgeskills/skybridgeskills-monorepo \
+            --ref main \
+            -f version="v${APP_VERSION}"
+          echo "Triggered ler-tests-bump-version.yml in the monorepo with version v${APP_VERSION}"

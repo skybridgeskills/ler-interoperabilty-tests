@@ -13,6 +13,11 @@ describe('parseBaseEnv', () => {
 		expect(parsed.CONTEXT).toBe('test');
 	});
 
+	it('accepts hosted CONTEXT', () => {
+		const parsed = parseBaseEnv({ CONTEXT: 'hosted' });
+		expect(parsed.CONTEXT).toBe('hosted');
+	});
+
 	it('rejects unknown CONTEXT values', () => {
 		expect(() => parseBaseEnv({ CONTEXT: 'prod' })).toThrow();
 	});
