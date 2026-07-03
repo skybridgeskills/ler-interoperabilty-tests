@@ -84,7 +84,12 @@
 			{/each}
 		</div>
 
-		<Button type="button" disabled={!canVerify} onclick={onVerify}>
+		<Button
+			type="button"
+			class="bg-live text-live-foreground hover:bg-live/90"
+			disabled={!canVerify}
+			onclick={onVerify}
+		>
 			{busy ? 'Verifying…' : 'Verify'}
 		</Button>
 	</div>
