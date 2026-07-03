@@ -2,7 +2,10 @@ import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 
 import { appContext } from '$lib/server/app-context.js';
-import { runIssuerFlowChecks } from '$lib/server/domain/wallet-runner/index.js';
+import {
+	runIssuerFlowChecks,
+	vcalmIssuerFlowChecks
+} from '$lib/server/domain/wallet-runner/index.js';
 
 const RunRequest = z.object({
 	interactionUrl: z.string().min(1),
@@ -28,7 +31,10 @@ export const POST = async ({ request }: { request: Request }) => {
 
 	try {
 		const run = await vcalmIssuerFlow.runIssuerFlow(body.interactionUrl, body.cryptosuite);
-		const { report, outcomes } = runIssuerFlowChecks(run.observations);
+		const { report, outcomes } = runIssuerFlowChecks(run.observations, {
+			profile: 'vcalm',
+			registry: vcalmIssuerFlowChecks
+		});
 		const failingMustCount = outcomes.filter(
 			(o) => o.level === 'MUST' && o.status === 'fail'
 		).length;

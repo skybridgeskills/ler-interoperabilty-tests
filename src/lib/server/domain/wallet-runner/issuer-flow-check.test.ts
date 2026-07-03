@@ -2,18 +2,21 @@ import { describe, expect, it } from 'vitest';
 
 import { FakeVcalmIssuerFlow } from '$lib/server/domain/wallet-client/index.js';
 
+import { vcalmIssuerFlowChecks } from './checks/vcalm-issuer-flow.js';
 import { runIssuerFlowChecks, type IssuerFlowCheckCtx } from './issuer-flow-check.js';
 
 const P = 'vcalm.issuer.credential-issuance.';
+const vcalmOpts = { profile: 'vcalm' as const, registry: vcalmIssuerFlowChecks };
+const runVcalm = (ctx: IssuerFlowCheckCtx) => runIssuerFlowChecks(ctx, vcalmOpts);
 const outcome = (id: string, ctx: IssuerFlowCheckCtx) =>
-	runIssuerFlowChecks(ctx).outcomes.find((o) => o.id === `${P}${id}`);
+	runVcalm(ctx).outcomes.find((o) => o.id === `${P}${id}`);
 
 describe('runIssuerFlowChecks', () => {
 	it('passes every MUST for a fully-successful run (fake flow observations)', async () => {
 		const { observations } = await FakeVcalmIssuerFlow().runIssuerFlow(
 			'https://issuer.test/interactions/ex-1'
 		);
-		const { report, outcomes } = runIssuerFlowChecks(observations);
+		const { report, outcomes } = runVcalm(observations);
 
 		expect(report.verified).toBe(true);
 		expect(outcomes.filter((o) => o.level === 'MUST' && o.status === 'fail')).toHaveLength(0);
@@ -38,7 +41,7 @@ describe('runIssuerFlowChecks', () => {
 				error: 'Interaction URL responded 502.'
 			}
 		};
-		const { report, outcomes } = runIssuerFlowChecks(ctx);
+		const { report, outcomes } = runVcalm(ctx);
 
 		expect(report.verified).toBe(false);
 		expect(outcome('interaction-url-fetchable', ctx)?.status).toBe('fail');
@@ -62,7 +65,7 @@ describe('runIssuerFlowChecks', () => {
 		};
 		expect(outcome('tls', ctx)?.status).toBe('fail');
 		expect(outcome('interaction-url-fetchable', ctx)?.status).toBe('pass');
-		expect(runIssuerFlowChecks(ctx).report.verified).toBe(false);
+		expect(runVcalm(ctx).report.verified).toBe(false);
 	});
 
 	it('fails holder binding when the subject id does not match the authenticated holder', () => {
@@ -84,5 +87,12 @@ describe('runIssuerFlowChecks', () => {
 		const vu = outcome('valid-until', ctx);
 		expect(vu?.level).toBe('SHOULD');
 		expect(vu?.status).toBe('warn');
+	});
+
+	it('is profile-parametric: resolves the oid4 combo (empty registry → all pending)', () => {
+		const { report, outcomes } = runIssuerFlowChecks({}, { profile: 'oid4', registry: {} });
+		expect(outcomes).toHaveLength(0);
+		expect(report.verified).toBe(true);
+		expect(report.groups[0]?.checklist.profileSlug).toBe('oid4');
 	});
 });

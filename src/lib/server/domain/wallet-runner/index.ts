@@ -8,3 +8,4 @@ export type { WalletCheckCtx, WalletCheckFn, WalletExchangeView } from './wallet
 export { runIssuerFlowChecks } from './issuer-flow-check.js';
 export type { IssuerFlowCheckCtx, IssuerFlowCheckFn } from './issuer-flow-check.js';
 export { vcalmIssuerFlowChecks } from './checks/vcalm-issuer-flow.js';
+export { oid4IssuerFlowChecks } from './checks/oid4-issuer-flow.js';

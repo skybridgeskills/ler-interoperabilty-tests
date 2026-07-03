@@ -5,11 +5,12 @@
 	type Cryptosuite = 'eddsa-rdfc-2022' | 'ecdsa-rdfc-2019';
 
 	/**
-	 * Flame-orange (`primary`) test-wallet panel for the runnable issuer VCALM page. Owns the
-	 * primary starting action — an interaction-URL input + submit — plus a holder-cryptosuite
-	 * selector and the run status (success / not-verified / stopped-early / error). Purely
-	 * presentational: the parent owns the run lifecycle and passes state down; `interactionUrl` and
-	 * `cryptosuite` are bindable.
+	 * Flame-orange (`primary`) test-wallet panel for the runnable issuer pages. Owns the primary
+	 * starting action — a URL input + submit — plus a holder-cryptosuite selector and the run status
+	 * (success / not-verified / stopped-early / error). Purely presentational: the parent owns the run
+	 * lifecycle and passes state down; `interactionUrl` and `cryptosuite` are bindable. Copy
+	 * (`title` / `blurb` / `inputLabel` / `inputPlaceholder` / `inputType` / `verifiedCopy`) is
+	 * parametrized with VCALM defaults so the OID4 page can pass OID4VCI wording.
 	 */
 	let {
 		interactionUrl = $bindable(''),
@@ -21,6 +22,12 @@
 		verified = false,
 		failingMustCount = 0,
 		error,
+		title = 'Run the test wallet against your issuer',
+		blurb = 'Paste the interaction URL you generated on your issuer. The test wallet participates as the holder — fetching the exchange, authenticating with a DID, and receiving the credential — then lights up each requirement below with a pass, fail, or warning.',
+		inputLabel = 'Interaction URL',
+		inputPlaceholder = 'https://issuer.example/exchanges/…',
+		inputType = 'url',
+		verifiedCopy = 'The test wallet completed the whole VCALM issuance flow and no MUST requirements failed.',
 		onRun,
 		onReset
 	}: {
@@ -33,6 +40,12 @@
 		verified?: boolean;
 		failingMustCount?: number;
 		error?: { message: string; hint?: string };
+		title?: string;
+		blurb?: string;
+		inputLabel?: string;
+		inputPlaceholder?: string;
+		inputType?: 'url' | 'text';
+		verifiedCopy?: string;
 		onRun: () => void | Promise<void>;
 		onReset: () => void;
 	} = $props();
@@ -45,23 +58,19 @@
 
 <div class="space-y-4 rounded-md border border-primary/40 bg-primary/5 p-5">
 	<p class="text-label-md text-primary uppercase">Test wallet</p>
-	<h3 class="text-headline-md text-foreground">Run the test wallet against your issuer</h3>
-	<p class="text-body-md text-foreground">
-		Paste the interaction URL you generated on your issuer. The test wallet participates as the
-		holder — fetching the exchange, authenticating with a DID, and receiving the credential — then
-		lights up each requirement below with a pass, fail, or warning.
-	</p>
+	<h3 class="text-headline-md text-foreground">{title}</h3>
+	<p class="text-body-md text-foreground">{blurb}</p>
 
 	<form class="space-y-3" onsubmit={handleSubmit}>
 		<label class="block space-y-1">
 			<span class="text-label-md text-foreground"
-				>Interaction URL <span class="text-muted-foreground">(step 1)</span></span
+				>{inputLabel} <span class="text-muted-foreground">(step 1)</span></span
 			>
 			<Input
-				type="url"
+				type={inputType}
 				bind:value={interactionUrl}
 				disabled={busy}
-				placeholder="https://issuer.example/exchanges/…"
+				placeholder={inputPlaceholder}
 				autocomplete="off"
 			/>
 		</label>
@@ -111,9 +120,7 @@
 	{:else if done && verified}
 		<div class="rounded-md border border-primary/40 bg-primary/10 p-3">
 			<p class="text-label-md text-primary uppercase">Verified</p>
-			<p class="mt-1 text-body-md text-foreground">
-				The test wallet completed the whole VCALM issuance flow and no MUST requirements failed.
-			</p>
+			<p class="mt-1 text-body-md text-foreground">{verifiedCopy}</p>
 		</div>
 	{:else if done}
 		<div class="rounded-md border border-destructive/40 bg-destructive/10 p-3">
