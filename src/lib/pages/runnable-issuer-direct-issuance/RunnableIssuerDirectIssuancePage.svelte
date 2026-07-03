@@ -1,5 +1,8 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+
 	import { recordRun } from '$lib/client/run-history/index.js';
+	import { selectionStore } from '$lib/client/selection/index.js';
 	import { IssuerRunnerPanel } from '$lib/components/interop/issuer-runner/issuer-runner-panel/index.js';
 	import type { IssuerRunnerStatus } from '$lib/components/interop/issuer-runner/issuer-runner-panel/index.js';
 	import type { AdditiveProfileSlug } from '$lib/interop/additive-profile-schema.js';
@@ -18,9 +21,13 @@
 	}
 
 	let credentialText = $state<string>('');
-	let selectedAdditives = $state<AdditiveProfileSlug[]>([]);
+	const selectedAdditives = $derived([...selectionStore.additiveProfiles]);
 	let status = $state<IssuerRunnerStatus>('idle');
 	let report = $state<IssuerRunnerReport | undefined>(undefined);
+
+	onMount(() => {
+		selectionStore.hydrate();
+	});
 
 	async function verify() {
 		let parsed: unknown;
@@ -81,12 +88,8 @@
 		// until they re-Verify.
 	}
 
-	function onToggleAdditive(slug: AdditiveProfileSlug, next: boolean) {
-		if (next) {
-			if (!selectedAdditives.includes(slug)) selectedAdditives = [...selectedAdditives, slug];
-		} else {
-			selectedAdditives = selectedAdditives.filter((s) => s !== slug);
-		}
+	function onToggleAdditive(slug: AdditiveProfileSlug) {
+		selectionStore.toggleAdditiveProfile(slug);
 	}
 </script>
 

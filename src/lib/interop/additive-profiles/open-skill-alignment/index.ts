@@ -1,5 +1,6 @@
 import { AdditiveProfile } from '../../additive-profile-schema.js';
 
+import { issuerCredentialIssuance } from './issuer-credential-issuance.js';
 import { issuerDirectCredentialIssuance } from './issuer-direct-credential-issuance.js';
 import { openSkillAlignmentMeta } from './profile.js';
 import { verifierDirectCredentialVerification } from './verifier-direct-credential-verification.js';
@@ -7,7 +8,11 @@ import { verifierDirectCredentialVerification } from './verifier-direct-credenti
 /** The Open Skill Alignment additive profile, ready for use in the UI + accessors. */
 export const openSkillAlignment = AdditiveProfile({
 	...openSkillAlignmentMeta,
-	checklists: [issuerDirectCredentialIssuance, verifierDirectCredentialVerification]
+	checklists: [
+		issuerDirectCredentialIssuance,
+		issuerCredentialIssuance,
+		verifierDirectCredentialVerification
+	]
 });
 
 export { openSkillAlignmentMeta } from './profile.js';
