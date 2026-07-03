@@ -20,6 +20,7 @@
 			<a href={resolve('/verifier')} class="text-foreground hover:text-primary">Verifier</a>
 			<a href={resolve('/issuer')} class="text-foreground hover:text-primary">Issuer</a>
 			<a href={resolve('/profiles')} class="text-foreground hover:text-primary">Profiles</a>
+			<a href={resolve('/about')} class="text-foreground hover:text-primary">About</a>
 		</nav>
 
 		<div class="ml-auto">

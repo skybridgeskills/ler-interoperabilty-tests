@@ -24,6 +24,8 @@
 		type TestRunRecord
 	} from '$lib/interop/index.js';
 
+	import { resolve } from '$app/paths';
+
 	// Static set of rows — pure, SSR-safe.
 	const combos = allCombinations();
 
@@ -58,6 +60,15 @@
 		Pick the roles and profiles you care about, and the workflow checklists below reorganize into
 		your working set — each one drillable into the exact ordered steps your profile requires, with
 		the result of your most recent test run.
+	</p>
+</section>
+
+<section class="mt-4">
+	<p class="text-body-sm max-w-prose text-muted-foreground">
+		New here? Standards compliance isn’t the same as interoperability.
+		<a href={resolve('/about')} class="text-primary hover:underline">
+			Read about what this tool does →
+		</a>
 	</p>
 </section>
 
