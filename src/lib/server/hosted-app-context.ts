@@ -2,6 +2,7 @@ import type { AppContext } from './app-context.js';
 import { provideRealTransactionServiceClient } from './domain/exchange-runner/index.js';
 import { provideRealIssuerRunner } from './domain/issuer-runner/index.js';
 import {
+	provideRealOid4IssuerFlow,
 	provideRealVcalmIssuerFlow,
 	provideRealWalletClient
 } from './domain/wallet-client/index.js';
@@ -20,6 +21,7 @@ export function HostedAppContext(env: Record<string, unknown>): AppContext {
 	const issuerRunner = provideRealIssuerRunner();
 	const walletClient = provideRealWalletClient(exchangeRunner.exchangeRunnerConfig);
 	const vcalmIssuerFlow = provideRealVcalmIssuerFlow();
+	const oid4IssuerFlow = provideRealOid4IssuerFlow();
 	return {
 		logger: PinoLoggerService({
 			level: typeof env.LOG_LEVEL === 'string' ? env.LOG_LEVEL : 'info',
@@ -30,6 +32,7 @@ export function HostedAppContext(env: Record<string, unknown>): AppContext {
 		...exchangeRunner,
 		...issuerRunner,
 		...walletClient,
-		...vcalmIssuerFlow
+		...vcalmIssuerFlow,
+		...oid4IssuerFlow
 	};
 }
