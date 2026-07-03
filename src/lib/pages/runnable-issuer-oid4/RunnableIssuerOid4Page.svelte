@@ -42,6 +42,7 @@
 	};
 	type RunResponse = {
 		outcomes: CheckOutcome[];
+		additiveOutcomes?: CheckOutcome[];
 		blocked: boolean;
 		stoppedAtStep?: number;
 		verified: boolean;
@@ -74,6 +75,7 @@
 	let failingMustCount = $state(0);
 	let error = $state<RunError | undefined>(undefined);
 	let outcomesById = $state<Record<string, CheckOutcome>>({});
+	let additiveOutcomesById = $state<Record<string, CheckOutcome>>({});
 	let raw = $state<RunRaw>({});
 	let runState = $state<ChecklistRunState>('idle');
 	let perStep = $state<StepRunState[]>(Array.from({ length: stepCount }, () => 'pending'));
@@ -87,6 +89,7 @@
 		failingMustCount = 0;
 		error = undefined;
 		outcomesById = {};
+		additiveOutcomesById = {};
 		raw = {};
 		runState = 'idle';
 		perStep = Array.from({ length: stepCount }, () => 'pending');
@@ -124,6 +127,7 @@
 		error = undefined;
 		done = false;
 		outcomesById = {};
+		additiveOutcomesById = {};
 		raw = {};
 		runState = 'awaiting-wallet';
 		perStep = [
@@ -134,7 +138,11 @@
 			const res = await fetch('/api/wallet-runner/issuer-oid4/run', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ offerUrl: offerUrl.trim(), cryptosuite })
+				body: JSON.stringify({
+					offerUrl: offerUrl.trim(),
+					cryptosuite,
+					additiveProfiles: [...selectionStore.additiveProfiles]
+				})
 			});
 			if (!res.ok) {
 				const body = (await res.json().catch(() => ({}))) as RunError;
@@ -145,6 +153,9 @@
 			}
 			const data = (await res.json()) as RunResponse;
 			outcomesById = Object.fromEntries(data.outcomes.map((o) => [o.id, o]));
+			additiveOutcomesById = Object.fromEntries(
+				(data.additiveOutcomes ?? []).map((o) => [o.id, o])
+			);
 			raw = data.raw ?? {};
 			blocked = data.blocked;
 			stoppedAtStep = data.stoppedAtStep;
@@ -226,7 +237,17 @@
 				baseProfileName={combo.profile.name}
 				selected={selectionStore.isAdditiveProfileSelected(additive.slug)}
 				onToggle={selectionStore.toggleAdditiveProfile}
-			/>
+			>
+				{#snippet requirementState({ requirement })}
+					<RequirementStatusRow
+						{requirement}
+						status={outcomeToRequirementStatus(
+							requirement.id ? additiveOutcomesById[requirement.id] : undefined,
+							done ? raw.delivery : undefined
+						)}
+					/>
+				{/snippet}
+			</AdditiveChecklistSection>
 		{/each}
 	</section>
 {/if}

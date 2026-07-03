@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
+import { rawScoreFixture } from '$lib/interop/additive-profiles/open-skill-alignment/fixtures/raw-score.js';
+import type { IssuerRunnerReport } from '$lib/server/domain/issuer-runner/issuer-runner-report.js';
 import { FakeVcalmIssuerFlow } from '$lib/server/domain/wallet-client/index.js';
 
-import { vcalmIssuerFlowChecks } from './checks/vcalm-issuer-flow.js';
+import {
+	credCtx as vcalmCredentialCtx,
+	vcalmIssuerFlowChecks
+} from './checks/vcalm-issuer-flow.js';
 import { runIssuerFlowChecks, type IssuerFlowCheckCtx } from './issuer-flow-check.js';
 
 const P = 'vcalm.issuer.credential-issuance.';
@@ -94,5 +99,59 @@ describe('runIssuerFlowChecks', () => {
 		expect(outcomes).toHaveLength(0);
 		expect(report.verified).toBe(true);
 		expect(report.groups[0]?.checklist.profileSlug).toBe('oid4');
+	});
+});
+
+describe('runIssuerFlowChecks — additive evaluation', () => {
+	const osaOpts = {
+		...vcalmOpts,
+		additiveProfiles: ['open-skill-alignment' as const],
+		toCredentialCtx: vcalmCredentialCtx
+	};
+	const additiveGroup = (report: IssuerRunnerReport) =>
+		report.groups.find((g) => g.checklist.kind === 'additive');
+
+	it('emits no additive group when none is selected (response unchanged)', async () => {
+		const { observations } = await FakeVcalmIssuerFlow().runIssuerFlow(
+			'https://issuer.test/interactions/ex-1'
+		);
+		const { report, additiveOutcomes } = runVcalm(observations);
+		expect(additiveOutcomes).toHaveLength(0);
+		expect(report.groups).toHaveLength(1);
+		expect(report.groups[0]?.checklist.kind).toBe('base');
+	});
+
+	it('emits a passing OSA additive group for a conformant delivered credential', () => {
+		const ctx = { delivery: { status: 200, credential: rawScoreFixture } } as IssuerFlowCheckCtx;
+		const { report, additiveOutcomes } = runIssuerFlowChecks(ctx, osaOpts);
+
+		const group = additiveGroup(report);
+		expect(group?.checklist.profileSlug).toBe('open-skill-alignment');
+		expect(additiveOutcomes.length).toBeGreaterThan(0);
+		expect(
+			additiveOutcomes.find((o) => o.id === 'open-skill-alignment.result.present')?.status
+		).toBe('pass');
+		// No OSA MUST failed → the additive group does not drag `verified` down.
+		expect(group?.outcomes.some((o) => o.level === 'MUST' && o.status === 'fail')).toBe(false);
+	});
+
+	it('fails a selected-additive MUST and flips combined verified for a non-conformant credential', () => {
+		const credential = { credentialSubject: { id: 'did:key:zHolder' } }; // no result[]/resultDescription[]
+		const ctx = { delivery: { status: 200, credential } } as IssuerFlowCheckCtx;
+		const { report, additiveOutcomes } = runIssuerFlowChecks(ctx, osaOpts);
+
+		const present = additiveOutcomes.find(
+			(o) => o.id === 'open-skill-alignment.result-description.present'
+		);
+		expect(present?.level).toBe('MUST');
+		expect(present?.status).toBe('fail');
+		expect(report.verified).toBe(false);
+	});
+
+	it('skips additive evaluation (pending) when no credential has been delivered yet', () => {
+		const ctx = { interaction: { ok: true, status: 200 } } as IssuerFlowCheckCtx;
+		const { report, additiveOutcomes } = runIssuerFlowChecks(ctx, osaOpts);
+		expect(additiveOutcomes).toHaveLength(0);
+		expect(additiveGroup(report)).toBeUndefined();
 	});
 });

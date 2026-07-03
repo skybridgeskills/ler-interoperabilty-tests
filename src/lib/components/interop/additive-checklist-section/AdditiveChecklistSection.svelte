@@ -6,9 +6,15 @@
 		additiveProfileHref,
 		type AdditiveProfile,
 		type AdditiveProfileSlug,
+		type ChecklistRequirement,
 		type ChecklistStep,
 		type WorkflowChecklist as WorkflowChecklistData
 	} from '$lib/interop/index.js';
+
+	import {
+		requirementLevelClass,
+		requirementLevelVariant
+	} from '../workflow-checklist/requirement-level-badge.js';
 
 	/**
 	 * One additive's combined-view section, rendered as a collapsible block:
@@ -17,6 +23,11 @@
 	 * caller-driven — the owner passes `selected` and `onToggle` (the shared
 	 * selection store on real pages), so this component is reused unchanged by
 	 * both the static combined view and the runnable pages.
+	 *
+	 * Body rendering, in priority order: a `requirementState` snippet (runnable
+	 * pages, lighting up live per-requirement status), then a shared `stepList`
+	 * snippet (static combined view, DRY with the base checklist), then a
+	 * built-in static requirement list (standalone fallback).
 	 */
 	let {
 		additive,
@@ -24,7 +35,8 @@
 		baseProfileName,
 		selected,
 		onToggle,
-		stepList
+		stepList,
+		requirementState
 	}: {
 		additive: AdditiveProfile;
 		checklist: WorkflowChecklistData;
@@ -33,8 +45,16 @@
 		/** Whether this additive is currently selected for testing. */
 		selected: boolean;
 		onToggle: (slug: AdditiveProfileSlug) => void;
-		/** Optional shared step renderer; falls back to an inline list. */
+		/** Optional shared step renderer; used by the static combined view. */
 		stepList?: Snippet<[ChecklistStep[], 'h2' | 'h3']>;
+		/**
+		 * Optional per-requirement renderer (mirrors `RunnableChecklist`). When
+		 * provided, each requirement renders through this snippet — the runnable
+		 * pages use it to show live pass/fail/warn/na/pending status.
+		 */
+		requirementState?: Snippet<
+			[{ requirement: ChecklistRequirement; stepIndex: number; reqIndex: number }]
+		>;
 	} = $props();
 
 	// Collapsed by default; auto-expands when selected. A writable `$derived`
@@ -98,7 +118,28 @@
 	</summary>
 
 	<div class="mt-4">
-		{#if stepList}
+		{#if requirementState}
+			<ol class="space-y-10">
+				{#each checklist.steps as step, i (step.title)}
+					<li class="space-y-3">
+						<header class="flex items-baseline gap-3">
+							<span class="text-headline-md font-mono text-primary">{i + 1}.</span>
+							<h3 class="text-headline-md">{step.title}</h3>
+						</header>
+						<p class="max-w-prose text-body-md text-muted-foreground">{step.summary}</p>
+						{#if step.requirements.length}
+							<ul class="space-y-2 pl-6">
+								{#each step.requirements as req, j (req.text)}
+									<li>
+										{@render requirementState({ requirement: req, stepIndex: i, reqIndex: j })}
+									</li>
+								{/each}
+							</ul>
+						{/if}
+					</li>
+				{/each}
+			</ol>
+		{:else if stepList}
 			{@render stepList(checklist.steps, 'h3')}
 		{:else}
 			<ol class="space-y-10">
@@ -109,6 +150,27 @@
 							<h3 class="text-headline-md">{step.title}</h3>
 						</header>
 						<p class="max-w-prose text-body-md text-muted-foreground">{step.summary}</p>
+						{#if step.requirements.length}
+							<ul class="space-y-2 pl-6">
+								{#each step.requirements as req (req.text)}
+									<li class="flex items-start gap-3">
+										<input
+											type="checkbox"
+											disabled
+											class="mt-1 size-4 shrink-0 rounded border-border bg-card"
+											aria-label="static"
+										/>
+										<span class="flex flex-wrap items-baseline gap-2">
+											<Badge
+												variant={requirementLevelVariant[req.level]}
+												class={requirementLevelClass[req.level]}>{req.level}</Badge
+											>
+											<span class="text-body-md text-foreground">{req.text}</span>
+										</span>
+									</li>
+								{/each}
+							</ul>
+						{/if}
 					</li>
 				{/each}
 			</ol>

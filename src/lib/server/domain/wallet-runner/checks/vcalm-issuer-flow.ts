@@ -22,7 +22,7 @@ const pass = (message: string): CheckResult => ({ status: 'pass', message });
 const fail = (message: string): CheckResult => ({ status: 'fail', message });
 
 /** Adapt issuer-flow observations into the OB3 issuer `CheckCtx` (credential-only checks). */
-function credCtx(ctx: IssuerFlowCheckCtx): CheckCtx {
+export function credCtx(ctx: IssuerFlowCheckCtx): CheckCtx {
 	return {
 		credential: ctx.delivery?.credential,
 		verifierResult: { verified: !!ctx.verify?.verified },

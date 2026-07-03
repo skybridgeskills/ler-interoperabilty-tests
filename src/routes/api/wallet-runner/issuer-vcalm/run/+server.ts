@@ -1,15 +1,18 @@
 import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 
+import { AdditiveProfileSlug } from '$lib/interop/additive-profile-schema.js';
 import { appContext } from '$lib/server/app-context.js';
 import {
 	runIssuerFlowChecks,
+	vcalmCredentialCtx,
 	vcalmIssuerFlowChecks
 } from '$lib/server/domain/wallet-runner/index.js';
 
 const RunRequest = z.object({
 	interactionUrl: z.string().min(1),
-	cryptosuite: z.enum(['eddsa-rdfc-2022', 'ecdsa-rdfc-2019']).optional()
+	cryptosuite: z.enum(['eddsa-rdfc-2022', 'ecdsa-rdfc-2019']).optional(),
+	additiveProfiles: z.array(AdditiveProfileSlug.schema).optional().default([])
 });
 
 /**
@@ -31,18 +34,22 @@ export const POST = async ({ request }: { request: Request }) => {
 
 	try {
 		const run = await vcalmIssuerFlow.runIssuerFlow(body.interactionUrl, body.cryptosuite);
-		const { report, outcomes } = runIssuerFlowChecks(run.observations, {
+		const { report, outcomes, additiveOutcomes } = runIssuerFlowChecks(run.observations, {
 			profile: 'vcalm',
-			registry: vcalmIssuerFlowChecks
+			registry: vcalmIssuerFlowChecks,
+			additiveProfiles: body.additiveProfiles,
+			toCredentialCtx: vcalmCredentialCtx
 		});
-		const failingMustCount = outcomes.filter(
-			(o) => o.level === 'MUST' && o.status === 'fail'
-		).length;
+		// Combined across base + additive groups so a failing selected-additive MUST flips the run.
+		const failingMustCount = report.groups
+			.flatMap((g) => g.outcomes)
+			.filter((o) => o.level === 'MUST' && o.status === 'fail').length;
 
 		const { interaction, didAuth, delivery, verify } = run.observations;
 		return json({
 			report,
 			outcomes,
+			additiveOutcomes,
 			blocked: run.blocked,
 			stoppedAtStep: run.stoppedAtStep,
 			verified: report.verified,
