@@ -1,5 +1,9 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+
 	import { recordRun } from '$lib/client/run-history/index.js';
+	import { selectionStore } from '$lib/client/selection/index.js';
+	import { AdditiveChecklistSection } from '$lib/components/interop/additive-checklist-section/index.js';
 	import { IssuerFlowWalletPanel } from '$lib/components/interop/issuer-flow-runner/index.js';
 	import {
 		RequirementStatusRow,
@@ -7,6 +11,7 @@
 	} from '$lib/components/interop/requirement-status-row/index.js';
 	import { RunnableChecklist } from '$lib/components/interop/runnable-checklist/index.js';
 	import {
+		additiveChecklistsForCombination,
 		combinationFor,
 		issuerReportRunRecord,
 		roleBySlug,
@@ -37,6 +42,7 @@
 	};
 	type RunResponse = {
 		outcomes: CheckOutcome[];
+		additiveOutcomes?: CheckOutcome[];
 		blocked: boolean;
 		stoppedAtStep?: number;
 		verified: boolean;
@@ -49,6 +55,15 @@
 	const workflow = workflowBySlug('credential-issuance')!;
 	const combo = combinationFor('issuer', 'credential-issuance', 'oid4')!;
 	const stepCount = combo.checklist.steps.length;
+	const additives = additiveChecklistsForCombination(
+		combo.profile.slug,
+		'issuer',
+		'credential-issuance'
+	);
+
+	onMount(() => {
+		selectionStore.hydrate();
+	});
 
 	let offerUrl = $state('');
 	let cryptosuite = $state<Cryptosuite>('eddsa-rdfc-2022');
@@ -60,6 +75,7 @@
 	let failingMustCount = $state(0);
 	let error = $state<RunError | undefined>(undefined);
 	let outcomesById = $state<Record<string, CheckOutcome>>({});
+	let additiveOutcomesById = $state<Record<string, CheckOutcome>>({});
 	let raw = $state<RunRaw>({});
 	let runState = $state<ChecklistRunState>('idle');
 	let perStep = $state<StepRunState[]>(Array.from({ length: stepCount }, () => 'pending'));
@@ -73,6 +89,7 @@
 		failingMustCount = 0;
 		error = undefined;
 		outcomesById = {};
+		additiveOutcomesById = {};
 		raw = {};
 		runState = 'idle';
 		perStep = Array.from({ length: stepCount }, () => 'pending');
@@ -110,6 +127,7 @@
 		error = undefined;
 		done = false;
 		outcomesById = {};
+		additiveOutcomesById = {};
 		raw = {};
 		runState = 'awaiting-wallet';
 		perStep = [
@@ -120,7 +138,11 @@
 			const res = await fetch('/api/wallet-runner/issuer-oid4/run', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ offerUrl: offerUrl.trim(), cryptosuite })
+				body: JSON.stringify({
+					offerUrl: offerUrl.trim(),
+					cryptosuite,
+					additiveProfiles: [...selectionStore.additiveProfiles]
+				})
 			});
 			if (!res.ok) {
 				const body = (await res.json().catch(() => ({}))) as RunError;
@@ -131,6 +153,9 @@
 			}
 			const data = (await res.json()) as RunResponse;
 			outcomesById = Object.fromEntries(data.outcomes.map((o) => [o.id, o]));
+			additiveOutcomesById = Object.fromEntries(
+				(data.additiveOutcomes ?? []).map((o) => [o.id, o])
+			);
 			raw = data.raw ?? {};
 			blocked = data.blocked;
 			stoppedAtStep = data.stoppedAtStep;
@@ -202,3 +227,27 @@
 		/>
 	{/snippet}
 </RunnableChecklist>
+
+{#if additives.length}
+	<section class="space-y-6">
+		{#each additives as { additive, checklist: additiveChecklist } (additive.slug)}
+			<AdditiveChecklistSection
+				{additive}
+				checklist={additiveChecklist}
+				baseProfileName={combo.profile.name}
+				selected={selectionStore.isAdditiveProfileSelected(additive.slug)}
+				onToggle={selectionStore.toggleAdditiveProfile}
+			>
+				{#snippet requirementState({ requirement })}
+					<RequirementStatusRow
+						{requirement}
+						status={outcomeToRequirementStatus(
+							requirement.id ? additiveOutcomesById[requirement.id] : undefined,
+							done ? raw.delivery : undefined
+						)}
+					/>
+				{/snippet}
+			</AdditiveChecklistSection>
+		{/each}
+	</section>
+{/if}

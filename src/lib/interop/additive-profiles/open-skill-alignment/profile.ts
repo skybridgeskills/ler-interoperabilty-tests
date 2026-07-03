@@ -13,5 +13,5 @@ export const openSkillAlignmentMeta = {
 		'using credentialSubject.result[] and credentialSubject.achievement.resultDescription[]. ' +
 		'Alignment target URLs SHOULD point at CTDL resources in the Credential Registry. Supported ' +
 		'resultType values: RawScore, Percent, RubricCriterionLevel.',
-	appliesToBaseProfiles: ['ob3-direct-delivery'] satisfies ProfileSlug[]
+	appliesToBaseProfiles: ['ob3-direct-delivery', 'vcalm', 'oid4'] satisfies ProfileSlug[]
 };

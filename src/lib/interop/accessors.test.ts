@@ -153,14 +153,14 @@ describe('additive profile accessors', () => {
 		expect(list).toEqual(['open-skill-alignment', 'data-integrity-cryptosuites']);
 	});
 
-	it('lists data-integrity-cryptosuites as applicable to vcalm', () => {
+	it('lists both additives as applicable to vcalm', () => {
 		const list = additiveProfilesForBaseProfile('vcalm').map((p) => p.slug);
-		expect(list).toEqual(['data-integrity-cryptosuites']);
+		expect(list).toEqual(['open-skill-alignment', 'data-integrity-cryptosuites']);
 	});
 
-	it('lists data-integrity-cryptosuites as applicable to oid4', () => {
+	it('lists both additives as applicable to oid4', () => {
 		const list = additiveProfilesForBaseProfile('oid4').map((p) => p.slug);
-		expect(list).toEqual(['data-integrity-cryptosuites']);
+		expect(list).toEqual(['open-skill-alignment', 'data-integrity-cryptosuites']);
 	});
 });
 
@@ -189,6 +189,31 @@ describe('additiveChecklistsForCombination', () => {
 		const di = result.find((r) => r.additive.slug === 'data-integrity-cryptosuites');
 		expect(di).toBeDefined();
 		expect(di?.checklist.steps).toHaveLength(1);
+	});
+
+	it('applies the open-skill-alignment issuer checklist to vcalm issuance', () => {
+		const result = additiveChecklistsForCombination('vcalm', 'issuer', 'credential-issuance');
+		const osa = result.find((r) => r.additive.slug === 'open-skill-alignment');
+		expect(osa).toBeDefined();
+		expect(osa?.checklist.steps).toHaveLength(2);
+	});
+
+	it('applies the open-skill-alignment issuer checklist to oid4 issuance', () => {
+		const result = additiveChecklistsForCombination('oid4', 'issuer', 'credential-issuance');
+		const osa = result.find((r) => r.additive.slug === 'open-skill-alignment');
+		expect(osa).toBeDefined();
+		expect(osa?.checklist.steps).toHaveLength(2);
+	});
+
+	it('still applies the open-skill-alignment checklist to ob3-direct-delivery issuance', () => {
+		const result = additiveChecklistsForCombination(
+			'ob3-direct-delivery',
+			'issuer',
+			'direct-credential-issuance'
+		);
+		const osa = result.find((r) => r.additive.slug === 'open-skill-alignment');
+		expect(osa).toBeDefined();
+		expect(osa?.checklist.steps).toHaveLength(2);
 	});
 
 	it('does not apply DI where it has no checklist for the (role, workflow)', () => {

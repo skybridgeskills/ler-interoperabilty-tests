@@ -1,9 +1,12 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+
+	import { selectionStore } from '$lib/client/selection/index.js';
+	import { AdditiveChecklistSection } from '$lib/components/interop/additive-checklist-section/index.js';
 	import { ProfileBadge } from '$lib/components/interop/profile-badge/index.js';
 	import { RoleBadge } from '$lib/components/interop/role-badge/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import {
-		additiveProfileHref,
 		profileHref,
 		type AdditiveProfile,
 		type ChecklistStep,
@@ -29,6 +32,10 @@
 		/** Applicable additive checklist(s), rendered as combined-view sections. */
 		additives?: { additive: AdditiveProfile; checklist: WorkflowChecklistData }[];
 	} = $props();
+
+	onMount(() => {
+		selectionStore.hydrate();
+	});
 </script>
 
 {#snippet stepList(steps: ChecklistStep[], headingTag: 'h2' | 'h3')}
@@ -80,23 +87,14 @@
 </div>
 
 {#each additives as { additive, checklist: additiveChecklist } (additive.slug)}
-	<section class="mt-16 space-y-4 border-t border-border pt-10">
-		<header class="space-y-2">
-			<div class="flex flex-wrap items-center gap-2">
-				<Badge variant="outline" href={additiveProfileHref(additive.slug)}>Additive</Badge>
-				<h2 class="text-headline-md">
-					<a class="hover:text-primary hover:underline" href={additiveProfileHref(additive.slug)}>
-						{additive.name}
-					</a>
-				</h2>
-			</div>
-			<p class="max-w-prose text-body-md text-muted-foreground">
-				These requirements layer on top of the {profile.name} checklist when the {additive.name} additive
-				is in use.
-			</p>
-		</header>
-		{@render stepList(additiveChecklist.steps, 'h3')}
-	</section>
+	<AdditiveChecklistSection
+		{additive}
+		checklist={additiveChecklist}
+		baseProfileName={profile.name}
+		selected={selectionStore.isAdditiveProfileSelected(additive.slug)}
+		onToggle={selectionStore.toggleAdditiveProfile}
+		{stepList}
+	/>
 {/each}
 
 <footer class="mt-16 text-label-md text-muted-foreground">

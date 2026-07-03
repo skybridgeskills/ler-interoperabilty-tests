@@ -7,5 +7,8 @@ export { walletCheckRegistry } from './checks/index.js';
 export type { WalletCheckCtx, WalletCheckFn, WalletExchangeView } from './wallet-check.js';
 export { runIssuerFlowChecks } from './issuer-flow-check.js';
 export type { IssuerFlowCheckCtx, IssuerFlowCheckFn } from './issuer-flow-check.js';
-export { vcalmIssuerFlowChecks } from './checks/vcalm-issuer-flow.js';
-export { oid4IssuerFlowChecks } from './checks/oid4-issuer-flow.js';
+export {
+	vcalmIssuerFlowChecks,
+	credCtx as vcalmCredentialCtx
+} from './checks/vcalm-issuer-flow.js';
+export { oid4IssuerFlowChecks, credCtx as oid4CredentialCtx } from './checks/oid4-issuer-flow.js';

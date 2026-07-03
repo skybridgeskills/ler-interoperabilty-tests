@@ -29,7 +29,7 @@ const fail = (message: string): CheckResult => ({ status: 'fail', message });
 const step1Ran = (ctx: Oid4IssuerFlowObservations) => ctx.offerUrl !== undefined;
 
 /** Adapt issuer-flow observations into the OB3 issuer `CheckCtx` (credential-only checks). */
-function credCtx(ctx: Oid4IssuerFlowObservations): CheckCtx {
+export function credCtx(ctx: Oid4IssuerFlowObservations): CheckCtx {
 	return {
 		credential: ctx.delivery?.credential,
 		verifierResult: { verified: !!ctx.verify?.verified },
