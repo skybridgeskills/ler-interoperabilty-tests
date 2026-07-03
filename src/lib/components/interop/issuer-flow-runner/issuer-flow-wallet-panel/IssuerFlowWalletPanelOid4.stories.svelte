@@ -4,7 +4,7 @@
 	import IssuerFlowWalletPanel from './IssuerFlowWalletPanel.svelte';
 
 	const { Story } = defineMeta({
-		title: 'Components/IssuerFlowRunner/IssuerFlowWalletPanel (OID4)',
+		title: 'Interop/Issuer Flow Runner/IssuerFlowWalletPanel (OID4)',
 		component: IssuerFlowWalletPanel
 	});
 

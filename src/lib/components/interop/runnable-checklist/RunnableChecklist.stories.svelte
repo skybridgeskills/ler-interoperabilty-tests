@@ -17,7 +17,7 @@
 	import { RunnableChecklist } from './index.js';
 
 	const { Story } = defineMeta({
-		title: 'Pages/RunnableChecklist',
+		title: 'Interop/RunnableChecklist',
 		component: RunnableChecklist
 	});
 

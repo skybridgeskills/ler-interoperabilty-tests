@@ -5,9 +5,10 @@
 	type Cryptosuite = 'eddsa-rdfc-2022' | 'ecdsa-rdfc-2019';
 
 	/**
-	 * Flame-orange (`primary`) test-wallet panel for the runnable issuer pages. Owns the primary
-	 * starting action — a URL input + submit — plus a holder-cryptosuite selector and the run status
-	 * (success / not-verified / stopped-early / error). Purely presentational: the parent owns the run
+	 * Orange `live` "test runner" panel for the runnable issuer pages (same design language as
+	 * `ExchangeRunnerPanel` / `PresentPanel`). Owns the primary starting action — a URL input +
+	 * submit — plus a holder-cryptosuite selector and the run status (success / not-verified /
+	 * stopped-early / error). Purely presentational: the parent owns the run
 	 * lifecycle and passes state down; `interactionUrl` and `cryptosuite` are bindable. Copy
 	 * (`title` / `blurb` / `inputLabel` / `inputPlaceholder` / `inputType` / `verifiedCopy`) is
 	 * parametrized with VCALM defaults so the OID4 page can pass OID4VCI wording.
@@ -56,8 +57,8 @@
 	}
 </script>
 
-<div class="space-y-4 rounded-md border border-primary/40 bg-primary/5 p-5">
-	<p class="text-label-md text-primary uppercase">Test wallet</p>
+<div class="space-y-4 rounded-md border border-live-border bg-live-soft p-5">
+	<p class="text-label-md text-live uppercase">Test wallet</p>
 	<h3 class="text-headline-md text-foreground">{title}</h3>
 	<p class="text-body-md text-foreground">{blurb}</p>
 
@@ -88,7 +89,7 @@
 		<div class="flex flex-wrap gap-2">
 			<Button
 				type="submit"
-				class="bg-primary text-primary-foreground hover:bg-primary/90"
+				class="bg-live text-live-foreground hover:bg-live/90"
 				disabled={busy || !interactionUrl.trim()}
 			>
 				{busy ? 'Running test wallet…' : done ? 'Run again' : 'Run test wallet'}
@@ -118,8 +119,8 @@
 			</p>
 		</div>
 	{:else if done && verified}
-		<div class="rounded-md border border-primary/40 bg-primary/10 p-3">
-			<p class="text-label-md text-primary uppercase">Verified</p>
+		<div class="rounded-md border border-success/40 bg-success/10 p-3">
+			<p class="text-label-md text-success uppercase">Verified</p>
 			<p class="mt-1 text-body-md text-foreground">{verifiedCopy}</p>
 		</div>
 	{:else if done}
