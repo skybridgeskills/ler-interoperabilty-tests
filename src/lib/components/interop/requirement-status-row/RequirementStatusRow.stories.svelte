@@ -35,13 +35,55 @@
 		status: 'fail',
 		message: 'Endpoint is not served over HTTPS (TLS 1.2+ required).'
 	};
+	const advisoryFailOutcome: CheckOutcome = {
+		id: 'vcalm.issuer.credential-issuance.valid-until',
+		level: 'SHOULD',
+		status: 'fail',
+		message: '`validUntil` is present but not a valid ISO date string.'
+	};
 	const warnOutcome: CheckOutcome = {
 		id: 'vcalm.issuer.credential-issuance.valid-until',
 		level: 'SHOULD',
 		status: 'warn',
 		message: '`validUntil` is not set; the credential declares no expiration.'
 	};
+	const naOutcome: CheckOutcome = {
+		id: 'vcalm.issuer.credential-issuance.participation-problemdetails',
+		level: 'SHOULD',
+		status: 'n/a',
+		message: 'ProblemDetails error handling is not automatically checked on the happy path.'
+	};
 </script>
+
+<!--
+	All tones in one view for the UX gate. Blue appears only on the level badge; results read green
+	(pass) / red (MUST fail) / amber (warn + advisory SHOULD/MAY fail) / warm orange (in-flight) /
+	neutral (pending hollow ring, n-a, skipped). Toggle the Storybook theme to check light + dark.
+-->
+<Story name="All states" asChild>
+	<div class="max-w-2xl space-y-3 bg-background p-6">
+		<RequirementStatusRow requirement={mustReq} status={outcomeToRequirementStatus(passOutcome)} />
+		<RequirementStatusRow requirement={mustReq} status={outcomeToRequirementStatus(failOutcome)} />
+		<RequirementStatusRow
+			requirement={shouldReq}
+			status={outcomeToRequirementStatus(advisoryFailOutcome)}
+		/>
+		<RequirementStatusRow
+			requirement={shouldReq}
+			status={outcomeToRequirementStatus(warnOutcome)}
+		/>
+		<RequirementStatusRow requirement={shouldReq} status={outcomeToRequirementStatus(naOutcome)} />
+		<RequirementStatusRow requirement={mustReq} status={outcomeToRequirementStatus(undefined)} />
+		<RequirementStatusRow
+			requirement={mustReq}
+			status={stepStateToRequirementStatus('in-flight', {
+				message: 'The wallet is working through this step of the exchange.'
+			})}
+		/>
+		<RequirementStatusRow requirement={mustReq} status={stepStateToRequirementStatus('complete')} />
+		<RequirementStatusRow requirement={mustReq} status={stepStateToRequirementStatus('skipped')} />
+	</div>
+</Story>
 
 <Story name="Pending — step not run" asChild>
 	<div class="max-w-2xl bg-background p-6">
@@ -69,12 +111,27 @@
 	</div>
 </Story>
 
+<Story name="Fail (SHOULD) — advisory (amber)" asChild>
+	<div class="max-w-2xl bg-background p-6">
+		<RequirementStatusRow
+			requirement={shouldReq}
+			status={outcomeToRequirementStatus(advisoryFailOutcome)}
+		/>
+	</div>
+</Story>
+
 <Story name="Warn (SHOULD)" asChild>
 	<div class="max-w-2xl bg-background p-6">
 		<RequirementStatusRow
 			requirement={shouldReq}
 			status={outcomeToRequirementStatus(warnOutcome)}
 		/>
+	</div>
+</Story>
+
+<Story name="N/A" asChild>
+	<div class="max-w-2xl bg-background p-6">
+		<RequirementStatusRow requirement={shouldReq} status={outcomeToRequirementStatus(naOutcome)} />
 	</div>
 </Story>
 
