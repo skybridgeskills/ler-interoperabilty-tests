@@ -105,11 +105,24 @@ export function outcomeToRequirementStatus(
 }
 
 /**
- * The acceptance row that has no runnable pass yet (status-list support is
- * planned). Client-side mirror of the scoring engine's constant — do NOT
- * import from `$lib/server` here; this file is used by client code.
+ * The direct-delivery acceptance row that has no runnable pass yet
+ * (status-list support is planned). Client-side mirror of the scoring
+ * engine's row registry — do NOT import from `$lib/server` here; this
+ * file is used by client code.
  */
 export const VERIFIER_DEFERRED_REVOKED_ROW_ID = 'ob3-direct-delivery.verifier-rejects-revoked';
+
+/**
+ * Every deferred revoked acceptance row across the scorable verifier
+ * profiles — an explicit list (no id-pattern matching) mirroring the
+ * server row registry's `revoked` entries. New runnable verifier
+ * profiles must add their revoked row id here for the skipped rendering
+ * to apply.
+ */
+export const VERIFIER_DEFERRED_REVOKED_ROW_IDS: readonly string[] = [
+	VERIFIER_DEFERRED_REVOKED_ROW_ID,
+	'oid4.verifier-rejects-revoked'
+];
 
 /**
  * Verifier flow: derive the row status from a scored verifier outcome.
@@ -126,7 +139,7 @@ export function verifierOutcomeToRequirementStatus(
 	if (!outcome) {
 		return { tone: 'pending', label: 'PENDING', raw };
 	}
-	if (outcome.id === VERIFIER_DEFERRED_REVOKED_ROW_ID && outcome.status === 'n/a') {
+	if (VERIFIER_DEFERRED_REVOKED_ROW_IDS.includes(outcome.id) && outcome.status === 'n/a') {
 		return { tone: 'skipped', label: 'SKIPPED', message: outcome.message, raw };
 	}
 	const view = outcomeToRequirementStatus(outcome, raw);

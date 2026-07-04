@@ -35,13 +35,19 @@ export type PassVerdict = ReturnType<typeof PassVerdict>;
  * signed credential to hand to the system under test, and the ground
  * truth `kind`. The client holds the full definition, but the UI hides
  * `kind` until the reveal after scoring.
+ *
+ * `credential` is absent for live-delivery protocols (OID4VP), where the
+ * fixture is generated server-side at present time — see
+ * `VerifierRunPlanEntry` for the client-held shape. (`z.unknown()`
+ * already admitted absent values at parse time; `.optional()` makes the
+ * static type match that runtime behavior.)
  */
 export const PassDefinition = ZodFactory(
 	z.object({
 		passId: z.string().min(1),
 		label: z.string().min(1),
 		kind: PassKind.schema,
-		credential: z.unknown()
+		credential: z.unknown().optional()
 	})
 );
 export type PassDefinition = ReturnType<typeof PassDefinition>;

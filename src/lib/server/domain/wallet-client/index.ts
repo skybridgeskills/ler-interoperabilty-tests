@@ -8,8 +8,10 @@ export type {
 } from './wallet-client.js';
 export { FakeWalletClient } from './fake-wallet-client.js';
 export {
+	HttpDirectPost,
 	Oid4vpPresentationDriver,
 	type PresentationDriver,
+	type PresentationDriverResult,
 	type SubmitResponse
 } from './drivers/oid4vp-presentation.js';
 export {

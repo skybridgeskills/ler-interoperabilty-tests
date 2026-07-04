@@ -25,9 +25,17 @@ export async function signPresentation(args: {
 		signer: holder.signer as never,
 		cryptosuite: cryptosuite as never
 	});
+	// `verify: false` — a holder presents the credentials it holds without
+	// re-validating them; judging the embedded credential (expiry, schema,
+	// signature) is the verifier's job. This lets the suite present the
+	// intentionally defective acceptance fixtures (e.g. an expired credential,
+	// which `createPresentation`'s default temporal check would otherwise
+	// reject before signing). Valid credentials sign identically either way, so
+	// the wallet-role flow is unchanged.
 	const presentation = vc.createPresentation({
 		holder: holder.did,
-		verifiableCredential: verifiableCredential as never
+		verifiableCredential: verifiableCredential as never,
+		verify: false
 	});
 	return vc.signPresentation({ presentation, suite, challenge, domain, documentLoader });
 }

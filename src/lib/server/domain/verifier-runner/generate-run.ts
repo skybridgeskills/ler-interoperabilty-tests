@@ -38,11 +38,13 @@ export async function generateVerifierRun(args: {
 	const kinds = shuffle(PassKind.schema.options);
 	const passes: PassDefinition[] = [];
 	for (const [index, kind] of kinds.entries()) {
+		// Direct delivery ships the credential up front; the holder key is dropped.
+		const { credential } = await buildPassCredential(crypto, cryptosuite, kind);
 		passes.push({
 			passId: newId(),
 			label: `Credential ${index + 1}`,
 			kind,
-			credential: await buildPassCredential(crypto, cryptosuite, kind)
+			credential
 		});
 	}
 	return {

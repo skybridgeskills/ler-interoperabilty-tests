@@ -8,6 +8,7 @@ import {
 	matchCredential,
 	Oid4vpAuthorizationRequest,
 	seedHeldCredential,
+	type HeldCredential,
 	type PresentationSubmission
 } from '../oid4vp/index.js';
 
@@ -37,30 +38,40 @@ export interface PresentationDriver {
 	runPresentation(input: {
 		request: unknown;
 		cryptosuite: WalletCryptosuite;
+		/**
+		 * Pre-built held credential + holder key (verifier-runner present flow).
+		 * When absent the driver seeds its own valid OB3 credential — the
+		 * wallet-role default, unchanged.
+		 */
+		heldCredential?: HeldCredential;
 	}): Promise<PresentationDriverResult>;
 }
 
 /**
- * OID4VP holder presentation driver. Parses the authorization request, seeds a held OB3
- * credential, matches it against the `presentation_definition`, signs a Data Integrity
- * `vp_token` (`challenge` = `nonce`, `domain` = `client_id`, embedding the credential with its
- * issuer proof preserved verbatim), builds the `presentation_submission`, and submits via
- * `direct_post`. The VP self-verifies before submission.
+ * OID4VP holder presentation driver. Parses the authorization request, uses the injected held
+ * credential (or seeds a valid OB3 one), matches it against the `presentation_definition`,
+ * signs a Data Integrity `vp_token` (`challenge` = `nonce`, `domain` = `client_id`, embedding
+ * the credential with its issuer proof preserved verbatim), builds the
+ * `presentation_submission`, and submits via `direct_post`. The VP self-verifies before
+ * submission (holder proof only — an intentionally broken embedded VC proof never gates
+ * submission; the verifier under test must catch it).
  */
 export function Oid4vpPresentationDriver(deps: {
 	crypto: WalletCrypto;
 	submit?: SubmitResponse;
 }): PresentationDriver {
-	const submit: SubmitResponse = deps.submit ?? httpDirectPost;
+	const submit: SubmitResponse = deps.submit ?? HttpDirectPost();
 
 	async function runPresentation(input: {
 		request: unknown;
 		cryptosuite: WalletCryptosuite;
+		heldCredential?: HeldCredential;
 	}): Promise<PresentationDriverResult> {
 		// Validate the untrusted request at this boundary (zod throws on a malformed request).
 		const request = Oid4vpAuthorizationRequest(input.request as never);
-		const { credential, holder } = await seedHeldCredential(deps.crypto, input.cryptosuite);
-		const holderRef = { did: holder.did, cryptosuite: input.cryptosuite };
+		const { credential, holder } =
+			input.heldCredential ?? (await seedHeldCredential(deps.crypto, input.cryptosuite));
+		const holderRef = { did: holder.did, cryptosuite: holder.cryptosuite };
 
 		const match = matchCredential(request, credential);
 		if (!match.matches) {
@@ -110,16 +121,29 @@ export function Oid4vpPresentationDriver(deps: {
 	return { runPresentation };
 }
 
-/** Live `direct_post` transport (JSON). The verifier counterpart is the dcc-transaction-service. */
-const httpDirectPost: SubmitResponse = async (responseUri, body) => {
-	const res = await fetch(responseUri, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-		body: JSON.stringify(body)
-	});
-	if (!res.ok) {
-		throw new Error(`OID4VP direct_post responded ${res.status}.`);
-	}
-	const text = await res.text();
-	return text ? (JSON.parse(text) as Record<string, unknown>) : {};
-};
+/**
+ * Live `direct_post` transport factory (JSON; the verifier counterpart is the
+ * dcc-transaction-service). `onStatus` observes the HTTP status of every completed POST —
+ * success or not — so callers that need transport evidence (verifier-runner present flow) can
+ * capture it without changing the driver's result contract; the wallet-role default passes no
+ * hooks and behaves exactly as before.
+ */
+export function HttpDirectPost(opts?: {
+	fetchImpl?: typeof fetch;
+	onStatus?: (status: number) => void;
+}): SubmitResponse {
+	const fetchImpl = opts?.fetchImpl ?? fetch;
+	return async (responseUri, body) => {
+		const res = await fetchImpl(responseUri, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+			body: JSON.stringify(body)
+		});
+		opts?.onStatus?.(res.status);
+		if (!res.ok) {
+			throw new Error(`OID4VP direct_post responded ${res.status}.`);
+		}
+		const text = await res.text();
+		return text ? (JSON.parse(text) as Record<string, unknown>) : {};
+	};
+}

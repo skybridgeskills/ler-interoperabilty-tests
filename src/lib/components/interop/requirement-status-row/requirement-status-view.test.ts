@@ -144,6 +144,19 @@ describe('verifierOutcomeToRequirementStatus', () => {
 			)
 		).toMatchObject({ tone: 'n/a', label: 'N/A' });
 	});
+
+	it('maps the oid4 deferred revoked row (n/a) to the skipped tone too', () => {
+		expect(
+			verifierOutcomeToRequirementStatus(
+				verifierOutcome({
+					id: 'oid4.verifier-rejects-revoked',
+					status: 'n/a',
+					source: 'automated',
+					attestation: undefined
+				})
+			)
+		).toMatchObject({ tone: 'skipped', label: 'SKIPPED' });
+	});
 });
 
 describe('stepStateToRequirementStatus', () => {
