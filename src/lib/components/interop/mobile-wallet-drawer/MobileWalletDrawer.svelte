@@ -21,9 +21,9 @@
 		handleLabel?: string;
 		/**
 		 * When set (and the drawer is closed on mobile), an inline full-width call-to-action button
-		 * opens the drawer — used before a run starts so the primary action is discoverable in the
-		 * page flow rather than only via the edge handle. Pass it only in the idle state; omit it
-		 * once a run has started so the persistent edge handle takes over.
+		 * opens the drawer — a discoverable in-flow affordance that supplements the always-present
+		 * edge handle before a run starts. Pass it only in the idle state; once a run has started,
+		 * omit it and the persistent edge handle remains the way back into the drawer.
 		 */
 		ctaLabel?: string;
 		open?: boolean;
@@ -54,8 +54,9 @@
 	</button>
 {/if}
 
-<!-- Mobile-only persistent edge handle (once a run has started; hidden on lg and while open). -->
-{#if !open && !ctaLabel}
+<!-- Mobile-only persistent edge handle — shown whenever the drawer is closed (alongside the idle
+     CTA, if any); hidden on lg and while the drawer is open. -->
+{#if !open}
 	<button
 		type="button"
 		aria-expanded={open}
