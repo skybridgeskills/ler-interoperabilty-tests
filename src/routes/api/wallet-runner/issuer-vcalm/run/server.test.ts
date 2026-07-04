@@ -31,12 +31,25 @@ describe('POST /api/wallet-runner/issuer-vcalm/run', () => {
 			failingMustCount: number;
 			report: { verified: boolean; groups: { outcomes: unknown[] }[] };
 			raw: { delivery?: { credential?: unknown } };
+			walletActivity: { id: string; kind: string; status: string }[];
+			artifacts: { kind: string; verified: boolean; title: string }[];
 		};
 		expect(body.verified).toBe(true);
 		expect(body.blocked).toBe(false);
 		expect(body.failingMustCount).toBe(0);
 		expect(body.report.groups[0].outcomes.length).toBeGreaterThan(0);
 		expect(body.raw.delivery?.credential).toBeDefined();
+
+		// Normalized wallet run-response (additive): ordered activity + artifact summary.
+		expect(body.walletActivity.map((a) => a.id)).toEqual([
+			'vcalm.interaction',
+			'vcalm.didauth',
+			'vcalm.delivery',
+			'verify'
+		]);
+		expect(body.walletActivity.every((a) => a.status === 'ok')).toBe(true);
+		expect(body.artifacts).toHaveLength(1);
+		expect(body.artifacts[0]).toMatchObject({ kind: 'credential', verified: true });
 	});
 
 	it('runs a selected OSA additive against the delivered credential and reports its outcomes', async () => {

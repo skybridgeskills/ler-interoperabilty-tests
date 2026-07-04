@@ -30,6 +30,7 @@
 		perStep,
 		topOfPage,
 		rightColumn,
+		belowSteps,
 		stepState,
 		requirementState
 	}: {
@@ -41,6 +42,11 @@
 		perStep?: StepRunState[];
 		topOfPage?: Snippet;
 		rightColumn: Snippet;
+		/**
+		 * Rendered inside the left checklist column, below the steps — used for additive sections
+		 * so they align to the requirements width instead of spanning the full page width.
+		 */
+		belowSteps?: Snippet;
 		stepState?: Snippet<[{ stepIndex: number; stepRunState: StepRunState }]>;
 		/**
 		 * Optional per-requirement renderer. When provided, the left column renders this snippet
@@ -136,6 +142,9 @@
 				</li>
 			{/each}
 		</ol>
+		{#if belowSteps}
+			{@render belowSteps()}
+		{/if}
 	</div>
 
 	<div class="space-y-6 lg:col-span-2">

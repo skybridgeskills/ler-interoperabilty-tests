@@ -4,12 +4,17 @@
 	import { recordRun } from '$lib/client/run-history/index.js';
 	import { selectionStore } from '$lib/client/selection/index.js';
 	import { AdditiveChecklistSection } from '$lib/components/interop/additive-checklist-section/index.js';
-	import { IssuerFlowWalletPanel } from '$lib/components/interop/issuer-flow-runner/index.js';
+	import { MobileWalletDrawer } from '$lib/components/interop/mobile-wallet-drawer/index.js';
 	import {
 		RequirementStatusRow,
 		outcomeToRequirementStatus
 	} from '$lib/components/interop/requirement-status-row/index.js';
+	import {
+		RunResultCard,
+		type RunResultOutcome
+	} from '$lib/components/interop/run-result-card/index.js';
 	import { RunnableChecklist } from '$lib/components/interop/runnable-checklist/index.js';
+	import { VcalmIssuerFlowWallet } from '$lib/components/interop/test-wallet/index.js';
 	import {
 		additiveChecklistsForCombination,
 		combinationFor,
@@ -19,6 +24,7 @@
 		type ChecklistRunState,
 		type StepRunState
 	} from '$lib/interop/index.js';
+	import type { WalletActivity, WalletArtifact } from '$lib/interop/wallet-activity.js';
 	import type { CheckOutcome } from '$lib/server/domain/issuer-runner/check-outcome.js';
 
 	/**
@@ -38,6 +44,8 @@
 		verified: boolean;
 		failingMustCount: number;
 		raw: RunRaw;
+		walletActivity?: WalletActivity[];
+		artifacts?: WalletArtifact[];
 	};
 	type RunError = { message: string; hint?: string };
 
@@ -69,6 +77,25 @@
 	let raw = $state<RunRaw>({});
 	let runState = $state<ChecklistRunState>('idle');
 	let perStep = $state<StepRunState[]>(Array.from({ length: stepCount }, () => 'pending'));
+	let activity = $state<WalletActivity[]>([]);
+	let artifacts = $state<WalletArtifact[]>([]);
+
+	/** Lifecycle state for the test-wallet variant (distinct from the checklist `runState`). */
+	const walletState = $derived<'idle' | 'running' | 'done' | 'error'>(
+		busy ? 'running' : error ? 'error' : done ? 'done' : 'idle'
+	);
+	/** Overall verdict for the right-column result card; `undefined` before a run completes. */
+	const resultOutcome = $derived<RunResultOutcome | undefined>(
+		error
+			? 'error'
+			: !done
+				? undefined
+				: verified
+					? 'verified'
+					: blocked
+						? 'stopped-early'
+						: 'not-verified'
+	);
 
 	function reset() {
 		busy = false;
@@ -83,6 +110,8 @@
 		raw = {};
 		runState = 'idle';
 		perStep = Array.from({ length: stepCount }, () => 'pending');
+		activity = [];
+		artifacts = [];
 	}
 
 	/**
@@ -118,6 +147,8 @@
 		outcomesById = {};
 		additiveOutcomesById = {};
 		raw = {};
+		activity = [];
+		artifacts = [];
 		runState = 'awaiting-wallet';
 		perStep = [
 			'in-flight',
@@ -146,6 +177,8 @@
 				(data.additiveOutcomes ?? []).map((o) => [o.id, o])
 			);
 			raw = data.raw ?? {};
+			activity = data.walletActivity ?? [];
+			artifacts = data.artifacts ?? [];
 			blocked = data.blocked;
 			stoppedAtStep = data.stoppedAtStep;
 			verified = data.verified;
@@ -186,19 +219,25 @@
 	{perStep}
 >
 	{#snippet rightColumn()}
-		<IssuerFlowWalletPanel
-			bind:interactionUrl
-			bind:cryptosuite
-			{busy}
-			{done}
-			{blocked}
-			{stoppedAtStep}
-			{verified}
-			{failingMustCount}
-			{error}
-			onRun={run}
-			onReset={reset}
-		/>
+		<MobileWalletDrawer ctaLabel={walletState === 'idle' ? 'Run the test wallet' : undefined}>
+			<RunResultCard
+				outcome={resultOutcome}
+				{failingMustCount}
+				{stoppedAtStep}
+				message={error?.message}
+				hint={error?.hint}
+			/>
+			<VcalmIssuerFlowWallet
+				bind:value={interactionUrl}
+				bind:cryptosuite
+				state={walletState}
+				{busy}
+				{activity}
+				{artifacts}
+				onRun={run}
+				onReset={reset}
+			/>
+		</MobileWalletDrawer>
 	{/snippet}
 	{#snippet requirementState({ requirement, stepIndex })}
 		<RequirementStatusRow
@@ -209,28 +248,29 @@
 			)}
 		/>
 	{/snippet}
+	{#snippet belowSteps()}
+		{#if additives.length}
+			<section class="space-y-6">
+				{#each additives as { additive, checklist: additiveChecklist } (additive.slug)}
+					<AdditiveChecklistSection
+						{additive}
+						checklist={additiveChecklist}
+						baseProfileName={combo.profile.name}
+						selected={selectionStore.isAdditiveProfileSelected(additive.slug)}
+						onToggle={selectionStore.toggleAdditiveProfile}
+					>
+						{#snippet requirementState({ requirement })}
+							<RequirementStatusRow
+								{requirement}
+								status={outcomeToRequirementStatus(
+									requirement.id ? additiveOutcomesById[requirement.id] : undefined,
+									done ? raw.delivery : undefined
+								)}
+							/>
+						{/snippet}
+					</AdditiveChecklistSection>
+				{/each}
+			</section>
+		{/if}
+	{/snippet}
 </RunnableChecklist>
-
-{#if additives.length}
-	<section class="space-y-6">
-		{#each additives as { additive, checklist: additiveChecklist } (additive.slug)}
-			<AdditiveChecklistSection
-				{additive}
-				checklist={additiveChecklist}
-				baseProfileName={combo.profile.name}
-				selected={selectionStore.isAdditiveProfileSelected(additive.slug)}
-				onToggle={selectionStore.toggleAdditiveProfile}
-			>
-				{#snippet requirementState({ requirement })}
-					<RequirementStatusRow
-						{requirement}
-						status={outcomeToRequirementStatus(
-							requirement.id ? additiveOutcomesById[requirement.id] : undefined,
-							done ? raw.delivery : undefined
-						)}
-					/>
-				{/snippet}
-			</AdditiveChecklistSection>
-		{/each}
-	</section>
-{/if}

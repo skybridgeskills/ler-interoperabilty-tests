@@ -38,14 +38,22 @@
 <div class="flex items-start gap-3">
 	<span aria-hidden="true" class={`mt-1.5 size-3 shrink-0 rounded-full ${toneClasses.dot}`}></span>
 	<div class="min-w-0 flex-1 space-y-1">
-		<div class="flex items-baseline gap-2">
+		<!--
+			On small screens the requirement text drops to its own full-width second line while the
+			level badge + status label stay aligned on the first line; at `sm:` and up it is the
+			single inline row (dot · badge · text · trailing label).
+		-->
+		<div class="flex flex-wrap items-baseline gap-x-2 gap-y-1 sm:flex-nowrap">
 			<Badge
 				variant={requirementLevelVariant[requirement.level]}
 				class={requirementLevelClass[requirement.level]}>{requirement.level}</Badge
 			>
-			<span class="min-w-0 flex-1 text-body-md text-foreground">{requirement.text}</span>
 			<span
-				class={`text-label-sm shrink-0 font-medium whitespace-nowrap uppercase ${toneClasses.label}`}
+				class="order-last w-full text-body-md text-foreground sm:order-none sm:w-auto sm:min-w-0 sm:flex-1"
+				>{requirement.text}</span
+			>
+			<span
+				class={`text-label-sm ml-auto shrink-0 font-medium whitespace-nowrap uppercase sm:ml-0 ${toneClasses.label}`}
 			>
 				{status.label}
 			</span>
