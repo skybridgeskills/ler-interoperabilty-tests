@@ -37,6 +37,8 @@ describe('POST /api/wallet-runner/issuer-oid4/run', () => {
 				token?: { redeemed?: boolean };
 				transcript?: unknown[];
 			};
+			walletActivity: { id: string; kind: string; status: string; stepIndex?: number }[];
+			artifacts: { kind: string; verified: boolean; title: string }[];
 		};
 		expect(body.verified).toBe(true);
 		expect(body.blocked).toBe(false);
@@ -45,6 +47,12 @@ describe('POST /api/wallet-runner/issuer-oid4/run', () => {
 		expect(body.raw.delivery?.credential).toBeDefined();
 		expect(body.raw.token?.redeemed).toBe(true);
 		expect(Array.isArray(body.raw.transcript)).toBe(true);
+
+		// Normalized wallet run-response (additive): transcript-driven activity + artifact.
+		expect(body.walletActivity.length).toBeGreaterThan(0);
+		expect(body.walletActivity.at(-1)).toMatchObject({ id: 'verify', kind: 'check', status: 'ok' });
+		expect(body.artifacts).toHaveLength(1);
+		expect(body.artifacts[0]).toMatchObject({ kind: 'credential', verified: true });
 
 		// The access token must never be serialized anywhere in the response: no
 		// `access_token`/`accessToken` key, and `raw.token` exposes only the redacted shape.

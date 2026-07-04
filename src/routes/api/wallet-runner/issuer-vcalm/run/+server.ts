@@ -2,9 +2,12 @@ import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 
 import { AdditiveProfileSlug } from '$lib/interop/additive-profile-schema.js';
+import type { WalletArtifact } from '$lib/interop/wallet-activity.js';
 import { appContext } from '$lib/server/app-context.js';
 import {
+	credentialArtifact,
 	runIssuerFlowChecks,
+	vcalmActivity,
 	vcalmCredentialCtx,
 	vcalmIssuerFlowChecks
 } from '$lib/server/domain/wallet-runner/index.js';
@@ -65,7 +68,11 @@ export const POST = async ({ request }: { request: Request }) => {
 						}
 					: undefined,
 				verify
-			}
+			},
+			walletActivity: vcalmActivity(run.observations, run),
+			artifacts: [credentialArtifact(delivery?.credential, verify)].filter(
+				(a): a is WalletArtifact => !!a
+			)
 		});
 	} catch (e) {
 		const cause = e instanceof Error ? e.message : String(e);

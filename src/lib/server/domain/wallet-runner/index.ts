@@ -12,3 +12,9 @@ export {
 	credCtx as vcalmCredentialCtx
 } from './checks/vcalm-issuer-flow.js';
 export { oid4IssuerFlowChecks, credCtx as oid4CredentialCtx } from './checks/oid4-issuer-flow.js';
+export {
+	vcalmActivity,
+	oid4Activity,
+	directDeliveryActivity,
+	credentialArtifact
+} from './wallet-activity-map.js';

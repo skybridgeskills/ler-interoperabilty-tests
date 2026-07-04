@@ -27,9 +27,24 @@ describe('POST /api/issuer-runner/verify', { timeout: 30_000 }, () => {
 			additiveProfiles: ['open-skill-alignment']
 		});
 		expect(status).toBe(200);
-		const report = payload as { verified: boolean; groups: unknown[] };
+		const report = payload as {
+			verified: boolean;
+			groups: unknown[];
+			walletActivity: { id: string; status: string }[];
+			artifacts: { kind: string; verified: boolean; title: string }[];
+		};
 		expect(report.verified).toBe(true);
 		expect(report.groups).toHaveLength(2);
+
+		// Normalized wallet run-response (additive): light activity + pasted-credential artifact.
+		expect(report.walletActivity.map((a) => a.id)).toEqual([
+			'direct.loaded',
+			'direct.verify',
+			'direct.conformance'
+		]);
+		expect(report.walletActivity[1].status).toBe('ok');
+		expect(report.artifacts).toHaveLength(1);
+		expect(report.artifacts[0]).toMatchObject({ kind: 'credential', verified: true });
 	});
 
 	it('includes both additive groups when both are selected', async () => {
