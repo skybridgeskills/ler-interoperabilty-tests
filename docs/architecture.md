@@ -14,7 +14,7 @@ codebase evolves.
   `src/lib/server/domain/<feature>/` — today: `wallet-crypto`,
   `wallet-client`, `issuer-runner`, `wallet-runner`, `exchange-runner`,
   and `verifier-runner` (the verifier acceptance-pass generator +
-  scorer; see
+  scorer, plus the OID4VP request floor and present-time delivery; see
   [`adr/2026-07-04-verifier-assessment-model.md`](adr/2026-07-04-verifier-assessment-model.md)).
 
 ## Provider dependency injection

@@ -194,3 +194,96 @@
 		<VerifierPassesWallet state="error" activity={midRunActivity} onStart={noop} onReset={noop} />
 	</div>
 </Story>
+
+<!-- OID4VP idle: unlike direct delivery, the wallet takes the operator's presentation request
+     as an initiation input before "Start verifying". -->
+<Story name="OID4 — idle with request input" asChild>
+	<div class="max-w-md bg-background p-6">
+		<VerifierPassesWallet
+			state="idle"
+			inputLabel="Presentation request"
+			inputPlaceholder="openid4vp://… (or a request_uri URL or the request JSON)"
+			multiline
+			actionLabel="Start verifying"
+			onStart={noop}
+			onReset={noop}
+		/>
+	</div>
+</Story>
+
+<!-- OID4VP per-credential request: credentials 2–4 need a request before the verdict question.
+     `showVerdict={false}` gates the verdict until the credential has been presented. -->
+<Story name="OID4 — awaiting fresh request" asChild>
+	<div class="max-w-md bg-background p-6">
+		<VerifierPassesWallet
+			state="running"
+			busy
+			activity={midRunActivity}
+			passArtifacts={midRunPasses}
+			currentPassNumber={3}
+			totalPasses={4}
+			showVerdict={false}
+			onStart={noop}
+			onConfirm={noop}
+			onReset={noop}
+		>
+			{#snippet requestField()}
+				<div class="space-y-3">
+					<p class="text-label-md text-muted-foreground uppercase">Credential 3</p>
+					<p class="text-body-md font-medium text-foreground">
+						Paste a fresh presentation request from your verifier
+					</p>
+					<label class="flex items-center gap-2 text-body-md text-foreground">
+						<input type="checkbox" checked class="size-4 shrink-0 accent-live" />
+						Use the same request as the last credential
+					</label>
+					<button
+						type="button"
+						class="rounded-md bg-live px-3 py-2 text-body-md text-live-foreground"
+					>
+						Present credential 3
+					</button>
+				</div>
+			{/snippet}
+		</VerifierPassesWallet>
+	</div>
+</Story>
+
+<!-- OID4VP transport retry: the present did not reach the endpoint, so a fresh-request field and a
+     note appear ABOVE the verdict question — the operator can re-present or record the verdict. -->
+<Story name="OID4 — transport retry" asChild>
+	<div class="max-w-md bg-background p-6">
+		<VerifierPassesWallet
+			state="running"
+			busy
+			activity={midRunActivity}
+			passArtifacts={midRunPasses}
+			currentPassNumber={2}
+			totalPasses={4}
+			onStart={noop}
+			onConfirm={noop}
+			onReset={noop}
+		>
+			{#snippet requestField()}
+				<div class="space-y-3">
+					<p class="text-label-md text-muted-foreground uppercase">Credential 2</p>
+					<textarea
+						class="text-body-sm min-h-32 w-full rounded-md border border-border bg-card p-3 font-mono text-foreground"
+						rows="4"
+						placeholder="openid4vp://…"
+					></textarea>
+					<p class="text-body-sm text-warning">
+						The presentation was not accepted at the response endpoint. If your verifier one-times
+						its requests, paste a fresh one and re-present; otherwise record the verdict below.
+					</p>
+					<button
+						type="button"
+						class="rounded-md bg-live px-3 py-2 text-body-md text-live-foreground"
+					>
+						Re-present credential 2
+					</button>
+				</div>
+			{/snippet}
+		</VerifierPassesWallet>
+	</div>
+</Story>

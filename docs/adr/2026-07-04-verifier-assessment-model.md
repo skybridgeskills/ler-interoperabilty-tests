@@ -143,3 +143,43 @@ lands (a larger, separately planned effort).
   behavior is core conformance for each protocol profile, not an
   optional capability axis; embedding the step in the core checklist
   keeps one checklist per (role, workflow, profile) combination.
+
+## Update 2026-07-04 (M2 — OID4VP)
+
+M2 makes the `oid4` × `credential-request-and-verification` verifier
+runnable, realizing the "arrives with M2/M3" parts of the model above.
+The assessment model is unchanged; three refinements:
+
+- **Present-time server-side generation.** OID4VP presentations must be
+  holder-signed, and holder keys are ephemeral and server-only, so the
+  upfront full-run generation used for direct delivery cannot serve a
+  live-delivery protocol. Instead the client holds a **credential-less
+  plan** (`VerifierRunPlan` — `{ passId, label, kind }` per entry, still
+  hiding `kind` until the reveal); for each credential the `present`
+  endpoint generates the fixture, signs the `vp_token`, and submits via
+  `direct_post` inside that one request, then drops the holder key. It is
+  never serialized or sent to the client. Direct delivery keeps its
+  upfront `VerifierRunDefinition`. Rejected alternative: shipping private
+  holder keys to the client so the browser could present — it would
+  break the server-only-crypto invariant for no real gain, since the
+  suite already holds the credentials.
+
+- **The observable floor is now real.** The `inspect` endpoint runs the
+  OID4VP request checks (resolvable request; `presentation_definition`
+  matchable by a seeded OB3 credential; Data Integrity VP format pinned;
+  nonce freshness; TLS ≥ 1.2 on the request/response endpoints) as
+  `automated` outcomes, and the VALID credential's successful
+  `direct_post` delivery scores the `oid4.verifier-response-endpoint`
+  MUST row. Defect deliveries are activity evidence only — they never
+  score. `signPresentation` now builds the VP with
+  `vc.createPresentation({ verify: false })` so the suite can present the
+  intentionally-defective fixtures (e.g. an expired credential the
+  library would otherwise refuse to wrap); a holder does not re-validate
+  the credentials it presents.
+
+- **Per-(profile, workflow) row-id registry.** The ob3-only scoring
+  constants moved into `verifier-runner/row-registry.ts`
+  (`VERIFIER_ROW_IDS`), and scoring merges pre-computed `automatedOutcomes`
+  with the attested outcomes (attested wins per row). M3 (VCALM) adds a
+  registry entry, not a refactor. The client-side deferred-revoked mirror
+  is an explicit id list, extended with `oid4.verifier-rejects-revoked`.
