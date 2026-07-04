@@ -8,6 +8,7 @@ export * from './checklist-href.js';
 export * from './runner-state.js';
 export * from './wallet-activity.js';
 export * from './run-history/index.js';
+export * from './verifier-run/index.js';
 export * from './selection/index.js';
 export { allProfiles } from './profiles/all-profiles.js';
 export { allAdditiveProfiles } from './additive-profiles/all-additive-profiles.js';

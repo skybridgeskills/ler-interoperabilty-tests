@@ -3,6 +3,8 @@ export {
 	outcomeToRequirementStatus,
 	runStatusToneClasses,
 	stepStateToRequirementStatus,
+	verifierOutcomeToRequirementStatus,
+	VERIFIER_DEFERRED_REVOKED_ROW_ID,
 	type RequirementLevel,
 	type RequirementStatusTone,
 	type RequirementStatusView

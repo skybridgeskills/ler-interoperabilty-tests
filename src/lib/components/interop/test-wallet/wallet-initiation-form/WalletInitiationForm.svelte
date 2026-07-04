@@ -14,6 +14,10 @@
 	 * Set `multiline` to render a `<textarea>` instead of the single-line `<input>` (the
 	 * paste variant delivers a whole credential JSON document). `secondaryActions` renders
 	 * extra buttons in the action row (e.g. the paste variant's "Load sample").
+	 *
+	 * When `inputLabel` is absent there is no initiation input at all — the form is just
+	 * the action button row (used by wallet-initiated flows like the verifier acceptance
+	 * passes), and submitting no longer requires a non-empty `value`.
 	 */
 	let {
 		inputLabel,
@@ -31,7 +35,7 @@
 		onRun,
 		onReset
 	}: {
-		inputLabel: string;
+		inputLabel?: string;
 		inputPlaceholder?: string;
 		inputType?: 'url' | 'text';
 		multiline?: boolean;
@@ -54,7 +58,9 @@
 				? (againLabel ?? actionLabel)
 				: actionLabel
 	);
-	const disabled = $derived(busy || !canRun || value.trim().length === 0);
+	const disabled = $derived(
+		busy || !canRun || (inputLabel !== undefined && value.trim().length === 0)
+	);
 	const showReset = $derived(state === 'done' || state === 'error');
 
 	function handleSubmit(event: SubmitEvent) {
@@ -65,26 +71,28 @@
 </script>
 
 <form class="space-y-3" onsubmit={handleSubmit}>
-	<label class="block space-y-1">
-		<span class="text-label-md text-foreground">{inputLabel}</span>
-		{#if multiline}
-			<textarea
-				class="text-body-sm min-h-40 w-full rounded-md border border-border bg-card p-3 font-mono text-foreground focus:border-primary focus:outline-none disabled:opacity-60"
-				rows="8"
-				bind:value
-				disabled={busy}
-				placeholder={inputPlaceholder}
-			></textarea>
-		{:else}
-			<Input
-				type={inputType}
-				bind:value
-				disabled={busy}
-				placeholder={inputPlaceholder}
-				autocomplete="off"
-			/>
-		{/if}
-	</label>
+	{#if inputLabel !== undefined}
+		<label class="block space-y-1">
+			<span class="text-label-md text-foreground">{inputLabel}</span>
+			{#if multiline}
+				<textarea
+					class="text-body-sm min-h-40 w-full rounded-md border border-border bg-card p-3 font-mono text-foreground focus:border-primary focus:outline-none disabled:opacity-60"
+					rows="8"
+					bind:value
+					disabled={busy}
+					placeholder={inputPlaceholder}
+				></textarea>
+			{:else}
+				<Input
+					type={inputType}
+					bind:value
+					disabled={busy}
+					placeholder={inputPlaceholder}
+					autocomplete="off"
+				/>
+			{/if}
+		</label>
+	{/if}
 	<div class="flex flex-wrap gap-2">
 		<Button type="submit" class="bg-live text-live-foreground hover:bg-live/90" {disabled}>
 			{submitLabel}

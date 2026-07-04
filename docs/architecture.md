@@ -10,8 +10,12 @@ codebase evolves.
   variables, then **wrapped per request** in AsyncLocalStorage so any
   server code can access services via thin accessors.
 - **No database.** Day-one services are `LoggerService`, `TimeService`,
-  `IdService`. Domain folders (`src/lib/server/domain/<feature>/`) get
-  added when the first feature plan lands.
+  `IdService`. Domain folders live under
+  `src/lib/server/domain/<feature>/` — today: `wallet-crypto`,
+  `wallet-client`, `issuer-runner`, `wallet-runner`, `exchange-runner`,
+  and `verifier-runner` (the verifier acceptance-pass generator +
+  scorer; see
+  [`adr/2026-07-04-verifier-assessment-model.md`](adr/2026-07-04-verifier-assessment-model.md)).
 
 ## Provider dependency injection
 
@@ -64,10 +68,10 @@ can recover the fake surface via `asFakeTimeService()`.
 
 ### Adding a new domain feature
 
-Domain code lives under `src/lib/server/domain/<feature>/`. No domain
-folders exist yet — the first feature plan creates the first one. Within
-a feature folder, organize by what files _do_ (`ops.ts`, `queries.ts`,
-`schemas.ts`) rather than by type.
+Domain code lives under `src/lib/server/domain/<feature>/` (see the
+list in [High level](#high-level)). Within a feature folder, organize
+by what files _do_ (`ops.ts`, `queries.ts`, `schemas.ts`) rather than
+by type.
 
 ## Request lifecycle
 

@@ -98,9 +98,9 @@ src/
     ├── +page.svelte              # renders LandingPage
     ├── health/+server.ts         # GET /health → { status, version }
     ├── version/+server.ts        # GET /version → { name, version, … }
-    ├── wallet/+page.svelte       # placeholder
-    ├── verifier/+page.svelte     # placeholder
-    └── issuer/+page.svelte       # placeholder
+    ├── wallet/…                  # role landing + runnable wallet checklists
+    ├── verifier/…                # role landing + runnable verifier checklists
+    └── issuer/…                  # role landing + runnable issuer checklists
 ```
 
 ## Theming

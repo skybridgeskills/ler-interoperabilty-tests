@@ -1,5 +1,6 @@
 import { outcomeBadge } from '$lib/components/interop/issuer-runner/requirement-report/outcome-status-badge.js';
 import type { StepRunState } from '$lib/interop/index.js';
+import type { VerifierCheckOutcome } from '$lib/interop/verifier-run/index.js';
 import type { CheckOutcome } from '$lib/server/domain/issuer-runner/check-outcome.js';
 
 /** RFC 2119 conformance level for a checklist requirement. */
@@ -29,6 +30,12 @@ export type RequirementStatusView = {
 	message?: string;
 	/** Raw body for the collapsible `<details>`; optional. */
 	raw?: unknown;
+	/**
+	 * Set when the row was resolved from the operator's attestation of their own
+	 * system's behavior (verifier acceptance passes) rather than an automated
+	 * check — the row renders a small ATTESTED pill next to the status label.
+	 */
+	attested?: boolean;
 };
 
 /**
@@ -95,6 +102,35 @@ export function outcomeToRequirementStatus(
 					? 'n/a'
 					: 'fail';
 	return { tone, label: badge.label, message: outcome.message, raw };
+}
+
+/**
+ * The acceptance row that has no runnable pass yet (status-list support is
+ * planned). Client-side mirror of the scoring engine's constant — do NOT
+ * import from `$lib/server` here; this file is used by client code.
+ */
+export const VERIFIER_DEFERRED_REVOKED_ROW_ID = 'ob3-direct-delivery.verifier-rejects-revoked';
+
+/**
+ * Verifier flow: derive the row status from a scored verifier outcome.
+ * Same tone/label mapping as {@link outcomeToRequirementStatus}, plus:
+ *
+ * - `source === 'attested'` sets `attested` so the row shows the ATTESTED pill.
+ * - the deferred revoked row (its id + `n/a`) renders with the `skipped` tone
+ *   (line-through) instead of a plain N/A, carrying the engine's deferral note.
+ */
+export function verifierOutcomeToRequirementStatus(
+	outcome: VerifierCheckOutcome | undefined,
+	raw?: unknown
+): RequirementStatusView {
+	if (!outcome) {
+		return { tone: 'pending', label: 'PENDING', raw };
+	}
+	if (outcome.id === VERIFIER_DEFERRED_REVOKED_ROW_ID && outcome.status === 'n/a') {
+		return { tone: 'skipped', label: 'SKIPPED', message: outcome.message, raw };
+	}
+	const view = outcomeToRequirementStatus(outcome, raw);
+	return outcome.source === 'attested' ? { ...view, attested: true } : view;
 }
 
 /**

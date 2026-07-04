@@ -29,8 +29,12 @@ export type TestWalletProps = {
 	walletName?: string;
 	/** Lifecycle state driving the header chip + action copy. */
 	state?: TestWalletState;
-	/** Semantic label for the initiation input, e.g. `Interaction URL`. */
-	inputLabel: string;
+	/**
+	 * Semantic label for the initiation input, e.g. `Interaction URL`. When absent the wallet
+	 * renders no initiation input at all — just the action button (+ `secondaryActions`) — for
+	 * flows the wallet starts on its own (e.g. the verifier acceptance passes).
+	 */
+	inputLabel?: string;
 	inputPlaceholder?: string;
 	inputType?: 'url' | 'text';
 	/** Render the initiation input as a multiline `<textarea>` (the paste variant). */
@@ -53,6 +57,19 @@ export type TestWalletProps = {
 	settings?: Snippet;
 	/** Optional extra buttons in the initiation action row (e.g. "Load sample"). */
 	secondaryActions?: Snippet;
+	/**
+	 * Optional conversational prompt rendered inside the wallet surface, between the
+	 * artifacts and the activity log — the wallet "asking" the operator something
+	 * (e.g. "Did your verifier accept this credential?"). Omitted → no prompt section.
+	 */
+	prompt?: Snippet;
+	/**
+	 * Optional extra cards rendered inside the credentials/artifacts section, after any
+	 * `artifacts` entries. Lets variants show richer artifact cards (e.g. pass credentials
+	 * with copy/download actions) in the same wallet artifact list. When present, the
+	 * section renders even if `artifacts` is empty.
+	 */
+	artifactsExtra?: Snippet;
 	/** Optional placeholder shown before the first run. */
 	emptyActivity?: Snippet;
 	onRun?: () => void | Promise<void>;

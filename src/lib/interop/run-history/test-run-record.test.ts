@@ -7,7 +7,9 @@ import {
 	exchangeRunRecord,
 	issuerReportRunRecord,
 	statusFromExchange,
-	statusFromIssuerReport
+	statusFromIssuerReport,
+	statusFromVerifierReport,
+	verifierReportRunRecord
 } from './test-run-record.js';
 
 function derivation(run: RunStateDerivation['run']): RunStateDerivation {
@@ -78,6 +80,52 @@ describe('issuerReportRunRecord', () => {
 		expect(record.status).toBe('passed');
 		expect(record.payload.kind).toBe('issuer-report');
 		expect(new Date(record.ranAt).toISOString()).toBe(record.ranAt);
+	});
+});
+
+describe('statusFromVerifierReport', () => {
+	it('maps verified to passed', () => {
+		expect(statusFromVerifierReport({ verified: true })).toBe('passed');
+	});
+
+	it('maps not-verified to failed', () => {
+		expect(statusFromVerifierReport({ verified: false })).toBe('failed');
+	});
+});
+
+describe('verifierReportRunRecord', () => {
+	it('produces a parseable record with the correct status, kind, and ISO ranAt', () => {
+		const record = verifierReportRunRecord({
+			role: 'verifier',
+			workflow: 'direct-credential-verification',
+			profile: 'ob3-direct-delivery',
+			verified: true,
+			failingMustCount: 0,
+			attestedPassCount: 4
+		});
+
+		expect(() => TestRunRecord.schema.parse(record)).not.toThrow();
+		expect(record.status).toBe('passed');
+		expect(record.payload.kind).toBe('verifier-report');
+		expect(new Date(record.ranAt).toISOString()).toBe(record.ranAt);
+	});
+
+	it('marks a not-verified run failed and keeps the attested pass count', () => {
+		const record = verifierReportRunRecord({
+			role: 'verifier',
+			workflow: 'direct-credential-verification',
+			profile: 'ob3-direct-delivery',
+			verified: false,
+			failingMustCount: 2,
+			attestedPassCount: 4
+		});
+
+		expect(record.status).toBe('failed');
+		expect(record.payload).toMatchObject({
+			kind: 'verifier-report',
+			failingMustCount: 2,
+			attestedPassCount: 4
+		});
 	});
 });
 

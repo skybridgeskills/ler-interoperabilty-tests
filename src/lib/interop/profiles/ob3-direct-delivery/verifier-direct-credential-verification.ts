@@ -100,6 +100,38 @@ export const verifierDirectCredentialVerification = WorkflowChecklist({
 				{ level: 'SHOULD', text: 'Implement proper error logging and reporting.' },
 				{ level: 'SHOULD', text: 'Maintain current trust registry data.' }
 			]
+		},
+		{
+			title: 'Demonstrate verification outcomes',
+			summary:
+				'Run the verification check: the suite’s test wallet hands your verifier a valid credential and several defective ones. Report what your verifier decided for each.',
+			requirements: [
+				{
+					id: 'ob3-direct-delivery.verifier-accepts-valid-credential',
+					level: 'MUST',
+					text: 'Accept a valid credential.'
+				},
+				{
+					id: 'ob3-direct-delivery.verifier-rejects-broken-signature',
+					level: 'MUST',
+					text: 'Reject a credential whose signature does not verify.'
+				},
+				{
+					id: 'ob3-direct-delivery.verifier-rejects-schema-problem',
+					level: 'MUST',
+					text: 'Reject a credential that fails schema validation.'
+				},
+				{
+					id: 'ob3-direct-delivery.verifier-rejects-expired',
+					level: 'MUST',
+					text: 'Reject an expired credential.'
+				},
+				{
+					id: 'ob3-direct-delivery.verifier-rejects-revoked',
+					level: 'MUST',
+					text: 'Reject a revoked credential.'
+				}
+			]
 		}
 	]
 });

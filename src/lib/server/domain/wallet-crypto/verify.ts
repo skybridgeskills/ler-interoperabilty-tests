@@ -38,16 +38,23 @@ function issuerOf(credential: unknown): string | undefined {
 	return undefined;
 }
 
-/** Verify a Verifiable Credential's data-integrity proof (issuer did:key/did:web resolvable). */
+/**
+ * Verify a Verifiable Credential's data-integrity proof (issuer did:key/did:web resolvable).
+ * `now` overrides the clock the `validFrom`/`validUntil` window is checked against — used by
+ * fixture sanity tests to prove an intentionally expired credential still verifies
+ * cryptographically inside its validity window.
+ */
 export async function verifyCredential(args: {
 	credential: unknown;
 	documentLoader: DocumentLoader;
+	now?: Date | string;
 }): Promise<VerifyResult> {
-	const { credential, documentLoader } = args;
+	const { credential, documentLoader, now } = args;
 	const result = await vc.verifyCredential({
 		credential: credential as never,
 		suite: verifySuites(),
-		documentLoader
+		documentLoader,
+		...(now !== undefined ? { now } : {})
 	});
 	return {
 		verified: !!result.verified,
