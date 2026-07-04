@@ -32,6 +32,47 @@ export type RequirementStatusView = {
 };
 
 /**
+ * The single source of truth for tone → status colors, shared by
+ * `RequirementStatusRow` (leading dot + trailing label) and `RunStatusIndicator`
+ * (inline `● LABEL` at the step level), so the two can never drift.
+ *
+ * Cool blue is reserved for the requirement **level** badge and never appears
+ * here: results read green (pass), red (MUST fail), amber (warn / advisory fail),
+ * warm orange (in-flight), or neutral (pending / n-a / skipped). The optional
+ * `level` splits fail severity — a MUST fail is red, a SHOULD/MAY fail is amber
+ * (advisory). Pending is a hollow ring; every resolved state is a filled dot.
+ */
+export function runStatusToneClasses(
+	tone: RequirementStatusTone,
+	level?: RequirementLevel
+): { dot: string; label: string } {
+	const advisoryFail = tone === 'fail' && level !== undefined && level !== 'MUST';
+	switch (tone) {
+		case 'pass':
+			return { dot: 'bg-success', label: 'text-success' };
+		case 'warn':
+			return { dot: 'bg-warning', label: 'text-warning' };
+		case 'fail':
+			return advisoryFail
+				? { dot: 'bg-warning', label: 'text-warning' }
+				: { dot: 'bg-destructive', label: 'text-destructive' };
+		case 'in-flight':
+			return { dot: 'bg-progress animate-pulse', label: 'text-progress' };
+		case 'skipped':
+			return {
+				dot: 'bg-muted-foreground/30',
+				label: 'text-muted-foreground line-through decoration-muted-foreground/40'
+			};
+		case 'n/a':
+			return { dot: 'bg-muted-foreground/40', label: 'text-muted-foreground' };
+		case 'pending':
+		default:
+			// Hollow ring for not-yet-run; resolved states are filled dots.
+			return { dot: 'border border-muted-foreground/40', label: 'text-muted-foreground' };
+	}
+}
+
+/**
  * Issuer flow: derive the row status from a resolved check outcome. Reuses
  * {@link outcomeBadge} as the single source of truth for the pill label so the
  * issuer flow's text (`PASS`, `FAIL · MUST`, `N/A`, `WARN`) is unchanged. An

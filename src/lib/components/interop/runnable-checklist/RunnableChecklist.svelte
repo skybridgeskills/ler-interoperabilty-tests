@@ -2,7 +2,9 @@
 	import type { Snippet } from 'svelte';
 
 	import { ProfileBadge } from '$lib/components/interop/profile-badge/index.js';
+	import { stepStateToRequirementStatus } from '$lib/components/interop/requirement-status-row/index.js';
 	import { RoleBadge } from '$lib/components/interop/role-badge/index.js';
+	import { RunStatusIndicator } from '$lib/components/interop/run-status-indicator/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import {
 		profileHref,
@@ -14,7 +16,6 @@
 		type WorkflowChecklist as WorkflowChecklistData
 	} from '$lib/interop/index.js';
 
-	import { StepRunStateIndicator } from '../exchange-runner/step-run-state-indicator/index.js';
 	import {
 		requirementLevelClass,
 		requirementLevelVariant
@@ -97,7 +98,7 @@
 					<header class="flex flex-wrap items-baseline gap-3">
 						<span class="text-headline-md font-mono text-primary">{i + 1}.</span>
 						<h3 class="text-headline-md">{step.title}</h3>
-						<StepRunStateIndicator {state} />
+						<RunStatusIndicator status={stepStateToRequirementStatus(state)} />
 					</header>
 					<p class="max-w-prose text-body-md text-muted-foreground">{step.summary}</p>
 					{#if step.requirements.length}
