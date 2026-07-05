@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
+	import { InlineMarkup } from '$lib/components/interop/inline-markup/index.js';
 	import { ProfileBadge } from '$lib/components/interop/profile-badge/index.js';
 	import { stepStateToRequirementStatus } from '$lib/components/interop/requirement-status-row/index.js';
 	import { RoleBadge } from '$lib/components/interop/role-badge/index.js';
@@ -106,7 +107,10 @@
 						<h3 class="text-headline-md">{step.title}</h3>
 						<RunStatusIndicator status={stepStateToRequirementStatus(state)} />
 					</header>
-					<p class="max-w-prose text-body-md text-muted-foreground">{step.summary}</p>
+					<InlineMarkup
+						text={step.summary}
+						class="block max-w-prose text-body-md text-muted-foreground"
+					/>
 					{#if step.requirements.length}
 						<ul class="space-y-2 pl-6">
 							{#each step.requirements as req, j (req.text)}
@@ -127,7 +131,7 @@
 												variant={requirementLevelVariant[req.level]}
 												class={requirementLevelClass[req.level]}>{req.level}</Badge
 											>
-											<span class="text-body-md text-foreground">{req.text}</span>
+											<InlineMarkup text={req.text} class="text-body-md text-foreground" />
 										</span>
 									</li>
 								{/if}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { InlineMarkup } from '$lib/components/interop/inline-markup/index.js';
 	import {
 		requirementLevelClass,
 		requirementLevelVariant
@@ -48,10 +49,10 @@
 				variant={requirementLevelVariant[requirement.level]}
 				class={requirementLevelClass[requirement.level]}>{requirement.level}</Badge
 			>
-			<span
+			<InlineMarkup
+				text={requirement.text}
 				class="order-last w-full text-body-md text-foreground sm:order-none sm:w-auto sm:min-w-0 sm:flex-1"
-				>{requirement.text}</span
-			>
+			/>
 			{#if status.attested}
 				<!-- Operator-attested rows carry a small live-family pill so the tone label stays clean. -->
 				<span
