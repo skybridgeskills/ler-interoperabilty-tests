@@ -183,3 +183,38 @@ The assessment model is unchanged; three refinements:
   with the attested outcomes (attested wins per row). M3 (VCALM) adds a
   registry entry, not a refactor. The client-side deferred-revoked mirror
   is an explicit id list, extended with `oid4.verifier-rejects-revoked`.
+
+## Update 2026-07-05 (M3 — VCALM)
+
+M3 makes the `vcalm` × `credential-request-and-verification` verifier
+runnable — the last protocol surface. The assessment model and the M2
+present-time generation are unchanged; the VCALM specifics:
+
+- **Single-use exchanges → floor via present, no `inspect`.** A VC-API
+  exchange is consumed by the presentation submission, so each pass
+  engages a **fresh interaction URL**, and the automated floor is a
+  byproduct of presenting the first credential (unlike OID4VP's separate
+  `inspect` step). The `present` endpoint engages the exchange (fetch →
+  `vcapi` → read the `verifiablePresentationRequest`), runs the floor
+  (interaction endpoint advertises `vcapi`; the VPR carries a
+  QueryByExample matchable to a seeded OB3 credential + a challenge; a
+  DIDAuthentication query; TLS ≥ 1.2 on both hosts), signs a VP embedding
+  the fixture that satisfies both the QueryByExample and DIDAuthentication
+  queries, and submits it. The VALID credential's successful submission
+  scores `vcalm.verifier-exchange-endpoint`; defect submissions are
+  activity only (VC-API error shapes are unstandardized).
+
+- **New primitive: a lenient QueryByExample matcher** (`wallet-client/
+vcalm/vpr.ts`) — recognizes a credential-presentation request for an
+  `OpenBadgeCredential`, not a full Presentation Exchange engine. A
+  DID-authentication-only VPR fails the vpr-query row with a clear message.
+
+- **Shared transport, renamed.** The reversed-flow transport was
+  generalized to `ExchangeFlowTransport` (`exchange-flow-transport.ts`),
+  shared by the issuer-flow and the new verifier-flow drivers; the
+  issuer-vcalm flow is behavior-unchanged.
+
+- `VERIFIER_ROW_IDS` gained a `vcalm` entry and the client deferred-revoked
+  mirror gained `vcalm.verifier-rejects-revoked` — a registry entry, not a
+  refactor, as promised. Scoring reuses a shared `scoreDeliveredRun`
+  (parameterized by the delivery row) across OID4VP and VCALM.

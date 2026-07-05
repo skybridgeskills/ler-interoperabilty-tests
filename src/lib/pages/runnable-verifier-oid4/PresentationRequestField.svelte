@@ -16,6 +16,8 @@
 		busy = false,
 		note,
 		retry = false,
+		prompt = 'Paste a fresh presentation request from your verifier',
+		placeholder = 'openid4vp://… (or a request_uri URL or the request JSON)',
 		onPresent
 	}: {
 		credentialNumber: number;
@@ -30,6 +32,10 @@
 		note?: string;
 		/** Button reads "Re-present" instead of "Present" on a retry. */
 		retry?: boolean;
+		/** Field header copy (OID4VP presentation request vs VCALM interaction URL). */
+		prompt?: string;
+		/** Textarea placeholder copy. */
+		placeholder?: string;
 		onPresent?: () => void;
 	} = $props();
 
@@ -38,9 +44,7 @@
 
 <div class="space-y-3">
 	<p class="text-label-md text-muted-foreground uppercase">Credential {credentialNumber}</p>
-	<p class="text-body-md font-medium text-foreground">
-		Paste a fresh presentation request from your verifier
-	</p>
+	<p class="text-body-md font-medium text-foreground">{prompt}</p>
 	{#if canReuse}
 		<label class="flex items-center gap-2 text-body-md text-foreground">
 			<input type="checkbox" bind:checked={reuse} class="size-4 shrink-0 accent-live" />
@@ -57,7 +61,7 @@
 			rows="6"
 			bind:value
 			disabled={busy}
-			placeholder="openid4vp://… (or a request_uri URL or the request JSON)"
+			{placeholder}
 		></textarea>
 	{/if}
 	{#if note}

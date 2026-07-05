@@ -1,20 +1,12 @@
-import { checklistEntriesFor, loadChecklist } from '$lib/interop/checklist-loader.js';
+import { loadChecklist } from '$lib/interop/checklist-loader.js';
 
-export const prerender = true;
-
-// Runnable verifier combos are shadowed by their own runnable routes (dynamic at request time).
-// Exclude them from prerender entries so SvelteKit doesn't try to bake a static copy at the same
-// path (mirrors the wallet dynamic route).
-const RUNNABLE_VERIFIER_COMBOS = [
-	{ workflow: 'direct-credential-verification', profile: 'ob3-direct-delivery' },
-	{ workflow: 'credential-request-and-verification', profile: 'oid4' }
-];
-
-export const entries = () =>
-	checklistEntriesFor('verifier').filter(
-		(e) =>
-			!RUNNABLE_VERIFIER_COMBOS.some((c) => c.workflow === e.workflow && c.profile === e.profile)
-	);
+// Every verifier (workflow, profile) combination now has its own runnable route
+// that shadows this dynamic one by route specificity, so this route is not
+// reached in practice. It stays only so `resolve('/verifier/[workflow]/[profile]')`
+// (checklist-href) keeps resolving combo URLs to their runnable routes; it is
+// rendered at request time — not prerendered — as a safety net for any future
+// non-runnable verifier combo.
+export const prerender = false;
 
 export function load({ params }: { params: { workflow: string; profile: string } }) {
 	return loadChecklist('verifier', params);
