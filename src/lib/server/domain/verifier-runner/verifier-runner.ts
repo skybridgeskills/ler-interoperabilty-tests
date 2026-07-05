@@ -13,6 +13,8 @@ import type { InspectOid4Result } from './oid4/inspect-request.js';
 import type { PresentOid4Result } from './oid4/present-run.js';
 import { scoreOid4Run } from './oid4/score-run-oid4.js';
 import { scoreVerifierRun } from './score-run.js';
+import type { PresentVcalmResult } from './vcalm/present-run.js';
+import { scoreVcalmRun } from './vcalm/score-run-vcalm.js';
 
 /** The injectable seam between Real and Fake runners: run generation. */
 export type GenerateRunFn = (args: {
@@ -35,6 +37,16 @@ export type PresentOid4Fn = (args: {
 	cryptosuite: WalletCryptosuite;
 }) => Promise<PresentOid4Result>;
 
+/** The injectable seam for vcalm plan generation: secure shuffle, or canned ordering. */
+export type PlanVcalmFn = (args: { cryptosuite: WalletCryptosuite }) => VerifierRunPlan;
+
+/** The injectable seam for the vcalm present flow: real crypto + VC-API exchange, or canned. */
+export type PresentVcalmFn = (args: {
+	entry: VerifierRunPlanEntry;
+	interactionUrl: string;
+	cryptosuite: WalletCryptosuite;
+}) => Promise<PresentVcalmResult>;
+
 /**
  * The verifier-runner service wired to the verifier-runner API routes:
  * generates acceptance runs (crypto-backed or faked via `generate`),
@@ -47,12 +59,16 @@ export function VerifierRunner({
 	generate,
 	inspectOid4,
 	planOid4,
-	presentOid4
+	presentOid4,
+	planVcalm,
+	presentVcalm
 }: {
 	generate: GenerateRunFn;
 	inspectOid4: InspectOid4Fn;
 	planOid4: PlanOid4Fn;
 	presentOid4: PresentOid4Fn;
+	planVcalm: PlanVcalmFn;
+	presentVcalm: PresentVcalmFn;
 }) {
 	return {
 		/** Generate a fresh direct-delivery verifier run. */
@@ -98,6 +114,30 @@ export function VerifierRunner({
 			floorOutcomes: VerifierCheckOutcome[];
 		}): VerifierRunnerReport {
 			return scoreOid4Run(args);
+		},
+
+		/** Generate a credential-less vcalm verifier run plan (one entry per pass kind). */
+		planVcalmRun(args: { cryptosuite: WalletCryptosuite }): VerifierRunPlan {
+			return planVcalm(args);
+		},
+
+		/** Present one plan entry's credential to the operator's verifier over a VC-API exchange. */
+		presentVcalmCredential(args: {
+			entry: VerifierRunPlanEntry;
+			interactionUrl: string;
+			cryptosuite: WalletCryptosuite;
+		}): Promise<PresentVcalmResult> {
+			return presentVcalm(args);
+		},
+
+		/** Score an attested vcalm run from plan + present evidence + floor outcomes. */
+		scoreVcalmRun(args: {
+			plan: VerifierRunPlan;
+			evidence: PresentEvidence[];
+			attestations: PassAttestation[];
+			floorOutcomes: VerifierCheckOutcome[];
+		}): VerifierRunnerReport {
+			return scoreVcalmRun(args);
 		}
 	};
 }

@@ -64,17 +64,20 @@ function rowById(report: VerifierRunnerReport, id: string) {
 }
 
 describe('row registry', () => {
-	it('registers exactly the two scorable combinations', () => {
+	it('registers the three scorable verifier combinations', () => {
 		expect(verifierRowIdsFor('ob3-direct-delivery', 'direct-credential-verification')).toBe(
 			VERIFIER_ROW_IDS['ob3-direct-delivery']?.['direct-credential-verification']
 		);
 		expect(OID4_ROW_IDS.revoked).toBe('oid4.verifier-rejects-revoked');
-		expect(verifierRowIdsFor('vcalm', 'credential-request-and-verification')).toBeUndefined();
+		expect(verifierRowIdsFor('vcalm', 'credential-request-and-verification')?.revoked).toBe(
+			'vcalm.verifier-rejects-revoked'
+		);
 	});
 
-	it('rejects a combination with a checklist but no registry entry', () => {
-		// vcalm has a verifier checklist, but no registry entry until M3.
-		const run = { ...oid4Run(), profile: 'vcalm' as const };
+	it('rejects a (profile, workflow) with no registry entry', () => {
+		// oid4 is scorable only under credential-request-and-verification — no
+		// registry entry (nor verifier checklist) exists for direct-credential-verification.
+		const run = { ...oid4Run(), workflow: 'direct-credential-verification' as const };
 		expect(() => scoreVerifierRun({ run, attestations: correctAttestations(run) })).toThrow(
 			VerifierRunMismatchError
 		);

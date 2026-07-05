@@ -13,9 +13,9 @@ import {
 import type { WalletCrypto, WalletCryptosuite } from '$lib/server/domain/wallet-crypto/index.js';
 
 import { buildPassCredential } from '../passes/build-pass.js';
+import { PresentInputError } from '../present-error.js';
 
-/** Malformed present input (unparseable/unresolvable request) — surfaced as a 400 by the route. */
-export class PresentInputError extends Error {}
+export { PresentInputError };
 
 /** A submit-transport factory that threads an `onStatus` observer so the HTTP status is captured. */
 export type SubmitFactory = (onStatus: (status: number) => void) => SubmitResponse;

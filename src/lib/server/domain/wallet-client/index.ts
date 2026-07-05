@@ -31,13 +31,13 @@ export {
 	type DeliveryObservation
 } from './drivers/vcalm-issuer-flow.js';
 export {
-	makeHttpIssuerFlowTransport,
+	makeHttpExchangeFlowTransport,
 	probeTls,
-	type IssuerFlowTransport,
+	type ExchangeFlowTransport,
 	type FetchInteractionResult,
 	type PostToVcapiResult,
 	type TlsProbeResult
-} from './issuer-flow-transport.js';
+} from './exchange-flow-transport.js';
 export { FakeVcalmIssuerFlow } from './fake-vcalm-issuer-flow.js';
 export {
 	provideRealVcalmIssuerFlow,

@@ -121,7 +121,8 @@ export const VERIFIER_DEFERRED_REVOKED_ROW_ID = 'ob3-direct-delivery.verifier-re
  */
 export const VERIFIER_DEFERRED_REVOKED_ROW_IDS: readonly string[] = [
 	VERIFIER_DEFERRED_REVOKED_ROW_ID,
-	'oid4.verifier-rejects-revoked'
+	'oid4.verifier-rejects-revoked',
+	'vcalm.verifier-rejects-revoked'
 ];
 
 /**

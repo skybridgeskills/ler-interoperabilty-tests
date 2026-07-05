@@ -9,11 +9,11 @@ import {
 import { scoreDeliveredRun } from '../score-delivered-run.js';
 
 /**
- * Score an oid4 verifier run. Thin wrapper over {@link scoreDeliveredRun}:
- * the VALID credential's successful `direct_post` delivery lights
- * `oid4.verifier-response-endpoint`; defect deliveries are activity only.
+ * Score a vcalm verifier run. Thin wrapper over {@link scoreDeliveredRun}:
+ * the VALID credential's successful submission to the exchange lights
+ * `vcalm.verifier-exchange-endpoint`; defect deliveries are activity only.
  */
-export function scoreOid4Run(args: {
+export function scoreVcalmRun(args: {
 	plan: VerifierRunPlan;
 	evidence: PresentEvidence[];
 	attestations: PassAttestation[];
@@ -22,10 +22,10 @@ export function scoreOid4Run(args: {
 	return scoreDeliveredRun({
 		...args,
 		delivery: {
-			rowId: 'oid4.verifier-response-endpoint',
-			acceptedMessage: 'The verifier accepted the presentation at its response endpoint.',
+			rowId: 'vcalm.verifier-exchange-endpoint',
+			acceptedMessage: 'The verifier accepted the presentation at its exchange endpoint.',
 			rejectedMessage: (error) =>
-				`The verifier did not accept the presentation at its response endpoint${
+				`The verifier did not accept the presentation at its exchange endpoint${
 					error ? ` (${error})` : ''
 				}.`
 		}

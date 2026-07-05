@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { WalletCrypto, type WalletCryptosuite } from '$lib/server/domain/wallet-crypto/index.js';
 
-import type { IssuerFlowTransport } from '../issuer-flow-transport.js';
+import type { ExchangeFlowTransport } from '../exchange-flow-transport.js';
 
 import { VcalmIssuerFlowDriver } from './vcalm-issuer-flow.js';
 
@@ -22,7 +22,7 @@ function fakeIssuerTransport(
 	crypto: WalletCrypto,
 	cryptosuite: WalletCryptosuite,
 	opts: FakeOpts = {}
-): IssuerFlowTransport {
+): ExchangeFlowTransport {
 	let issuer: Awaited<ReturnType<WalletCrypto['generateKey']>> | undefined;
 	return {
 		async fetchInteractionUrl() {

@@ -6,8 +6,8 @@ import {
 	type IssuerFlowRunResult,
 	type VcalmIssuerFlow
 } from './drivers/vcalm-issuer-flow.js';
+import { makeHttpExchangeFlowTransport } from './exchange-flow-transport.js';
 import { FakeVcalmIssuerFlow } from './fake-vcalm-issuer-flow.js';
-import { makeHttpIssuerFlowTransport } from './issuer-flow-transport.js';
 
 export type VcalmIssuerFlowCtx = {
 	vcalmIssuerFlow: VcalmIssuerFlow;
@@ -16,7 +16,7 @@ export type VcalmIssuerFlowCtx = {
 /** Dev / production wiring — real driver (WalletCrypto + HTTP user-URL transport, no token). */
 export function provideRealVcalmIssuerFlow(): VcalmIssuerFlowCtx {
 	const crypto = WalletCrypto();
-	const transport = makeHttpIssuerFlowTransport();
+	const transport = makeHttpExchangeFlowTransport();
 	return { vcalmIssuerFlow: VcalmIssuerFlowDriver({ crypto, transport }) };
 }
 

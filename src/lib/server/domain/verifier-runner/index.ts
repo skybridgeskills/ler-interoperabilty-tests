@@ -14,8 +14,11 @@ export {
 	type GenerateRunFn,
 	type InspectOid4Fn,
 	type PlanOid4Fn,
-	type PresentOid4Fn
+	type PresentOid4Fn,
+	type PlanVcalmFn,
+	type PresentVcalmFn
 } from './verifier-runner.js';
+export { PresentInputError } from './present-error.js';
 export type { VerifierRunner as VerifierRunnerInstance } from './verifier-runner.js';
 export { fakeGenerateRun } from './fake-generate-run.js';
 export {
@@ -29,12 +32,17 @@ export { generateOid4Plan } from './oid4/plan-run.js';
 export { fakePlanOid4Run } from './oid4/fake-plan-run.js';
 export {
 	presentOid4Credential,
-	PresentInputError,
 	type PresentOid4Result,
 	type SubmitFactory
 } from './oid4/present-run.js';
 export { fakePresentOid4Credential } from './oid4/fake-present-run.js';
 export { scoreOid4Run } from './oid4/score-run-oid4.js';
+export { generateVcalmPlan } from './vcalm/plan-run.js';
+export { fakePlanVcalmRun } from './vcalm/fake-plan-run.js';
+export { presentVcalmCredential, type PresentVcalmResult } from './vcalm/present-run.js';
+export { fakePresentVcalmCredential } from './vcalm/fake-present-run.js';
+export { scoreVcalmRun } from './vcalm/score-run-vcalm.js';
+export { VCALM_FLOOR_ROW_IDS } from './vcalm/vpr-checks.js';
 export {
 	provideRealVerifierRunner,
 	provideFakeVerifierRunner,

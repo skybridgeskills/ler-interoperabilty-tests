@@ -34,6 +34,16 @@ const OID4_REQUEST_AND_VERIFICATION_ROW_IDS: VerifierRowIds = {
 	revoked: 'oid4.verifier-rejects-revoked'
 };
 
+const VCALM_REQUEST_AND_VERIFICATION_ROW_IDS: VerifierRowIds = {
+	acceptance: {
+		valid: 'vcalm.verifier-accepts-valid-credential',
+		'broken-signature': 'vcalm.verifier-rejects-broken-signature',
+		'schema-problem': 'vcalm.verifier-rejects-schema-problem',
+		expired: 'vcalm.verifier-rejects-expired'
+	},
+	revoked: 'vcalm.verifier-rejects-revoked'
+};
+
 /**
  * Row ids per scorable (profile, workflow) verifier combination. A pair
  * absent here cannot be scored, even when a checklist exists for it —
@@ -48,6 +58,9 @@ export const VERIFIER_ROW_IDS: Partial<
 	},
 	oid4: {
 		'credential-request-and-verification': OID4_REQUEST_AND_VERIFICATION_ROW_IDS
+	},
+	vcalm: {
+		'credential-request-and-verification': VCALM_REQUEST_AND_VERIFICATION_ROW_IDS
 	}
 };
 
