@@ -17,18 +17,32 @@ describe.each<WalletCryptosuite>(['eddsa-rdfc-2022', 'ecdsa-rdfc-2019'])(
 	(cryptosuite) => {
 		const crypto = WalletCrypto();
 
-		it('valid: signature verifies', async () => {
+		it('valid: schema-complete OB3 whose signature verifies', async () => {
 			const { credential } = await buildPassCredential(crypto, cryptosuite, 'valid');
+
+			// The valid control is a genuine minimal OB3: a Profile issuer and a
+			// complete Achievement (so a conformant verifier accepts it on schema).
+			const c = credential as {
+				issuer: { type: string[] };
+				credentialSubject: { achievement?: { criteria?: unknown } };
+			};
+			expect(c.issuer.type).toContain('Profile');
+			expect(c.credentialSubject.achievement?.criteria).toBeDefined();
+
 			const result = await crypto.verifyCredential(credential);
 			expect(result.errors).toEqual([]);
 			expect(result.verified).toBe(true);
 		});
 
-		it('schema-problem: defect is present yet the signature verifies', async () => {
+		it('schema-problem: missing required Achievement criteria yet the signature verifies', async () => {
 			const { credential } = await buildPassCredential(crypto, cryptosuite, 'schema-problem');
-			const subject = (credential as { credentialSubject: Record<string, unknown> })
-				.credentialSubject;
-			expect(subject.type).toBeUndefined();
+			const subject = (
+				credential as { credentialSubject: { achievement: Record<string, unknown> } }
+			).credentialSubject;
+			// The Achievement is present but OB3-invalid: its required `criteria` is gone.
+			expect(subject.achievement).toBeDefined();
+			expect(subject.achievement.criteria).toBeUndefined();
+			expect(subject.achievement.name).toBeDefined();
 
 			const result = await crypto.verifyCredential(credential);
 			expect(result.errors).toEqual([]);

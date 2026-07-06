@@ -1,4 +1,5 @@
 import type { PassKind } from '$lib/interop/verifier-run/index.js';
+import { minimalOpenBadgeCredential } from '$lib/server/domain/credential-fixtures/minimal-open-badge-credential.js';
 import type {
 	WalletCrypto,
 	WalletCryptosuite,
@@ -41,9 +42,12 @@ export async function buildPassCredential(
 			return issueBase(crypto, cryptosuite);
 		case 'schema-problem':
 			return issueBase(crypto, cryptosuite, (credential) => {
-				// OB3 schema defect signed as-is: AchievementSubject type removed
-				// before signing, so the proof stays valid over the defective doc.
-				delete (credential.credentialSubject as Record<string, unknown>).type;
+				// OB3 schema defect signed as-is: the required `criteria` is removed
+				// from an otherwise-complete Achievement before signing, so the proof
+				// stays valid over the OB3-invalid document.
+				const subject = credential.credentialSubject as Record<string, unknown>;
+				const achievement = subject.achievement as Record<string, unknown>;
+				delete achievement.criteria;
 			});
 		case 'expired':
 			return issueBase(crypto, cryptosuite, (credential) => {
@@ -62,9 +66,10 @@ export async function buildPassCredential(
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 /**
- * Issue the minimal OB3 credential the passes share (fresh ephemeral
- * did:key issuer + holder — same shape as the wallet-client seed
- * credential), applying `mutate` to the document BEFORE signing.
+ * Issue the minimal schema-valid OB3 credential the passes share (fresh
+ * ephemeral did:key issuer + holder — same {@link minimalOpenBadgeCredential}
+ * body as the wallet-client seed credential), applying `mutate` to the
+ * document BEFORE signing so each pass's defect is signed over.
  */
 async function issueBase(
 	crypto: WalletCrypto,
@@ -73,15 +78,10 @@ async function issueBase(
 ): Promise<BuiltPassCredential> {
 	const issuer = await crypto.generateKey(cryptosuite);
 	const holder = await crypto.generateKey(cryptosuite);
-	const credential: Record<string, unknown> = {
-		'@context': [
-			'https://www.w3.org/ns/credentials/v2',
-			'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'
-		],
-		type: ['VerifiableCredential', 'OpenBadgeCredential'],
-		issuer: issuer.did,
-		credentialSubject: { id: holder.did, type: 'AchievementSubject' }
-	};
+	const credential = minimalOpenBadgeCredential({
+		issuerDid: issuer.did,
+		holderDid: holder.did
+	});
 	mutate?.(credential);
 	return { credential: await crypto.issueCredential({ issuer, credential }), holder };
 }
