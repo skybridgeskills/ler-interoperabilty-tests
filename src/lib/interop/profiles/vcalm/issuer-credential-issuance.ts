@@ -62,7 +62,7 @@ export const issuerCredentialIssuance = WorkflowChecklist({
 				{
 					id: 'vcalm.issuer.credential-issuance.didauth-requested',
 					level: 'MUST',
-					text: 'Include a `DIDAuthentication` query (via `QueryByExample`) in the `verifiablePresentationRequest`.'
+					text: 'Include a `DIDAuthentication` query in the `verifiablePresentationRequest`’s `query` array.'
 				},
 				{
 					id: 'vcalm.issuer.credential-issuance.didauth-problemdetails',

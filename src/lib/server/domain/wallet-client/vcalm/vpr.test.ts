@@ -68,4 +68,17 @@ describe('hasDidAuthQuery', () => {
 		const { queries } = parseVpr(vpr({ type: 'QueryByExample', example: ob3 }));
 		expect(hasDidAuthQuery(queries)).toBe(false);
 	});
+
+	it('requires a sibling top-level query — a DIDAuthentication nested inside QueryByExample is not matched', () => {
+		// DIDAuthentication is its own query type in the `query` array, not carried
+		// "via" QueryByExample. A verifier must express it as a sibling query.
+		const { queries } = parseVpr(
+			vpr({
+				type: 'QueryByExample',
+				example: ob3,
+				credentialQuery: [{ type: 'DIDAuthentication' }]
+			})
+		);
+		expect(hasDidAuthQuery(queries)).toBe(false);
+	});
 });

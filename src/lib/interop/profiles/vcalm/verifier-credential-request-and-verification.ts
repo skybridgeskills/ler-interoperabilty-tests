@@ -52,7 +52,7 @@ export const verifierCredentialRequestAndVerification = WorkflowChecklist({
 				{
 					id: 'vcalm.verifier-vpr-didauth',
 					level: 'MUST',
-					text: 'Include a `DIDAuthentication` query (via `QueryByExample`) in the request.'
+					text: 'Include a `DIDAuthentication` query in the request’s `query` array, alongside the `QueryByExample` credential query.'
 				},
 				{ level: 'MUST', text: 'Express any errors as ProblemDetails objects.' }
 			]

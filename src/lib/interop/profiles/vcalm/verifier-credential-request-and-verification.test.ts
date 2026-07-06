@@ -24,7 +24,7 @@ const floorRows: Record<string, string> = {
 	'vcalm.verifier-interaction-endpoint':
 		'Support an Interaction Protocols response that includes `vcapi`.',
 	'vcalm.verifier-vpr-didauth':
-		'Include a `DIDAuthentication` query (via `QueryByExample`) in the request.',
+		'Include a `DIDAuthentication` query in the request’s `query` array, alongside the `QueryByExample` credential query.',
 	'vcalm.verifier-response-tls': 'Encrypt web-service endpoints with at least TLS 1.2.'
 };
 
