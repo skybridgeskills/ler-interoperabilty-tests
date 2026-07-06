@@ -1,6 +1,7 @@
 import type { AppContext } from './app-context.js';
 import { provideFakeTransactionServiceClient } from './domain/exchange-runner/index.js';
 import { provideFakeIssuerRunner } from './domain/issuer-runner/index.js';
+import { provideFakeVerifierRunner } from './domain/verifier-runner/index.js';
 import {
 	provideFakeOid4IssuerFlow,
 	provideFakeVcalmIssuerFlow,
@@ -14,6 +15,7 @@ import { FakeTimeService } from './services/time-service/time-service.js';
 export function TestAppContext(_env: Record<string, unknown>): AppContext {
 	const exchangeRunner = provideFakeTransactionServiceClient({ enabled: true });
 	const issuerRunner = provideFakeIssuerRunner();
+	const verifierRunner = provideFakeVerifierRunner();
 	const walletClient = provideFakeWalletClient();
 	const vcalmIssuerFlow = provideFakeVcalmIssuerFlow();
 	const oid4IssuerFlow = provideFakeOid4IssuerFlow();
@@ -23,6 +25,7 @@ export function TestAppContext(_env: Record<string, unknown>): AppContext {
 		idService: FakeIdService(),
 		...exchangeRunner,
 		...issuerRunner,
+		...verifierRunner,
 		...walletClient,
 		...vcalmIssuerFlow,
 		...oid4IssuerFlow

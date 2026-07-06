@@ -1,11 +1,14 @@
 <script lang="ts" module>
 	import { defineMeta } from '@storybook/addon-svelte-csf';
 
+	import type { VerifierCheckOutcome } from '$lib/interop/verifier-run/index.js';
 	import type { CheckOutcome } from '$lib/server/domain/issuer-runner/check-outcome.js';
 
 	import {
 		outcomeToRequirementStatus,
-		stepStateToRequirementStatus
+		stepStateToRequirementStatus,
+		VERIFIER_DEFERRED_REVOKED_ROW_ID,
+		verifierOutcomeToRequirementStatus
 	} from './requirement-status-view.js';
 	import RequirementStatusRow from './RequirementStatusRow.svelte';
 
@@ -52,6 +55,34 @@
 		level: 'SHOULD',
 		status: 'n/a',
 		message: 'ProblemDetails error handling is not automatically checked on the happy path.'
+	};
+
+	const acceptReq = { level: 'MUST' as const, text: 'Accept a valid credential.' };
+	const revokedReq = { level: 'MUST' as const, text: 'Reject a revoked credential.' };
+
+	const attestedPass: VerifierCheckOutcome = {
+		id: 'ob3-direct-delivery.verifier-accepts-valid-credential',
+		level: 'MUST',
+		status: 'pass',
+		message: 'Your verifier accepted the valid credential.',
+		source: 'attested',
+		attestation: { passLabel: 'Credential 1', kind: 'valid', verdict: 'accepted' }
+	};
+	const attestedFail: VerifierCheckOutcome = {
+		id: 'ob3-direct-delivery.verifier-rejects-broken-signature',
+		level: 'MUST',
+		status: 'fail',
+		message: 'Your verifier accepted a credential with a broken signature.',
+		source: 'attested',
+		attestation: { passLabel: 'Credential 3', kind: 'broken-signature', verdict: 'accepted' }
+	};
+	const deferredRevoked: VerifierCheckOutcome = {
+		id: VERIFIER_DEFERRED_REVOKED_ROW_ID,
+		level: 'MUST',
+		status: 'n/a',
+		message:
+			'Revocation passes are not yet available in this suite — status-list support is planned.',
+		source: 'automated'
 	};
 </script>
 
@@ -149,6 +180,35 @@
 <Story name="Done — step derived (wallet)" asChild>
 	<div class="max-w-2xl bg-background p-6">
 		<RequirementStatusRow requirement={mustReq} status={stepStateToRequirementStatus('complete')} />
+	</div>
+</Story>
+
+<!-- Verifier acceptance rows: resolved from the operator's attestation → visible ATTESTED
+     pill (live/orange family) next to the tone label; the deferred revoked row renders with
+     the skipped (line-through) tone + the engine's deferral message in Details. -->
+<Story name="Attested — verifier acceptance rows" asChild>
+	<div class="max-w-2xl space-y-3 bg-background p-6">
+		<RequirementStatusRow
+			requirement={acceptReq}
+			status={verifierOutcomeToRequirementStatus(attestedPass)}
+		/>
+		<RequirementStatusRow
+			requirement={{ level: 'MUST', text: 'Reject a credential whose signature does not verify.' }}
+			status={verifierOutcomeToRequirementStatus(attestedFail)}
+		/>
+		<RequirementStatusRow
+			requirement={revokedReq}
+			status={verifierOutcomeToRequirementStatus(deferredRevoked)}
+		/>
+	</div>
+</Story>
+
+<Story name="Skipped — deferred revoked row (verifier)" asChild>
+	<div class="max-w-2xl bg-background p-6">
+		<RequirementStatusRow
+			requirement={revokedReq}
+			status={verifierOutcomeToRequirementStatus(deferredRevoked)}
+		/>
 	</div>
 </Story>
 

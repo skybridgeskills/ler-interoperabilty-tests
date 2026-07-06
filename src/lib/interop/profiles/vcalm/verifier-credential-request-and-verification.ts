@@ -12,14 +12,20 @@ export const verifierCredentialRequestAndVerification = WorkflowChecklist({
 				'Create a VCALM exchange and a `verifiablePresentationRequest` using `QueryByExample` for `OpenBadgeCredential`, with a fresh challenge. Expose the interaction URL via QR / deep link / copy-paste.',
 			requirements: [
 				{
+					id: 'vcalm.verifier-exchange-endpoint',
 					level: 'MUST',
 					text: 'Implement the VCALM Exchanges exchange-participation endpoint.'
 				},
 				{
+					id: 'vcalm.verifier-vpr-query',
 					level: 'MUST',
 					text: 'Generate a `verifiablePresentationRequest` with `QueryByExample` and a challenge value.'
 				},
-				{ level: 'MUST', text: 'Encrypt web-service endpoints with at least TLS 1.2.' }
+				{
+					id: 'vcalm.verifier-request-tls',
+					level: 'MUST',
+					text: 'Encrypt web-service endpoints with at least TLS 1.2.'
+				}
 			]
 		},
 		{
@@ -28,6 +34,7 @@ export const verifierCredentialRequestAndVerification = WorkflowChecklist({
 				'Return the protocols list including `vcapi` so the holder wallet can advance to the exchange.',
 			requirements: [
 				{
+					id: 'vcalm.verifier-interaction-endpoint',
 					level: 'MUST',
 					text: 'Support an Interaction Protocols response that includes `vcapi`.'
 				},
@@ -43,8 +50,9 @@ export const verifierCredentialRequestAndVerification = WorkflowChecklist({
 				'On the holder’s POST `{}`, respond with the `verifiablePresentationRequest` containing both the credential request query and a `DIDAuthentication` query.',
 			requirements: [
 				{
+					id: 'vcalm.verifier-vpr-didauth',
 					level: 'MUST',
-					text: 'Include a `DIDAuthentication` query (via `QueryByExample`) in the request.'
+					text: 'Include a `DIDAuthentication` query in the request’s `query` array, alongside the `QueryByExample` credential query.'
 				},
 				{ level: 'MUST', text: 'Express any errors as ProblemDetails objects.' }
 			]
@@ -78,8 +86,44 @@ export const verifierCredentialRequestAndVerification = WorkflowChecklist({
 					level: 'MUST',
 					text: 'Integrate with trust registries to query issuer authorization and revocation.'
 				},
-				{ level: 'MUST', text: 'Encrypt web-service endpoints with at least TLS 1.2.' },
+				{
+					id: 'vcalm.verifier-response-tls',
+					level: 'MUST',
+					text: 'Encrypt web-service endpoints with at least TLS 1.2.'
+				},
 				{ level: 'SHOULD', text: 'Cache status information appropriately.' }
+			]
+		},
+		{
+			title: 'Demonstrate verification outcomes',
+			summary:
+				'Run the verification check: the suite’s test wallet presents your verifier a valid credential and several defective ones. Report what your verifier decided for each.',
+			requirements: [
+				{
+					id: 'vcalm.verifier-accepts-valid-credential',
+					level: 'MUST',
+					text: 'Accept a valid credential.'
+				},
+				{
+					id: 'vcalm.verifier-rejects-broken-signature',
+					level: 'MUST',
+					text: 'Reject a credential whose signature does not verify.'
+				},
+				{
+					id: 'vcalm.verifier-rejects-schema-problem',
+					level: 'MUST',
+					text: 'Reject a credential that fails schema validation.'
+				},
+				{
+					id: 'vcalm.verifier-rejects-expired',
+					level: 'MUST',
+					text: 'Reject an expired credential.'
+				},
+				{
+					id: 'vcalm.verifier-rejects-revoked',
+					level: 'MUST',
+					text: 'Reject a revoked credential.'
+				}
 			]
 		}
 	]

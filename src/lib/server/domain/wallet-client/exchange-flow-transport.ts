@@ -1,7 +1,10 @@
 import tls from 'node:tls';
 
 /**
- * Transport for the reversed "test wallet verifies the issuer" flow. Unlike
+ * Transport for the reversed VC-API exchange flows, where the suite acts as
+ * holder against an exchange living on the user's system — the issuer-flow
+ * (test wallet verifies the issuer) and the verifier-flow (test wallet presents
+ * to the verifier). Unlike
  * {@link makeHttpContinueExchange} (which talks to the *suite's own* transaction-service with a
  * tenant token), this transport participates in an exchange that lives on the **user's** system:
  * it fetches the absolute interaction URL the user pasted, discovers the absolute `vcapi` URL,
@@ -37,8 +40,8 @@ export type PostToVcapiResult = {
 	error?: string;
 };
 
-/** The transport the issuer-flow driver depends on (real HTTP, or a test fake). */
-export interface IssuerFlowTransport {
+/** The transport the reversed-flow drivers (issuer-flow, verifier-flow) depend on (real HTTP, or a test fake). */
+export interface ExchangeFlowTransport {
 	fetchInteractionUrl(url: string): Promise<FetchInteractionResult>;
 	postToVcapi(vcapiUrl: string, body: unknown): Promise<PostToVcapiResult>;
 }
@@ -121,7 +124,7 @@ async function parseBody(res: Response): Promise<unknown> {
 }
 
 /** The real HTTP transport used in dev/production. */
-export function makeHttpIssuerFlowTransport(): IssuerFlowTransport {
+export function makeHttpExchangeFlowTransport(): ExchangeFlowTransport {
 	async function fetchInteractionUrl(url: string): Promise<FetchInteractionResult> {
 		let parsed: URL;
 		try {

@@ -8,7 +8,10 @@ export { default as WalletArtifactCard } from './wallet-artifact-card/WalletArti
 export {
 	VcalmIssuerFlowWallet,
 	Oid4IssuerFlowWallet,
-	DirectDeliveryWallet
+	DirectDeliveryWallet,
+	VerifierPassesWallet,
+	PassArtifactCard,
+	type PassArtifactView
 } from './variants/index.js';
 
 export { walletActivityStatusView } from './wallet-activity-list/activity-status-view.js';

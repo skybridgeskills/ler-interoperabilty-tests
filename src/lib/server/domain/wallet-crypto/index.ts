@@ -44,9 +44,9 @@ export function WalletCrypto() {
 			return issueCredential({ ...args, documentLoader });
 		},
 
-		/** Verify a VC's data-integrity proof. */
-		verifyCredential(credential: unknown): Promise<VerifyResult> {
-			return verifyCredential({ credential, documentLoader });
+		/** Verify a VC's data-integrity proof (`now` overrides the validity-window clock). */
+		verifyCredential(credential: unknown, opts?: { now?: Date | string }): Promise<VerifyResult> {
+			return verifyCredential({ credential, documentLoader, ...opts });
 		},
 
 		/** Verify a VP (challenge/domain bound for DIDAuth). */

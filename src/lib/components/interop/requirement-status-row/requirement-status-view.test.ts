@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
 import type { StepRunState } from '$lib/interop/index.js';
+import type { VerifierCheckOutcome } from '$lib/interop/verifier-run/index.js';
 import type { CheckOutcome } from '$lib/server/domain/issuer-runner/check-outcome.js';
 
 import {
 	outcomeToRequirementStatus,
 	runStatusToneClasses,
-	stepStateToRequirementStatus
+	stepStateToRequirementStatus,
+	VERIFIER_DEFERRED_REVOKED_ROW_ID,
+	verifierOutcomeToRequirementStatus
 } from './requirement-status-view.js';
 
 const outcome = (
@@ -71,6 +74,88 @@ describe('outcomeToRequirementStatus', () => {
 	it('threads raw into the view', () => {
 		const raw = { status: 200 };
 		expect(outcomeToRequirementStatus(outcome('pass'), raw).raw).toBe(raw);
+	});
+});
+
+describe('verifierOutcomeToRequirementStatus', () => {
+	const verifierOutcome = (over: Partial<VerifierCheckOutcome> = {}): VerifierCheckOutcome => ({
+		id: 'ob3-direct-delivery.verifier-accepts-valid-credential',
+		level: 'MUST',
+		status: 'pass',
+		message: 'Your verifier accepted the valid credential.',
+		source: 'attested',
+		attestation: { passLabel: 'Credential 1', kind: 'valid', verdict: 'accepted' },
+		...over
+	});
+
+	it('maps an absent outcome to pending', () => {
+		expect(verifierOutcomeToRequirementStatus(undefined)).toEqual({
+			tone: 'pending',
+			label: 'PENDING',
+			raw: undefined
+		});
+	});
+
+	it('marks attested outcomes with the attested flag', () => {
+		expect(verifierOutcomeToRequirementStatus(verifierOutcome())).toMatchObject({
+			tone: 'pass',
+			label: 'PASS',
+			attested: true
+		});
+	});
+
+	it('keeps the fail label + tone for an attested MUST failure', () => {
+		expect(
+			verifierOutcomeToRequirementStatus(
+				verifierOutcome({ status: 'fail', message: 'Your verifier rejected a valid credential.' })
+			)
+		).toMatchObject({ tone: 'fail', label: 'FAIL · MUST', attested: true });
+	});
+
+	it('does not mark automated outcomes as attested', () => {
+		const view = verifierOutcomeToRequirementStatus(
+			verifierOutcome({ source: 'automated', attestation: undefined })
+		);
+		expect(view.attested).toBeUndefined();
+	});
+
+	it('maps the deferred revoked row (n/a) to the skipped tone with its message', () => {
+		const view = verifierOutcomeToRequirementStatus(
+			verifierOutcome({
+				id: VERIFIER_DEFERRED_REVOKED_ROW_ID,
+				status: 'n/a',
+				source: 'automated',
+				attestation: undefined,
+				message: 'Revocation passes are not yet available in this suite.'
+			})
+		);
+		expect(view).toMatchObject({
+			tone: 'skipped',
+			label: 'SKIPPED',
+			message: 'Revocation passes are not yet available in this suite.'
+		});
+		expect(view.attested).toBeUndefined();
+	});
+
+	it('maps other n/a outcomes to the plain n/a tone', () => {
+		expect(
+			verifierOutcomeToRequirementStatus(
+				verifierOutcome({ id: 'some-other-row', status: 'n/a', source: 'automated' })
+			)
+		).toMatchObject({ tone: 'n/a', label: 'N/A' });
+	});
+
+	it('maps the oid4 deferred revoked row (n/a) to the skipped tone too', () => {
+		expect(
+			verifierOutcomeToRequirementStatus(
+				verifierOutcome({
+					id: 'oid4.verifier-rejects-revoked',
+					status: 'n/a',
+					source: 'automated',
+					attestation: undefined
+				})
+			)
+		).toMatchObject({ tone: 'skipped', label: 'SKIPPED' });
 	});
 });
 

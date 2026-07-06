@@ -30,8 +30,11 @@ export async function resolveAuthorizationRequest(
 	return decodeJwtPayload(text);
 }
 
-/** Decode (without verifying) the payload of a compact JWS request object. */
-function decodeJwtPayload(jwt: string): unknown {
+/**
+ * Decode (without verifying) the payload of a compact JWS request object. Shared with the
+ * deep-link parser, which accepts a request-object JWT by value (`request` parameter).
+ */
+export function decodeJwtPayload(jwt: string): unknown {
 	const parts = jwt.split('.');
 	if (parts.length < 2 || !parts[1]) {
 		throw new Error('request_uri returned an unrecognized request object (not JSON or a JWT).');

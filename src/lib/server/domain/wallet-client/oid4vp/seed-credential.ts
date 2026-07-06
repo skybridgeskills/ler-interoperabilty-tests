@@ -1,3 +1,4 @@
+import { minimalOpenBadgeCredential } from '$lib/server/domain/credential-fixtures/minimal-open-badge-credential.js';
 import type {
 	WalletCrypto,
 	WalletCryptosuite,
@@ -11,8 +12,8 @@ export type HeldCredential = {
 };
 
 /**
- * Seed a held OB3 credential on demand: generate a fresh holder key, issue an
- * OpenBadgeCredential to it via a fixture issuer key, and return both. The holder key is what
+ * Seed a held OB3 credential on demand: generate a fresh holder key, issue a
+ * minimal schema-valid OpenBadgeCredential to it via a fixture issuer key, and return both. The holder key is what
  * later signs the presentation; the credential subject is the holder DID. Hermetic + stateless
  * — there is no persistent wallet store (see the M5 plan's seed-on-demand decision).
  */
@@ -24,15 +25,7 @@ export async function seedHeldCredential(
 	const holder = await crypto.generateKey(cryptosuite);
 	const credential = await crypto.issueCredential({
 		issuer,
-		credential: {
-			'@context': [
-				'https://www.w3.org/ns/credentials/v2',
-				'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'
-			],
-			type: ['VerifiableCredential', 'OpenBadgeCredential'],
-			issuer: issuer.did,
-			credentialSubject: { id: holder.did, type: 'AchievementSubject' }
-		}
+		credential: minimalOpenBadgeCredential({ issuerDid: issuer.did, holderDid: holder.did })
 	});
 	return { credential, holder };
 }

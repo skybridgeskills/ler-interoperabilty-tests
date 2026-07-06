@@ -1,0 +1,220 @@
+# Verifier assessment model (layered floor + attested acceptance passes)
+
+- Status: accepted
+- Date: 2026-07-04
+- Context: verifier M1 — the first runnable verifier checklist
+  (`ob3-direct-delivery` × `direct-credential-verification`), where the
+  system under test is the participant's verifier and the suite plays
+  the wallet handing credentials over
+
+## Context
+
+For issuer and wallet flows the suite can observe the system under test
+directly: it receives the credential, drives the protocol, and grades
+what it saw. A verifier is different — the interesting behavior (accept
+or reject a credential, and why) happens inside the participant's
+system, invisible to the suite in a direct-delivery flow where
+credentials arrive as pasted JSON with no protocol round trip.
+
+We still want a runnable verifier checklist with per-requirement
+outcomes, and we want it to be honest about what the suite actually
+observed versus what the operator told us. We also need test
+credentials whose defects a real verifier can genuinely detect — a
+"broken signature" fixture whose signature actually fails verification,
+not a prose label.
+
+## Decision
+
+**Layered verifier assessment.** One checklist carries two layers as
+distinct requirement rows:
+
+- an **automated observable floor** — protocol/request checks the suite
+  can verify itself (these arrive with the OID4VP and VCALM exchange
+  flows in roadmap M2/M3; the direct-delivery flow has no protocol
+  surface to check), and
+- **operator-attested acceptance passes** — rows scored from the
+  operator's report of what their verifier decided.
+
+Every scored outcome carries `source: 'automated' | 'attested'`
+(`VerifierCheckOutcome` in `src/lib/interop/verifier-run/`), and the UI
+renders an ATTESTED pill on attested rows so a reader can always tell
+which results the suite observed and which the operator vouched for.
+
+**Attested acceptance passes.** A run contains one pass per kind —
+`valid`, `broken-signature`, `schema-problem`, `expired` — shuffled
+(Fisher–Yates over `node:crypto` randomness) and opaquely labeled
+"Credential 1"…"Credential 4" so the order betrays nothing. User-facing
+copy deliberately avoids the word "passes". For each credential the
+test wallet asks for a verdict via a radio set (accepted / rejected)
+plus an optional rejection reason; the actions are "Start verifying" /
+"Start over". Scoring (`score-run.ts`):
+
+- valid-accepted and each defect-rejected are **MUST** rows —
+  `pass`/`fail` on the verdict alone;
+- a rejection with the **wrong reason** resolves `warn` (rejection
+  stands; the reason is a diagnostic, and `other`/no reason is not
+  second-guessed).
+
+**Cryptographically honest fixtures** (`passes/build-pass.ts`): defects
+are signed-in or window-only, never fake. The schema defect is
+introduced before signing, so the data-integrity proof verifies over
+the defective document; the expired credential is signed with a
+validity window entirely in the past, so the proof verifies but any
+clock-aware verifier must reject it (`wallet-crypto.verifyCredential`
+gained an optional `{ now }` clock override so the fixture sanity tests
+can prove it verifies inside its window); only `broken-signature` is
+tampered after signing, so its proof genuinely fails.
+
+**Stateless ground truth + cooperative trust model.** The flow is
+generate → client holds the run → score: the generate endpoint returns
+the full `VerifierRunDefinition` — ground-truth `kind` included — the
+operator's browser holds it (the UI hides `kind` until the post-scoring
+reveal), and the score endpoint receives it back with the attestations.
+The server keeps no state and re-validates coherence (every kind
+exactly once, one attestation per pass). There is no sealing or
+signing of the run, deliberately: the pass artifacts are inherently
+inspectable (an operator can verify the signatures themselves), and the
+suite is cooperative self-certification. Randomized opaque labels
+prevent pattern-matching, not adversaries — an operator determined to
+cheat is only cheating their own conformance report.
+
+**Acceptance step embedded in the core verifier profile**, not an
+additive profile. Deciding correctly about valid and defective
+credentials is core verifier conformance for the protocol profile; the
+"Demonstrate verification outcomes" step lives in the
+`ob3-direct-delivery` verifier checklist with row ids
+`ob3-direct-delivery.verifier-accepts-valid-credential`,
+`…verifier-rejects-broken-signature`, `…verifier-rejects-schema-problem`,
+`…verifier-rejects-expired`, `…verifier-rejects-revoked`. M2/M3
+replicate the step for the oid4/vcalm verifier checklists.
+
+**Wallet-as-interlocutor UX.** The acceptance conversation — handing
+credentials over, asking for verdicts, echoing them neutrally, and the
+reveal — lives in the test-wallet panel, reusing the normalized
+wallet-run-response vocabulary (`WalletActivity`/`WalletArtifact`; the
+report returns both, so the panel consumes it directly). The base
+TestWallet grew three extensions to host it: an optional initiation
+input (no `inputLabel` → no input row, for flows the wallet starts
+itself), a `prompt` snippet (the wallet "asking" the operator
+something), and an `artifactsExtra` snippet (richer artifact cards —
+the pass credentials with copy/download). Pre-reveal, nothing rendered
+may mention a pass kind; verdict echoes are deliberately neutral
+(`info`).
+
+**Revocation deferral.** The `verifier-rejects-revoked` MUST row exists
+in checklist content today but has no pass; the scorer resolves it
+`n/a` with the message "Revocation checks are not yet available in this
+suite — status-list support is planned." and the UI renders it with the
+skipped tone. `'revoked'` joins `PassKind` when status-list support
+lands (a larger, separately planned effort).
+
+## Consequences
+
+- The suite never overstates what it observed: attested rows are
+  visibly attested, in both the data (`source`) and the UI (pill).
+- No database, no session state: the verifier-runner stays as stateless
+  as the rest of the suite, and a run survives page reloads only as
+  long as the client keeps it — acceptable for a self-help tool.
+- Fixture honesty means results transfer: a verifier that rejects the
+  broken-signature pass did real signature verification, not label
+  matching.
+- The scoring engine is pure and shared by Real and Fake wirings, so
+  route tests exercise real scoring with deterministic fixtures.
+- M2/M3 add automated floor rows and replicate the acceptance step per
+  protocol profile without changing the assessment model.
+- The revoked row sits visibly unresolved on every report until
+  status-list support lands — a standing reminder, by design.
+
+## Alternatives considered
+
+- **Server-held run state.** Rejected: requires a DB or session store
+  the suite otherwise doesn't need, complicates deploys, and buys
+  nothing — the client must see the credentials anyway.
+- **Sealed/signed run tokens** (ground truth encrypted or signed so the
+  client can't read it). Rejected: complexity without honesty — the
+  pass artifacts are inspectable JSON, so a motivated operator can
+  always recover the ground truth by verifying signatures themselves.
+  The trust model is cooperative; sealing pretends otherwise.
+- **Machine verdict callback API** (the participant's verifier POSTs
+  its decisions to the suite). Rejected for M1: real participant
+  burden (build an integration to run a checklist) for marginal trust
+  gain. Plausible future work alongside M2/M3.
+- **An "acceptance testing" additive profile.** Rejected: verdict
+  behavior is core conformance for each protocol profile, not an
+  optional capability axis; embedding the step in the core checklist
+  keeps one checklist per (role, workflow, profile) combination.
+
+## Update 2026-07-04 (M2 — OID4VP)
+
+M2 makes the `oid4` × `credential-request-and-verification` verifier
+runnable, realizing the "arrives with M2/M3" parts of the model above.
+The assessment model is unchanged; three refinements:
+
+- **Present-time server-side generation.** OID4VP presentations must be
+  holder-signed, and holder keys are ephemeral and server-only, so the
+  upfront full-run generation used for direct delivery cannot serve a
+  live-delivery protocol. Instead the client holds a **credential-less
+  plan** (`VerifierRunPlan` — `{ passId, label, kind }` per entry, still
+  hiding `kind` until the reveal); for each credential the `present`
+  endpoint generates the fixture, signs the `vp_token`, and submits via
+  `direct_post` inside that one request, then drops the holder key. It is
+  never serialized or sent to the client. Direct delivery keeps its
+  upfront `VerifierRunDefinition`. Rejected alternative: shipping private
+  holder keys to the client so the browser could present — it would
+  break the server-only-crypto invariant for no real gain, since the
+  suite already holds the credentials.
+
+- **The observable floor is now real.** The `inspect` endpoint runs the
+  OID4VP request checks (resolvable request; `presentation_definition`
+  matchable by a seeded OB3 credential; Data Integrity VP format pinned;
+  nonce freshness; TLS ≥ 1.2 on the request/response endpoints) as
+  `automated` outcomes, and the VALID credential's successful
+  `direct_post` delivery scores the `oid4.verifier-response-endpoint`
+  MUST row. Defect deliveries are activity evidence only — they never
+  score. `signPresentation` now builds the VP with
+  `vc.createPresentation({ verify: false })` so the suite can present the
+  intentionally-defective fixtures (e.g. an expired credential the
+  library would otherwise refuse to wrap); a holder does not re-validate
+  the credentials it presents.
+
+- **Per-(profile, workflow) row-id registry.** The ob3-only scoring
+  constants moved into `verifier-runner/row-registry.ts`
+  (`VERIFIER_ROW_IDS`), and scoring merges pre-computed `automatedOutcomes`
+  with the attested outcomes (attested wins per row). M3 (VCALM) adds a
+  registry entry, not a refactor. The client-side deferred-revoked mirror
+  is an explicit id list, extended with `oid4.verifier-rejects-revoked`.
+
+## Update 2026-07-05 (M3 — VCALM)
+
+M3 makes the `vcalm` × `credential-request-and-verification` verifier
+runnable — the last protocol surface. The assessment model and the M2
+present-time generation are unchanged; the VCALM specifics:
+
+- **Single-use exchanges → floor via present, no `inspect`.** A VC-API
+  exchange is consumed by the presentation submission, so each pass
+  engages a **fresh interaction URL**, and the automated floor is a
+  byproduct of presenting the first credential (unlike OID4VP's separate
+  `inspect` step). The `present` endpoint engages the exchange (fetch →
+  `vcapi` → read the `verifiablePresentationRequest`), runs the floor
+  (interaction endpoint advertises `vcapi`; the VPR carries a
+  QueryByExample matchable to a seeded OB3 credential + a challenge; a
+  DIDAuthentication query; TLS ≥ 1.2 on both hosts), signs a VP embedding
+  the fixture that satisfies both the QueryByExample and DIDAuthentication
+  queries, and submits it. The VALID credential's successful submission
+  scores `vcalm.verifier-exchange-endpoint`; defect submissions are
+  activity only (VC-API error shapes are unstandardized).
+
+- **New primitive: a lenient QueryByExample matcher** (`wallet-client/
+vcalm/vpr.ts`) — recognizes a credential-presentation request for an
+  `OpenBadgeCredential`, not a full Presentation Exchange engine. A
+  DID-authentication-only VPR fails the vpr-query row with a clear message.
+
+- **Shared transport, renamed.** The reversed-flow transport was
+  generalized to `ExchangeFlowTransport` (`exchange-flow-transport.ts`),
+  shared by the issuer-flow and the new verifier-flow drivers; the
+  issuer-vcalm flow is behavior-unchanged.
+
+- `VERIFIER_ROW_IDS` gained a `vcalm` entry and the client deferred-revoked
+  mirror gained `vcalm.verifier-rejects-revoked` — a registry entry, not a
+  refactor, as promised. Scoring reuses a shared `scoreDeliveredRun`
+  (parameterized by the delivery row) across OID4VP and VCALM.

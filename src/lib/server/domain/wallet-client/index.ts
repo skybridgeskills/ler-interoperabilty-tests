@@ -8,8 +8,10 @@ export type {
 } from './wallet-client.js';
 export { FakeWalletClient } from './fake-wallet-client.js';
 export {
+	HttpDirectPost,
 	Oid4vpPresentationDriver,
 	type PresentationDriver,
+	type PresentationDriverResult,
 	type SubmitResponse
 } from './drivers/oid4vp-presentation.js';
 export {
@@ -29,13 +31,13 @@ export {
 	type DeliveryObservation
 } from './drivers/vcalm-issuer-flow.js';
 export {
-	makeHttpIssuerFlowTransport,
+	makeHttpExchangeFlowTransport,
 	probeTls,
-	type IssuerFlowTransport,
+	type ExchangeFlowTransport,
 	type FetchInteractionResult,
 	type PostToVcapiResult,
 	type TlsProbeResult
-} from './issuer-flow-transport.js';
+} from './exchange-flow-transport.js';
 export { FakeVcalmIssuerFlow } from './fake-vcalm-issuer-flow.js';
 export {
 	provideRealVcalmIssuerFlow,

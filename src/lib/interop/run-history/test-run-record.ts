@@ -43,6 +43,15 @@ const WalletReportRunPayload = z.object({
 });
 export type WalletReportRunPayload = z.infer<typeof WalletReportRunPayload>;
 
+/** Snapshot of a verifier-report run (attested acceptance passes scored against ground truth). */
+const VerifierReportRunPayload = z.object({
+	kind: z.literal('verifier-report'),
+	verified: z.boolean(),
+	failingMustCount: z.number().int().nonnegative(),
+	attestedPassCount: z.number().int().nonnegative()
+});
+export type VerifierReportRunPayload = z.infer<typeof VerifierReportRunPayload>;
+
 /**
  * A persisted record of one test run for a (role, workflow, profile)
  * combination. Framework-free + validated via the {@link TestRunRecord}
@@ -59,7 +68,8 @@ export const TestRunRecord = ZodFactory(
 		payload: z.discriminatedUnion('kind', [
 			ExchangeRunPayload,
 			IssuerReportRunPayload,
-			WalletReportRunPayload
+			WalletReportRunPayload,
+			VerifierReportRunPayload
 		])
 	})
 );
@@ -134,6 +144,38 @@ export function statusFromWalletReport(r: {
 	if (r.exchangeState === 'invalid') return 'failed';
 	if (r.exchangeState !== 'complete') return 'incomplete';
 	return r.verified ? 'passed' : 'failed';
+}
+
+/**
+ * Derive a run status from a verifier-report result. There is no exchange
+ * state to consider — an abandoned run simply never records.
+ */
+export function statusFromVerifierReport(r: { verified: boolean }): RunStatus {
+	return r.verified ? 'passed' : 'failed';
+}
+
+/** Assemble + validate a full verifier-report run record (stamps `ranAt` now). */
+export function verifierReportRunRecord(args: {
+	role: RoleSlug;
+	workflow: WorkflowSlug;
+	profile: ProfileSlug;
+	verified: boolean;
+	failingMustCount: number;
+	attestedPassCount: number;
+}): TestRunRecord {
+	return TestRunRecord({
+		role: args.role,
+		workflow: args.workflow,
+		profile: args.profile,
+		ranAt: new Date().toISOString(),
+		status: statusFromVerifierReport(args),
+		payload: {
+			kind: 'verifier-report',
+			verified: args.verified,
+			failingMustCount: args.failingMustCount,
+			attestedPassCount: args.attestedPassCount
+		}
+	});
 }
 
 /** Assemble + validate a full wallet-report run record (stamps `ranAt` now). */

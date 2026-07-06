@@ -15,6 +15,12 @@ export const Oid4vpAuthorizationRequest = ZodFactory(
 		nonce: z.string().min(1),
 		presentation_definition: z.object({
 			id: z.string().min(1),
+			/**
+			 * Optional DIF PE top-level format registry (e.g. `{ ldp_vp: {...} }`). The wallet-role
+			 * flow ignores it; the verifier-runner floor check reads it to see whether the request
+			 * pins a Data Integrity VP format.
+			 */
+			format: z.record(z.string(), z.unknown()).optional(),
 			input_descriptors: z
 				.array(
 					z.object({

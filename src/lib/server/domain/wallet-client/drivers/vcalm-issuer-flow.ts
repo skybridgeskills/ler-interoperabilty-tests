@@ -4,7 +4,7 @@ import type {
 	WalletCryptosuite
 } from '$lib/server/domain/wallet-crypto/index.js';
 
-import type { FetchInteractionResult, IssuerFlowTransport } from '../issuer-flow-transport.js';
+import type { FetchInteractionResult, ExchangeFlowTransport } from '../exchange-flow-transport.js';
 
 /** DIDAuth request observation (step 2). */
 export type DidAuthObservation = {
@@ -58,7 +58,7 @@ export interface VcalmIssuerFlow {
  */
 export function VcalmIssuerFlowDriver(deps: {
 	crypto: WalletCrypto;
-	transport: IssuerFlowTransport;
+	transport: ExchangeFlowTransport;
 }) {
 	/** Step 1 — fetch the pasted interaction URL, discover protocols + `vcapi`, probe TLS. */
 	function fetchInteraction(interactionUrl: string): Promise<FetchInteractionResult> {

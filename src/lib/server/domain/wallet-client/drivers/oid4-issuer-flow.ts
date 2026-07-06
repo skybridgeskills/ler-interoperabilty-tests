@@ -4,7 +4,7 @@ import type {
 	WalletCryptosuite
 } from '$lib/server/domain/wallet-crypto/index.js';
 
-import { probeTls, type TlsProbeResult } from '../issuer-flow-transport.js';
+import { probeTls, type TlsProbeResult } from '../exchange-flow-transport.js';
 import {
 	PRE_AUTH_GRANT,
 	extractCredential,

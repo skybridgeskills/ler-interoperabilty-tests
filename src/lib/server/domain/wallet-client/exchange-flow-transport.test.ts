@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { makeHttpIssuerFlowTransport, probeTls } from './issuer-flow-transport.js';
+import { makeHttpExchangeFlowTransport, probeTls } from './exchange-flow-transport.js';
 
 // Mock node:tls so probeTls resolves deterministically without a real socket.
 vi.mock('node:tls', () => ({
@@ -37,7 +37,7 @@ describe('probeTls', () => {
 	});
 });
 
-describe('makeHttpIssuerFlowTransport.fetchInteractionUrl', () => {
+describe('makeHttpExchangeFlowTransport.fetchInteractionUrl', () => {
 	it('extracts a nested `protocols.vcapi` URL', async () => {
 		vi.stubGlobal(
 			'fetch',
@@ -48,7 +48,7 @@ describe('makeHttpIssuerFlowTransport.fetchInteractionUrl', () => {
 					})
 			)
 		);
-		const t = makeHttpIssuerFlowTransport();
+		const t = makeHttpExchangeFlowTransport();
 		const r = await t.fetchInteractionUrl('https://issuer.test/interactions/ex-1');
 		expect(r.ok).toBe(true);
 		expect(r.vcapiUrl).toBe('https://issuer.test/vcapi/ex-1');
@@ -63,7 +63,7 @@ describe('makeHttpIssuerFlowTransport.fetchInteractionUrl', () => {
 					new Response(JSON.stringify({ vcapi: 'https://issuer.test/vcapi/ex-2' }), { status: 200 })
 			)
 		);
-		const bare = await makeHttpIssuerFlowTransport().fetchInteractionUrl(
+		const bare = await makeHttpExchangeFlowTransport().fetchInteractionUrl(
 			'https://issuer.test/interactions/ex-2'
 		);
 		expect(bare.vcapiUrl).toBe('https://issuer.test/vcapi/ex-2');
@@ -72,7 +72,7 @@ describe('makeHttpIssuerFlowTransport.fetchInteractionUrl', () => {
 			'fetch',
 			vi.fn(async () => new Response(JSON.stringify({ protocols: {} }), { status: 200 }))
 		);
-		const missing = await makeHttpIssuerFlowTransport().fetchInteractionUrl(
+		const missing = await makeHttpExchangeFlowTransport().fetchInteractionUrl(
 			'https://issuer.test/interactions/ex-3'
 		);
 		expect(missing.vcapiUrl).toBeUndefined();
@@ -83,7 +83,7 @@ describe('makeHttpIssuerFlowTransport.fetchInteractionUrl', () => {
 			'fetch',
 			vi.fn(async () => new Response('nope', { status: 404 }))
 		);
-		const r = await makeHttpIssuerFlowTransport().fetchInteractionUrl(
+		const r = await makeHttpExchangeFlowTransport().fetchInteractionUrl(
 			'https://issuer.test/interactions/ex-4'
 		);
 		expect(r.ok).toBe(false);
@@ -91,13 +91,13 @@ describe('makeHttpIssuerFlowTransport.fetchInteractionUrl', () => {
 	});
 
 	it('rejects a non-absolute URL without fetching', async () => {
-		const r = await makeHttpIssuerFlowTransport().fetchInteractionUrl('not-a-url');
+		const r = await makeHttpExchangeFlowTransport().fetchInteractionUrl('not-a-url');
 		expect(r.ok).toBe(false);
 		expect(r.error).toMatch(/absolute/i);
 	});
 });
 
-describe('makeHttpIssuerFlowTransport.postToVcapi', () => {
+describe('makeHttpExchangeFlowTransport.postToVcapi', () => {
 	it('returns ok + parsed body on 200', async () => {
 		vi.stubGlobal(
 			'fetch',
@@ -108,7 +108,10 @@ describe('makeHttpIssuerFlowTransport.postToVcapi', () => {
 					})
 			)
 		);
-		const r = await makeHttpIssuerFlowTransport().postToVcapi('https://issuer.test/vcapi/ex-1', {});
+		const r = await makeHttpExchangeFlowTransport().postToVcapi(
+			'https://issuer.test/vcapi/ex-1',
+			{}
+		);
 		expect(r.ok).toBe(true);
 		expect(
 			(r.rawBody as { verifiablePresentationRequest?: unknown }).verifiablePresentationRequest
@@ -120,7 +123,10 @@ describe('makeHttpIssuerFlowTransport.postToVcapi', () => {
 			'fetch',
 			vi.fn(async () => new Response('bad', { status: 500 }))
 		);
-		const r = await makeHttpIssuerFlowTransport().postToVcapi('https://issuer.test/vcapi/ex-1', {});
+		const r = await makeHttpExchangeFlowTransport().postToVcapi(
+			'https://issuer.test/vcapi/ex-1',
+			{}
+		);
 		expect(r.ok).toBe(false);
 		expect(r.status).toBe(500);
 	});

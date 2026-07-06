@@ -268,3 +268,55 @@
 		/>
 	</div>
 </Story>
+
+{#snippet verdictPrompt()}
+	<div class="space-y-2">
+		<p class="text-label-md text-muted-foreground uppercase">Credential 2 of 4</p>
+		<p class="text-body-md text-foreground">Did your verifier accept this credential?</p>
+		<div class="flex flex-wrap gap-2">
+			<button
+				type="button"
+				class="rounded-md border border-live-border bg-live px-3 py-1.5 text-body-md text-live-foreground"
+				>Accepted</button
+			>
+			<button
+				type="button"
+				class="rounded-md border border-border bg-card px-3 py-1.5 text-body-md text-foreground"
+				>Rejected</button
+			>
+		</div>
+	</div>
+{/snippet}
+
+<!-- Input-less mode: no initiation input at all — just the action button. Used by
+     wallet-initiated flows (e.g. the verifier acceptance checks). -->
+<Story name="Input-less — action button only" asChild>
+	<div class="max-w-md bg-background p-6">
+		<TestWallet
+			actionLabel="Start verifying"
+			runningLabel="Verifying in progress"
+			againLabel="Start over"
+			state="idle"
+			onRun={noop}
+			onReset={noop}
+		/>
+	</div>
+</Story>
+
+<!-- The conversational prompt slot: rendered inside the wallet surface between the
+     artifacts and the activity log, so the wallet reads as the interlocutor. -->
+<Story name="With prompt — wallet asks a question" asChild>
+	<div class="max-w-md bg-background p-6">
+		<TestWallet
+			actionLabel="Start verifying"
+			runningLabel="Verifying in progress"
+			state="running"
+			busy
+			activity={runningActivity}
+			artifacts={unverifiedArtifact}
+			prompt={verdictPrompt}
+			onRun={noop}
+			onReset={noop}
+		/>
+	</div>
+</Story>

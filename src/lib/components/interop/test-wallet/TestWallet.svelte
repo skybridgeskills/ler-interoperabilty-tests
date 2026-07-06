@@ -8,11 +8,12 @@
 
 	/**
 	 * Purely presentational "test wallet" panel, styled as a stripped-down digital wallet:
-	 * header (identity + live/idle chip) → primary initiation action → separated wallet
-	 * settings → produced-credential artifacts → ordered activity/messages list. Every label
-	 * and the settings contents are parametrized via props/snippets — no protocol strings or
-	 * data fetching live here. The container keeps the orange `live` runtime surface. The
-	 * overall pass/fail verdict is intentionally NOT rendered here (see P3's RunResultCard).
+	 * header (identity + live/idle chip) → primary initiation action (input optional) →
+	 * separated wallet settings → produced-credential artifacts (+ `artifactsExtra` cards) →
+	 * optional conversational `prompt` → ordered activity/messages list. Every label and the
+	 * settings contents are parametrized via props/snippets — no protocol strings or data
+	 * fetching live here. The container keeps the orange `live` runtime surface. The overall
+	 * pass/fail verdict is intentionally NOT rendered here (see the page's RunResultCard).
 	 */
 	let {
 		walletName = 'Test wallet',
@@ -32,6 +33,8 @@
 		intro,
 		settings,
 		secondaryActions,
+		prompt,
+		artifactsExtra,
 		emptyActivity,
 		onRun,
 		onReset
@@ -64,14 +67,23 @@
 
 	<WalletSettings {settings} />
 
-	{#if artifacts.length > 0}
+	{#if artifacts.length > 0 || artifactsExtra}
 		<section class="space-y-2 border-t border-live-border/60 pt-4">
 			<p class="text-label-md text-muted-foreground uppercase">Credentials</p>
 			<div class="space-y-2">
 				{#each artifacts as artifact (artifact.title)}
 					<WalletArtifactCard {artifact} />
 				{/each}
+				{#if artifactsExtra}
+					{@render artifactsExtra()}
+				{/if}
 			</div>
+		</section>
+	{/if}
+
+	{#if prompt}
+		<section class="border-t border-live-border/60 pt-4">
+			{@render prompt()}
 		</section>
 	{/if}
 
