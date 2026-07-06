@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
 import { z } from 'zod';
 
@@ -28,8 +28,14 @@ let cached: VersionBody | undefined;
 export function appVersion(): VersionBody {
 	if (cached) return cached;
 
-	const pkgUrl = new URL('../../../../package.json', import.meta.url);
-	const pkg = JSON.parse(readFileSync(fileURLToPath(pkgUrl), 'utf8')) as {
+	// Resolve package.json from the working directory rather than relative to
+	// this module. The old `new URL('../../../../package.json', import.meta.url)`
+	// worked against the source tree but broke in the adapter-node bundle (the
+	// compiled chunk lives at a different depth), making /version and /health
+	// 500. `node build` runs from the app root (where package.json sits), as do
+	// `vite dev` and vitest.
+	const pkgPath = resolve(process.cwd(), 'package.json');
+	const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as {
 		name: string;
 		version: string;
 	};
