@@ -7,6 +7,7 @@ import type {
 	VcalmIssuerFlow,
 	WalletClient
 } from './domain/wallet-client/index.js';
+import type { HealthRegistry } from './health/health-registry.js';
 import type { IdService } from './services/id-service/id-service.js';
 import type { LoggerService } from './services/logging/logger-service.js';
 import type { TimeService } from './services/time-service/time-service.js';
@@ -23,6 +24,7 @@ export interface AppContext {
 	idService: IdService;
 	transactionServiceClient: TransactionServiceClient;
 	exchangeRunnerConfig: ExchangeRunnerConfig;
+	healthRegistry: HealthRegistry;
 	issuerRunner: IssuerRunner;
 	verifierRunner: VerifierRunner;
 	walletClient: WalletClient;

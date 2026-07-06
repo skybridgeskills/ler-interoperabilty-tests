@@ -88,7 +88,11 @@ by type.
 The two endpoints already wired (`/health`, `/version`) demonstrate
 this: `/health` calls `appContext()` (which throws helpfully if the
 context is missing) and returns `{ status: 'ok', version }`; `/version`
-returns the package + git info from `appVersion()`.
+returns the package + git info from `appVersion()`. A third endpoint,
+`GET /health/ready`, runs the health registry's config-readiness check
+(503 when overall is `DOWN`); the server also emits a periodic
+`health-snapshot` structured log for Loki/Grafana (see
+`src/lib/server/health/`).
 
 ## Theme system
 
