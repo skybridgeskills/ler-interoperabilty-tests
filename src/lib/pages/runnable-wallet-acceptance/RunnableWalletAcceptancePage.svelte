@@ -149,6 +149,9 @@
 					}
 				},
 				onError: (e: ExchangePollError) => {
+					// Belt-and-suspenders: the poller already stops itself on a fatal
+					// error, but stop the handle here too so page state can't diverge.
+					pollHandle?.stop();
 					setError({
 						message:
 							e.kind === 'http-error'

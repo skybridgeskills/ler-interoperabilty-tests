@@ -73,6 +73,9 @@ export function pollExchange(
 			const res = await fetch(url, { headers: { Accept: 'application/json' } });
 			if (stopped) return;
 			if (!res.ok) {
+				// Fatal: any non-2xx tears down the poller. Stop before onError so a
+				// synchronous handler can't observe a still-live poller.
+				stop();
 				callbacks.onError?.({
 					kind: 'http-error',
 					status: res.status,
@@ -87,6 +90,8 @@ export function pollExchange(
 			}
 		} catch (e) {
 			if (stopped) return;
+			// Fatal: a network/fetch error also tears down the poller.
+			stop();
 			callbacks.onError?.({
 				kind: 'fetch-error',
 				message: e instanceof Error ? e.message : String(e)
