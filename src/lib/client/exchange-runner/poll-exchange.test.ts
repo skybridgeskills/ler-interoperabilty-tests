@@ -81,19 +81,42 @@ describe('pollExchange', () => {
 		expect(onTimeout).toHaveBeenCalledOnce();
 	});
 
-	it('reports HTTP errors via onError', async () => {
-		vi.spyOn(globalThis, 'fetch').mockImplementation(
-			async () => new Response('boom', { status: 502 })
-		);
+	it('stops polling after a fatal HTTP error', async () => {
+		const fetchSpy = vi
+			.spyOn(globalThis, 'fetch')
+			.mockImplementation(async () => new Response('boom', { status: 502 }));
 		const onUpdate = vi.fn();
 		const onError = vi.fn();
-		const handle = pollExchange('x', { onUpdate, onError }, { intervalMs: 1000, timeoutMs: 5000 });
+		pollExchange('x', { onUpdate, onError }, { intervalMs: 100, timeoutMs: 5000 });
 
 		await vi.advanceTimersByTimeAsync(0);
 		expect(onError).toHaveBeenCalledWith(
 			expect.objectContaining({ kind: 'http-error', status: 502 })
 		);
-		handle.stop();
+		expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+		// No re-fire after a fatal error.
+		await vi.advanceTimersByTimeAsync(500);
+		expect(fetchSpy).toHaveBeenCalledTimes(1);
+	});
+
+	it('stops polling after a fatal network error', async () => {
+		const fetchSpy = vi
+			.spyOn(globalThis, 'fetch')
+			.mockImplementation(async () => Promise.reject(new Error('network down')));
+		const onUpdate = vi.fn();
+		const onError = vi.fn();
+		pollExchange('x', { onUpdate, onError }, { intervalMs: 100, timeoutMs: 5000 });
+
+		await vi.advanceTimersByTimeAsync(0);
+		expect(onError).toHaveBeenCalledWith(
+			expect.objectContaining({ kind: 'fetch-error', message: 'network down' })
+		);
+		expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+		// No re-fire after a fatal error.
+		await vi.advanceTimersByTimeAsync(500);
+		expect(fetchSpy).toHaveBeenCalledTimes(1);
 	});
 
 	it('respects an AbortSignal', async () => {
