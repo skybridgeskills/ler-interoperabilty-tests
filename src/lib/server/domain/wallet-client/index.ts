@@ -1,19 +1,6 @@
 export { RealWalletClient } from './wallet-client.js';
-export type {
-	WalletClient,
-	WalletRunResult,
-	WalletPresentResult,
-	AcceptCredentialArgs,
-	PresentCredentialArgs
-} from './wallet-client.js';
+export type { WalletClient, WalletRunResult, AcceptCredentialArgs } from './wallet-client.js';
 export { FakeWalletClient } from './fake-wallet-client.js';
-export {
-	HttpDirectPost,
-	Oid4vpPresentationDriver,
-	type PresentationDriver,
-	type PresentationDriverResult,
-	type SubmitResponse
-} from './drivers/oid4vp-presentation.js';
 export {
 	provideRealWalletClient,
 	provideFakeWalletClient,

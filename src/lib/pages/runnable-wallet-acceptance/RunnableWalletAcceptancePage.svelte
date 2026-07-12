@@ -7,7 +7,10 @@
 		type ExchangePollResponse
 	} from '$lib/client/exchange-runner/index.js';
 	import { recordRun } from '$lib/client/run-history/index.js';
-	import { ExchangeRunnerPanel } from '$lib/components/interop/exchange-runner/index.js';
+	import {
+		ExchangeRunnerPanel,
+		type ExchangeProtocolId
+	} from '$lib/components/interop/exchange-runner/index.js';
 	import {
 		RequirementStatusRow,
 		stepStateToRequirementStatus
@@ -35,7 +38,8 @@
 	const stepCount = $derived(combo.checklist.steps.length);
 
 	const isOid4 = $derived(profile === 'oid4');
-	const headerLabel = $derived(isOid4 ? 'Live · OID4VCI offer' : 'Live · interaction URL');
+	// The panel derives its QR header label from this protocol id.
+	const protocol = $derived<ExchangeProtocolId>(isOid4 ? 'oid4vci' : 'vcalm');
 
 	type CreateExchangeBody = {
 		exchangeId: string;
@@ -209,10 +213,11 @@
 	});
 
 	const panelData = $derived({
+		intent: 'issuance' as const,
+		protocol,
 		run: runState,
 		perStep,
 		interactionUrl,
-		headerLabel,
 		exchangeId,
 		error: runnerError
 	});

@@ -34,6 +34,15 @@ export type RunStateDerivation = {
 };
 
 /**
+ * Which transaction-service workflow the exchange belongs to. Threaded from
+ * the page/GET route so a `verify` (presentation) exchange derives run-state
+ * from its own variables (`results`/`oid4vp`/`verifyTask`) rather than the
+ * issuance (`claim`) fields. Kept as a local literal (not the server `WorkflowId`
+ * type) so this module stays client-safe.
+ */
+export type RunnerWorkflowId = 'claim' | 'verify';
+
+/**
  * Runtime state the OID4VCI 1.0 pre-authorized-code flow records under
  * `variables.oid4vci`. Unlike VCALM, that flow never flips the exchange to
  * `active`; progress is observable only through these fields (presence is
@@ -65,10 +74,19 @@ function oid4vciStateOf(exchange: RunnerExchangeView): Oid4vciState | undefined 
  */
 export function deriveRunStateFromExchange(
 	exchange: RunnerExchangeView | null,
-	stepCount: number
+	stepCount: number,
+	workflowId?: RunnerWorkflowId
 ): RunStateDerivation {
 	if (!exchange) {
 		return { run: 'idle', perStep: filledArray(stepCount, 'pending') };
+	}
+
+	// Verify (presentation) exchanges record progress under `variables.results`
+	// / `oid4vp` / `verifyTask` — never the issuance `oid4vci`/`holderDid` fields
+	// the branches below key off. Route them to their own derivation, which keeps
+	// the two-phase `active`+`verifyTask` window non-terminal so polling continues.
+	if (isVerifyExchange(exchange, workflowId)) {
+		return deriveVerifyRunState(exchange, stepCount);
 	}
 
 	if (exchange.state === 'invalid') {
@@ -127,6 +145,65 @@ export function deriveRunStateFromExchange(
 		run: 'wallet-connected',
 		perStep: stepStates(stepCount, Math.min(stepCount - 1, 2))
 	};
+}
+
+/**
+ * A verify exchange is identified either by a threaded `workflowId === 'verify'`
+ * or by the presence of any verify-only variable the transaction service sets
+ * (`results`, `oid4vp`, `verifyTask`). Issuance (`claim`) exchanges never set
+ * these, so they fall through to the OID4VCI/VCALM logic.
+ */
+function isVerifyExchange(
+	exchange: RunnerExchangeView,
+	workflowId: RunnerWorkflowId | undefined
+): boolean {
+	if (workflowId === 'verify') return true;
+	const v = exchange.variables;
+	return !!(v?.results || v?.oid4vp || v?.verifyTask);
+}
+
+/** Read `variables.oid4vp` (OID4VP presentation progress) as an object. */
+function oid4vpStateOf(exchange: RunnerExchangeView): { state?: unknown } | undefined {
+	const v = exchange.variables?.oid4vp;
+	return v && typeof v === 'object' ? (v as { state?: unknown }) : undefined;
+}
+
+/**
+ * Map a verify (presentation) exchange to `(run, perStep)`.
+ *
+ * Critically, the two-phase `active` + `variables.verifyTask` window (the async
+ * Open Badges verification pass) maps to a NON-terminal `wallet-connected` with
+ * the final step in-flight — never `complete`/`error` — so `pollExchange` keeps
+ * polling until the worker settles the exchange to `complete`/`invalid`.
+ */
+function deriveVerifyRunState(exchange: RunnerExchangeView, stepCount: number): RunStateDerivation {
+	if (exchange.state === 'invalid') {
+		return { run: 'error', perStep: filledArray(stepCount, 'skipped') };
+	}
+	if (exchange.state === 'complete') {
+		return { run: 'complete', perStep: filledArray(stepCount, 'complete') };
+	}
+
+	const finalStep = Math.max(0, stepCount - 1);
+
+	if (exchange.state === 'active') {
+		// Two-phase: sync pass persisted `results.default` but held `active` with a
+		// queued `verifyTask`. Final step (delivery/verification) in-flight — NEVER
+		// terminal, or polling tears down before the async pass settles.
+		if (exchange.variables?.verifyTask) {
+			return { run: 'wallet-connected', perStep: stepStates(stepCount, finalStep) };
+		}
+		// `active` without a `verifyTask` — wallet is presenting (transient).
+		return { run: 'wallet-connected', perStep: stepStates(stepCount, Math.min(finalStep, 2)) };
+	}
+
+	// state === 'pending'
+	if (oid4vpStateOf(exchange)) {
+		// OID4VP authorization request fetched → engagement done, presentation in-flight.
+		return { run: 'wallet-connected', perStep: stepStates(stepCount, Math.min(finalStep, 1)) };
+	}
+	// Created but the wallet has not fetched the request yet.
+	return { run: 'awaiting-wallet', perStep: stepStates(stepCount, 0) };
 }
 
 function filledArray<T>(length: number, value: T): T[] {

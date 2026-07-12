@@ -3,6 +3,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 
 	import type {
+		ExchangeProtocolId,
 		ExchangeRunnerActions,
 		ExchangeRunnerPanelData
 	} from './exchange-runner-panel-types.js';
@@ -18,6 +19,35 @@
 		initiateLabel?: string;
 		busyLabel?: string;
 	} = $props();
+
+	// Copy is panel-owned: call sites pass `intent` + `protocol`, never strings.
+	const HEADER_LABEL: Record<ExchangeProtocolId, string> = {
+		vcalm: 'Live · interaction URL',
+		oid4vci: 'Live · OID4VCI offer',
+		oid4vp: 'Live · OID4VP request'
+	};
+
+	const IDLE_COPY = {
+		issuance: {
+			heading: 'Initiate an issuance exchange',
+			body: "Spin up a real VC-API exchange against the local DCC transaction service. We'll generate a QR code for the wallet under test to scan."
+		},
+		verification: {
+			heading: 'Initiate a verification exchange',
+			body: "Spin up a real VC-API exchange against the local DCC transaction service. We'll generate a QR code for the wallet under test to present a credential."
+		}
+	} as const;
+
+	const COMPLETE_BODY = {
+		issuance: 'The wallet successfully received and verified the issued credential.',
+		verification: 'The wallet successfully presented a credential, and we verified it.'
+	} as const;
+
+	const copy = $derived({
+		headerLabel: HEADER_LABEL[data.protocol],
+		idle: IDLE_COPY[data.intent],
+		completeBody: COMPLETE_BODY[data.intent]
+	});
 
 	let busy = $state(false);
 
@@ -46,11 +76,8 @@
 	{#if data.run === 'idle'}
 		<div class="space-y-3 rounded-md border border-live-border bg-live-soft p-5">
 			<p class="text-label-md text-live">Live test runner</p>
-			<h3 class="text-headline-md text-foreground">Initiate an issuance exchange</h3>
-			<p class="text-body-md text-foreground">
-				Spin up a real VC-API exchange against the local DCC transaction service. We'll generate a
-				QR code for the wallet under test to scan.
-			</p>
+			<h3 class="text-headline-md text-foreground">{copy.idle.heading}</h3>
+			<p class="text-body-md text-foreground">{copy.idle.body}</p>
 			<Button
 				type="button"
 				class="bg-live text-live-foreground hover:bg-live/90"
@@ -76,9 +103,7 @@
 	{:else if data.run === 'complete'}
 		<div class="space-y-3 rounded-md border border-primary/40 bg-primary/5 p-5">
 			<p class="text-label-md text-primary">Exchange complete</p>
-			<p class="text-body-md text-foreground">
-				The wallet successfully received and verified the issued credential.
-			</p>
+			<p class="text-body-md text-foreground">{copy.completeBody}</p>
 			{#if data.exchangeId}
 				<p class="text-label-md font-mono text-muted-foreground">exchange · {data.exchangeId}</p>
 			{/if}
@@ -89,10 +114,7 @@
 			{/if}
 		</div>
 	{:else if data.interactionUrl}
-		<InteractionQrCard
-			interactionUrl={data.interactionUrl}
-			headerLabel={data.headerLabel ?? 'Live · interaction URL'}
-		/>
+		<InteractionQrCard interactionUrl={data.interactionUrl} headerLabel={copy.headerLabel} />
 		{#if data.exchangeId}
 			<p class="text-label-md font-mono text-muted-foreground">exchange · {data.exchangeId}</p>
 		{/if}

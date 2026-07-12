@@ -19,6 +19,12 @@ export type PollExchangeOptions = {
 	timeoutMs?: number;
 	/** Step count for the run-state derivation. Default 5. */
 	stepCount?: number;
+	/**
+	 * Which transaction-service workflow this exchange belongs to. Threaded to
+	 * the GET endpoint as `?workflow=`. Defaults to the issuance (`claim`) path
+	 * server-side when omitted; presentation pages pass `verify`.
+	 */
+	workflow?: 'claim' | 'verify';
 	/** Optional AbortSignal for cancellation. */
 	signal?: AbortSignal;
 };
@@ -44,7 +50,8 @@ export function pollExchange(
 	const intervalMs = options.intervalMs ?? 2000;
 	const timeoutMs = options.timeoutMs ?? 5 * 60 * 1000;
 	const stepCount = options.stepCount ?? 5;
-	const url = `/api/exchange-runner/${encodeURIComponent(exchangeId)}?stepCount=${stepCount}`;
+	const workflowParam = options.workflow ? `&workflow=${options.workflow}` : '';
+	const url = `/api/exchange-runner/${encodeURIComponent(exchangeId)}?stepCount=${stepCount}${workflowParam}`;
 
 	let stopped = false;
 	const handles: {

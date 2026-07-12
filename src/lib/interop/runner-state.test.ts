@@ -120,4 +120,69 @@ describe('deriveRunStateFromExchange', () => {
 			expect(r.perStep).toEqual(['skipped', 'skipped', 'skipped', 'skipped']);
 		});
 	});
+
+	describe('verify (presentation) exchanges', () => {
+		it('fresh pending verify (workflowId threaded) → awaiting-wallet, step 1 in-flight', () => {
+			const r = deriveRunStateFromExchange({ state: 'pending' }, 4, 'verify');
+			expect(r.run).toBe('awaiting-wallet');
+			expect(r.perStep).toEqual(['in-flight', 'pending', 'pending', 'pending']);
+		});
+
+		it('pending + oid4vp.state (request fetched) → wallet-connected, presentation in-flight', () => {
+			const r = deriveRunStateFromExchange(
+				{ state: 'pending', variables: { oid4vp: { state: 'requested' } } },
+				4
+			);
+			expect(r.run).toBe('wallet-connected');
+			expect(r.perStep).toEqual(['complete', 'in-flight', 'pending', 'pending']);
+		});
+
+		it('two-phase: active + verifyTask → wallet-connected, final step in-flight, NON-terminal', () => {
+			const r = deriveRunStateFromExchange(
+				{ state: 'active', variables: { verifyTask: { status: 'queued' } } },
+				4
+			);
+			// Must NOT be terminal, or pollExchange tears down before the async pass settles.
+			expect(r.run).toBe('wallet-connected');
+			expect(r.run).not.toBe('complete');
+			expect(r.run).not.toBe('error');
+			expect(r.perStep).toEqual(['complete', 'complete', 'complete', 'in-flight']);
+		});
+
+		it('two-phase stays non-terminal even with results.default already persisted', () => {
+			const r = deriveRunStateFromExchange(
+				{
+					state: 'active',
+					variables: { verifyTask: { status: 'queued' }, results: { default: { verified: true } } }
+				},
+				4
+			);
+			expect(r.run).toBe('wallet-connected');
+			expect(r.perStep[3]).toBe('in-flight');
+		});
+
+		it('active without verifyTask → wallet-connected, present in-flight', () => {
+			const r = deriveRunStateFromExchange({ state: 'active', variables: { oid4vp: {} } }, 4);
+			expect(r.run).toBe('wallet-connected');
+			expect(r.perStep[2]).toBe('in-flight');
+		});
+
+		it('complete verify → complete, every step complete', () => {
+			const r = deriveRunStateFromExchange(
+				{ state: 'complete', variables: { results: { default: { verified: true } } } },
+				4
+			);
+			expect(r.run).toBe('complete');
+			expect(r.perStep).toEqual(['complete', 'complete', 'complete', 'complete']);
+		});
+
+		it('invalid verify → error, every step skipped', () => {
+			const r = deriveRunStateFromExchange(
+				{ state: 'invalid', variables: { results: { default: { verified: false } } } },
+				4
+			);
+			expect(r.run).toBe('error');
+			expect(r.perStep).toEqual(['skipped', 'skipped', 'skipped', 'skipped']);
+		});
+	});
 });

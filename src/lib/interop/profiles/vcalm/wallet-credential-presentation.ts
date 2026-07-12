@@ -37,8 +37,9 @@ export const walletCredentialPresentation = WorkflowChecklist({
 				{ level: 'MUST', text: 'Process credential requests from verifiers.' },
 				{ level: 'MUST', text: 'Provide a credential presentation interface.' },
 				{
+					id: 'vcalm.wallet.credential-presentation.proof-binding',
 					level: 'MUST',
-					text: 'Handle `DIDAuthentication` queries by responding with signed VPs using VCDM 2.0.'
+					text: 'Handle `DIDAuthentication` queries by responding with signed VPs using VCDM 2.0, binding the presentation proof to the verifier’s `challenge`.'
 				},
 				{ level: 'MUST', text: 'Implement explicit user-consent mechanisms.' },
 				{

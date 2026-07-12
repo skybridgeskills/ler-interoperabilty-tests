@@ -64,7 +64,10 @@
 			perStep={allPending}
 		>
 			{#snippet rightColumn()}
-				<ExchangeRunnerPanel data={{ run: 'idle', perStep: allPending }} actions={noopActions} />
+				<ExchangeRunnerPanel
+					data={{ intent: 'issuance', protocol: 'vcalm', run: 'idle', perStep: allPending }}
+					actions={noopActions}
+				/>
 			{/snippet}
 			{#snippet requirementState({ requirement, stepIndex })}
 				<RequirementStatusRow {requirement} status={statusFor(allPending, stepIndex)} />
@@ -86,6 +89,8 @@
 			{#snippet rightColumn()}
 				<ExchangeRunnerPanel
 					data={{
+						intent: 'issuance',
+						protocol: 'vcalm',
 						run: 'awaiting-wallet',
 						perStep: awaitingPerStep,
 						interactionUrl: 'http://localhost:4004/interactions/example-uuid-1234',
@@ -114,6 +119,8 @@
 			{#snippet rightColumn()}
 				<ExchangeRunnerPanel
 					data={{
+						intent: 'issuance',
+						protocol: 'vcalm',
 						run: 'wallet-connected',
 						perStep: connectedPerStep,
 						interactionUrl: 'http://localhost:4004/interactions/example-uuid-1234',
@@ -142,10 +149,11 @@
 			{#snippet rightColumn()}
 				<ExchangeRunnerPanel
 					data={{
+						intent: 'issuance',
+						protocol: 'oid4vci',
 						run: 'awaiting-wallet',
 						perStep: oid4AwaitingPerStep,
 						interactionUrl: oid4vciUrl,
-						headerLabel: 'Live · OID4VCI offer',
 						exchangeId: 'example-uuid-1234'
 					}}
 					actions={noopActions}
@@ -170,7 +178,13 @@
 		>
 			{#snippet rightColumn()}
 				<ExchangeRunnerPanel
-					data={{ run: 'complete', perStep: allComplete, exchangeId: 'example-uuid-1234' }}
+					data={{
+						intent: 'issuance',
+						protocol: 'vcalm',
+						run: 'complete',
+						perStep: allComplete,
+						exchangeId: 'example-uuid-1234'
+					}}
 					actions={{ ...noopActions, onReset: () => {} }}
 				/>
 			{/snippet}
@@ -194,6 +208,8 @@
 			{#snippet rightColumn()}
 				<ExchangeRunnerPanel
 					data={{
+						intent: 'issuance',
+						protocol: 'vcalm',
 						run: 'error',
 						perStep: allSkipped,
 						error: {

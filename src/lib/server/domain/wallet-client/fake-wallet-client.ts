@@ -1,6 +1,6 @@
 import type { WalletReport } from '$lib/server/domain/wallet-runner/index.js';
 
-import type { WalletClient, WalletPresentResult, WalletRunResult } from './wallet-client.js';
+import type { WalletClient, WalletRunResult } from './wallet-client.js';
 
 /**
  * In-memory fake wallet client for tests/stories that don't exercise real crypto. Returns
@@ -19,16 +19,6 @@ export function FakeWalletClient(override?: Partial<WalletRunResult>): WalletCli
 		};
 	}
 
-	async function presentCredential(): Promise<WalletPresentResult> {
-		return {
-			matched: true,
-			vpToken: { type: ['VerifiablePresentation'] },
-			verify: { verified: true },
-			submitted: true,
-			report: emptyReport
-		};
-	}
-
-	return { acceptCredential, presentCredential };
+	return { acceptCredential };
 }
 export type FakeWalletClient = ReturnType<typeof FakeWalletClient>;

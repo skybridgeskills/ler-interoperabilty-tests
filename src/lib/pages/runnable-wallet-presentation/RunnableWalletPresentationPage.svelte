@@ -1,5 +1,22 @@
 <script lang="ts">
+	import { onDestroy, untrack } from 'svelte';
+
+	import {
+		pollExchange,
+		type ExchangePollError,
+		type ExchangePollResponse
+	} from '$lib/client/exchange-runner/index.js';
 	import { recordRun } from '$lib/client/run-history/index.js';
+	import {
+		ExchangeRunnerPanel,
+		type ExchangeProtocolId
+	} from '$lib/components/interop/exchange-runner/index.js';
+	import { RequirementReport } from '$lib/components/interop/issuer-runner/requirement-report/index.js';
+	import {
+		outcomeToRequirementStatus,
+		RequirementStatusRow,
+		stepStateToRequirementStatus
+	} from '$lib/components/interop/requirement-status-row/index.js';
 	import { RunnableChecklist } from '$lib/components/interop/runnable-checklist/index.js';
 	import {
 		combinationFor,
@@ -9,112 +26,254 @@
 		type ChecklistRunState,
 		type StepRunState
 	} from '$lib/interop/index.js';
+	import type { ChecklistRequirement, ProfileSlug } from '$lib/interop/profile-schema.js';
+	import type { CheckOutcome } from '$lib/server/domain/issuer-runner/check-outcome.js';
+	import type { IssuerRunnerReport } from '$lib/server/domain/issuer-runner/issuer-runner-report.js';
 
-	import { PresentPanel, type PresentError, type PresentResult } from './present-panel/index.js';
+	import {
+		fetchPresentScore,
+		outcomesById,
+		PresentScoreError,
+		stepStatesFromReport
+	} from './present-score.js';
 
-	// The runnable wallet credential-presentation page (OID4VP). `profile` is
-	// fixed to `oid4` for the lifetime of the mount, so deriving the
-	// combination/step-count as plain consts is correct.
-	const profile = 'oid4';
+	// The runnable wallet credential-presentation page, parametrized by profile.
+	// `profile` is fixed for the lifetime of the route mount. Black-box: the
+	// operator wallet drives a real verification exchange; we only observe the
+	// settled result and score it — no built-in wallet.
+	let { profile = 'vcalm' }: { profile?: ProfileSlug } = $props();
+
 	const role = roleBySlug('wallet')!;
 	const workflow = workflowBySlug('credential-presentation')!;
-	const combo = combinationFor('wallet', 'credential-presentation', profile)!;
-	const stepCount = combo.checklist.steps.length;
+	const combo = $derived(combinationFor('wallet', 'credential-presentation', profile)!);
+	const stepCount = $derived(combo.checklist.steps.length);
 
-	let requestText = $state('');
-	let requestUri = $state('');
-	let busy = $state(false);
+	const isOid4 = $derived(profile === 'oid4');
+	// oid4 renders the OID4VP deep link; vcalm renders the VCALM interaction URL.
+	const protocol = $derived<ExchangeProtocolId>(isOid4 ? 'oid4vp' : 'vcalm');
+
+	type CreateExchangeBody = {
+		exchangeId: string;
+		protocols: { iu: string; OID4VP?: string };
+	};
+
+	type RunnerError = { message: string; hint?: string };
+
+	// Honest, step-level copy for each requirement row's `<details>` disclosure
+	// while the exchange is still in flight (pre-settle, before the report scores).
+	const stepDetailCopy: Record<StepRunState, string | undefined> = {
+		pending: undefined,
+		'in-flight':
+			'The verification exchange is in flight. Progress is tracked per step until the wallet presents and we score the result.',
+		complete: undefined,
+		failed: 'The exchange ended in an invalid state at this step.',
+		skipped: 'The run errored before reaching this step.'
+	};
+
+	let exchangeId = $state<string | undefined>(undefined);
+	// The single protocol link this profile presents (VCALM `iu` OR the OID4VP request).
+	let interactionUrl = $state<string | undefined>(undefined);
 	let runState = $state<ChecklistRunState>('idle');
-	let perStep = $state<StepRunState[]>(Array.from({ length: stepCount }, () => 'pending'));
-	let runnerError = $state<PresentError | undefined>(undefined);
-	let result = $state<PresentResult | undefined>(undefined);
+	let perStep = $state<StepRunState[]>(
+		untrack(() => Array.from({ length: stepCount }, () => 'pending'))
+	);
+	let runnerError = $state<RunnerError | undefined>(undefined);
 
-	function setError(error: PresentError) {
+	// Per-requirement report, set once the exchange settles and is scored. While
+	// undefined, requirement rows fall back to their step-derived status.
+	let report = $state<IssuerRunnerReport | undefined>(undefined);
+	let outcomes = $state<Record<string, CheckOutcome>>({});
+
+	let pollHandle: { stop: () => void } | undefined;
+	// Score + record exactly once per run.
+	let scoring = false;
+	let recorded = false;
+
+	function setIdle() {
+		exchangeId = undefined;
+		interactionUrl = undefined;
+		runState = 'idle';
+		perStep = Array.from({ length: stepCount }, () => 'pending');
+		runnerError = undefined;
+		report = undefined;
+		outcomes = {};
+		scoring = false;
+		recorded = false;
+		pollHandle?.stop();
+		pollHandle = undefined;
+	}
+
+	function setError(error: RunnerError) {
 		runState = 'error';
 		runnerError = error;
 		perStep = Array.from({ length: stepCount }, () => 'skipped');
 	}
 
-	/**
-	 * Parse the textarea as the OID4VP authorization request, drive the test
-	 * wallet via `POST /api/wallet-runner/present`, render the constructed
-	 * response + conformance report, and record the run. Invalid JSON and
-	 * non-2xx responses surface a friendly error affordance.
-	 */
-	async function present() {
-		if (busy) return;
-		busy = true;
-		runnerError = undefined;
-		result = undefined;
-
-		// A request_uri (fetched server-side by the wallet) takes precedence; otherwise parse the
-		// pasted JSON request object.
-		const uri = requestUri.trim();
-		let payload: { requestUri: string } | { request: unknown };
-		if (uri) {
-			payload = { requestUri: uri };
-		} else {
-			try {
-				payload = { request: JSON.parse(requestText) };
-			} catch {
-				busy = false;
-				setError({
-					message: 'The pasted text is not valid JSON.',
-					hint: 'Paste the verifier’s OID4VP authorization request as a JSON object, or provide a request_uri.'
-				});
-				return;
-			}
-		}
-
-		try {
-			const res = await fetch('/api/wallet-runner/present', {
-				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify(payload)
+	/** Create a fresh verification exchange; sets the error affordance on failure. */
+	async function createExchange(): Promise<CreateExchangeBody | undefined> {
+		const res = await fetch('/api/exchange-runner/create', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ intent: 'verification' })
+		});
+		if (!res.ok) {
+			const body = (await res.json().catch(() => ({}))) as RunnerError;
+			setError({
+				message: body.message ?? `Initiate responded ${res.status}`,
+				hint: body.hint ?? 'Run `pnpm turbo dev:full` to start the local DCC dependency services.'
 			});
-			if (!res.ok) {
-				const body = (await res.json().catch(() => ({}))) as PresentError;
-				setError({
-					message: body.message ?? `Present responded ${res.status}`,
-					hint: body.hint ?? 'Check the OID4VP request shape and the verifier availability.'
-				});
-				return;
-			}
+			return undefined;
+		}
+		return (await res.json()) as CreateExchangeBody;
+	}
 
-			const data = (await res.json()) as PresentResult;
-			result = data;
+	/**
+	 * Score the settled exchange via the P3 endpoint, light up the per-requirement
+	 * report, and record the run once. Runs at most once per exchange (the poller
+	 * only surfaces a terminal state once, and `scoring`/`recorded` guard reentry).
+	 */
+	async function settleAndScore(id: string) {
+		if (scoring || recorded) return;
+		scoring = true;
+		try {
+			const result = await fetchPresentScore({ exchangeId: id, profile });
+			if (!result.settled) return; // Contractually unreachable on a terminal poll.
 
-			const passed = data.matched && data.verify.verified && data.submitted;
-			runState = passed ? 'complete' : 'error';
-			perStep = Array.from({ length: stepCount }, () => (passed ? 'complete' : 'skipped'));
-			runnerError = passed
+			const byId = outcomesById(result.report);
+			report = result.report;
+			outcomes = byId;
+			perStep = stepStatesFromReport(combo.checklist.steps, byId);
+
+			const verified = result.report.verified;
+			runState = verified && result.state === 'complete' ? 'complete' : 'error';
+			runnerError = verified
 				? undefined
 				: {
-						message: `${data.failingMustCount} MUST requirement${
-							data.failingMustCount === 1 ? '' : 's'
-						} failed, or the presentation was not matched/verified/submitted.`,
-						hint: 'See the constructed response and conformance report below for details.'
+						message: `${result.failingMustCount} MUST requirement${
+							result.failingMustCount === 1 ? '' : 's'
+						} failed, or the exchange ended invalid.`,
+						hint: 'See the per-requirement report below for details.'
 					};
 
+			recorded = true;
 			recordRun(
 				walletRunRecord({
 					role: 'wallet',
 					workflow: 'credential-presentation',
 					profile,
-					verified: data.verify.verified,
-					failingMustCount: data.failingMustCount,
-					exchangeState: passed ? 'complete' : 'invalid'
+					verified,
+					failingMustCount: result.failingMustCount,
+					exchangeId: id,
+					exchangeState: result.state
 				})
 			);
+		} catch (e) {
+			setError(
+				e instanceof PresentScoreError
+					? { message: e.message, hint: e.hint }
+					: {
+							message: e instanceof Error ? e.message : String(e),
+							hint: 'Check the transaction service logs (`docker logs lits-transaction-service`).'
+						}
+			);
+		} finally {
+			scoring = false;
+		}
+	}
+
+	function startPolling(id: string) {
+		pollHandle?.stop();
+		pollHandle = pollExchange(
+			id,
+			{
+				onUpdate: (response: ExchangePollResponse) => {
+					// On a terminal exchange, defer the display to the P3 score; otherwise
+					// reflect the derived two-phase progress.
+					if (response.derived.run === 'complete' || response.derived.run === 'error') {
+						void settleAndScore(id);
+						return;
+					}
+					runState = response.derived.run;
+					perStep = response.derived.perStep;
+				},
+				onError: (e: ExchangePollError) => {
+					pollHandle?.stop();
+					setError({
+						message:
+							e.kind === 'http-error'
+								? `Polling responded ${e.status ?? '<no status>'}`
+								: e.message,
+						hint: 'Check the transaction service logs (`docker logs lits-transaction-service`).'
+					});
+				},
+				onTimeout: () => {
+					setError({
+						message: 'No presentation from the wallet within the 5-minute window.',
+						hint: 'Generate a new exchange and try again.'
+					});
+				}
+			},
+			{ stepCount, workflow: 'verify' }
+		);
+	}
+
+	async function initiate() {
+		runnerError = undefined;
+		report = undefined;
+		outcomes = {};
+		scoring = false;
+		recorded = false;
+		try {
+			const data = await createExchange();
+			if (!data) return;
+			exchangeId = data.exchangeId;
+			if (isOid4) {
+				if (!data.protocols.OID4VP) {
+					setError({
+						message: 'The transaction service did not return an OID4VP request.',
+						hint: 'Point TRANSACTION_SERVICE_URL at an OID4VP-capable transaction service (the local feature/oid4vp build).'
+					});
+					return;
+				}
+				interactionUrl = data.protocols.OID4VP;
+			} else {
+				interactionUrl = data.protocols.iu;
+			}
+			runState = 'awaiting-wallet';
+			const restPending: StepRunState[] = Array.from({ length: stepCount - 1 }, () => 'pending');
+			perStep = ['in-flight', ...restPending];
+			startPolling(data.exchangeId);
 		} catch (e) {
 			setError({
 				message: e instanceof Error ? e.message : String(e),
 				hint: 'Run `pnpm turbo dev:full` to start the local DCC dependency services.'
 			});
-		} finally {
-			busy = false;
 		}
 	}
+
+	/** Report status for a requirement: scored outcome once settled, else step-derived. */
+	function requirementStatusFor(requirement: ChecklistRequirement, stepIndex: number) {
+		if (report) {
+			return outcomeToRequirementStatus(requirement.id ? outcomes[requirement.id] : undefined);
+		}
+		const state = perStep[stepIndex] ?? 'pending';
+		return stepStateToRequirementStatus(state, { message: stepDetailCopy[state] });
+	}
+
+	onDestroy(() => {
+		pollHandle?.stop();
+		pollHandle = undefined;
+	});
+
+	const panelData = $derived({
+		intent: 'verification' as const,
+		protocol,
+		run: runState,
+		perStep,
+		interactionUrl,
+		exchangeId,
+		error: runnerError
+	});
 </script>
 
 <RunnableChecklist
@@ -126,15 +285,17 @@
 	{perStep}
 >
 	{#snippet rightColumn()}
-		<PresentPanel
-			{requestText}
-			{requestUri}
-			{busy}
-			error={runnerError}
-			{result}
-			onInput={(value) => (requestText = value)}
-			onUriInput={(value) => (requestUri = value)}
-			onPresent={present}
+		<ExchangeRunnerPanel
+			data={panelData}
+			actions={{ onInitiate: initiate, onRetry: initiate, onReset: setIdle }}
 		/>
+		{#if report}
+			<div class="mt-6">
+				<RequirementReport {report} />
+			</div>
+		{/if}
+	{/snippet}
+	{#snippet requirementState({ requirement, stepIndex })}
+		<RequirementStatusRow {requirement} status={requirementStatusFor(requirement, stepIndex)} />
 	{/snippet}
 </RunnableChecklist>

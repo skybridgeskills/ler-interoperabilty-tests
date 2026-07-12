@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 import { ZodFactory } from '$lib/util/zod-factory.js';
 
+import { issuanceExchangeBody, verificationExchangeBody } from './create-bodies.js';
 import type { ExchangeRunnerConfig } from './exchange-runner-config.js';
-import { ob3CredentialTemplate } from './ob3-credential-template.js';
 
 /** Verifiable Presentation Request shape — pass-through to the wallet. */
 export const VerifiablePresentationRequest = ZodFactory(z.record(z.string(), z.unknown()));
@@ -30,6 +30,18 @@ export const ExchangeProtocols = ZodFactory(
 		 * `.url()` validators reject.
 		 */
 		OID4VCI: z.string().optional(),
+		/**
+		 * OID4VP 1.0 authorization request deep link
+		 * (`openid4vp://?client_id=…&request_uri=…`). Present only on a
+		 * `verify` exchange when the connected transaction-service version
+		 * supports OID4VP; older containers omit it, in which case the oid4
+		 * presentation page surfaces a friendly "not returned" error.
+		 *
+		 * Wire field name is uppercase `OID4VP` to match the spec name and
+		 * the sibling `OID4VCI` field. Plain `z.string()` (not `.url()`) —
+		 * `openid4vp://` is a custom URI scheme some `.url()` validators reject.
+		 */
+		OID4VP: z.string().optional(),
 		verifiablePresentationRequest: VerifiablePresentationRequest.schema
 	})
 );
@@ -38,6 +50,23 @@ export type ExchangeProtocols = ReturnType<typeof ExchangeProtocols>;
 /** Exchange state from `GET /workflows/:workflowId/exchanges/:exchangeId`. */
 export const ExchangeState = ZodFactory(z.enum(['pending', 'active', 'complete', 'invalid']));
 export type ExchangeState = ReturnType<typeof ExchangeState>;
+
+/** Which transaction-service workflow an exchange belongs to. */
+export const WorkflowId = ZodFactory(z.enum(['claim', 'verify']));
+export type WorkflowId = ReturnType<typeof WorkflowId>;
+
+/**
+ * A single DCQL-style claim constraint on a verify presentation request.
+ * Mirrors the transaction service's `verifyWorkflow` claim shape.
+ */
+export const DcqlClaim = ZodFactory(
+	z.object({
+		id: z.string().optional(),
+		path: z.array(z.string()),
+		values: z.array(z.string()).optional()
+	})
+);
+export type DcqlClaim = ReturnType<typeof DcqlClaim>;
 
 export const ExchangeRecord = ZodFactory(
 	z.object({
@@ -50,15 +79,25 @@ export const ExchangeRecord = ZodFactory(
 );
 export type ExchangeRecord = ReturnType<typeof ExchangeRecord>;
 
-/** Inputs the suite passes when initiating a new exchange. */
-export type CreateExchangeRequest = {
+/** Inputs the suite passes when initiating an issuance (`claim`) exchange. */
+export type CreateIssuanceExchangeRequest = {
 	retrievalId: string;
+};
+
+/** Inputs the suite passes when initiating a verification (`verify`) exchange. */
+export type CreateVerificationExchangeRequest = {
+	vprCredentialType: string[];
+	vprContext: string[];
+	trustedIssuers?: string[];
+	vprClaims?: DcqlClaim[];
 };
 
 /** Result returned to suite callers. */
 export type CreateExchangeResult = {
 	exchangeId: string;
 	protocols: ExchangeProtocols;
+	/** The workflow this exchange was created under; carry it back to `getExchange`. */
+	workflowId: WorkflowId;
 };
 
 /**
@@ -66,8 +105,9 @@ export type CreateExchangeResult = {
  * in-memory fake. Server endpoints depend only on this interface.
  */
 export interface TransactionServiceClient {
-	createExchange(req: CreateExchangeRequest): Promise<CreateExchangeResult>;
-	getExchange(exchangeId: string): Promise<ExchangeRecord>;
+	createIssuanceExchange(req: CreateIssuanceExchangeRequest): Promise<CreateExchangeResult>;
+	createVerificationExchange(req: CreateVerificationExchangeRequest): Promise<CreateExchangeResult>;
+	getExchange(workflowId: WorkflowId, exchangeId: string): Promise<ExchangeRecord>;
 }
 
 /** Network-layer / API error surfaced from the real client. */
@@ -91,17 +131,23 @@ export function RealTransactionServiceClient(
 		'Content-Type': 'application/json',
 		Accept: 'application/json'
 	};
-	const workflowId = 'claim';
 
-	async function createExchange(req: CreateExchangeRequest): Promise<CreateExchangeResult> {
-		const body = {
-			variables: {
-				tenantName: config.tenantName,
-				exchangeHost: config.exchangeHost,
-				retrievalId: req.retrievalId,
-				vc: JSON.stringify(ob3CredentialTemplate(req.retrievalId))
-			}
-		};
+	async function createIssuanceExchange(
+		req: CreateIssuanceExchangeRequest
+	): Promise<CreateExchangeResult> {
+		return postExchange('claim', issuanceExchangeBody(config, req));
+	}
+
+	async function createVerificationExchange(
+		req: CreateVerificationExchangeRequest
+	): Promise<CreateExchangeResult> {
+		return postExchange('verify', verificationExchangeBody(config, req));
+	}
+
+	async function postExchange(
+		workflowId: WorkflowId,
+		body: unknown
+	): Promise<CreateExchangeResult> {
 		const url = `${config.transactionServiceUrl}/workflows/${workflowId}/exchanges`;
 		const res = await fetch(url, {
 			method: 'POST',
@@ -110,17 +156,17 @@ export function RealTransactionServiceClient(
 		});
 		if (!res.ok) throw new TransactionServiceError(res.status, await res.text());
 		const protocols = ExchangeProtocols(await res.json());
-		return { exchangeId: extractExchangeIdFromIu(protocols.iu), protocols };
+		return { exchangeId: extractExchangeIdFromIu(protocols.iu), protocols, workflowId };
 	}
 
-	async function getExchange(exchangeId: string): Promise<ExchangeRecord> {
+	async function getExchange(workflowId: WorkflowId, exchangeId: string): Promise<ExchangeRecord> {
 		const url = `${config.transactionServiceUrl}/workflows/${workflowId}/exchanges/${exchangeId}`;
 		const res = await fetch(url, { headers: baseHeaders });
 		if (!res.ok) throw new TransactionServiceError(res.status, await res.text());
 		return ExchangeRecord(await res.json());
 	}
 
-	return { createExchange, getExchange };
+	return { createIssuanceExchange, createVerificationExchange, getExchange };
 }
 
 /** Pull the exchange UUID out of an interaction URL like `…/interactions/<id>`. */
