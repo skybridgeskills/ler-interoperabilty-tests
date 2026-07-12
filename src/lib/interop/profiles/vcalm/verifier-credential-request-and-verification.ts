@@ -39,6 +39,7 @@ export const verifierCredentialRequestAndVerification = WorkflowChecklist({
 					text: 'Support an Interaction Protocols response that includes `vcapi`.'
 				},
 				{
+					id: 'vcalm.verifier-interaction-problemdetails',
 					level: 'MUST',
 					text: 'Report exchange errors using ProblemDetails objects.'
 				}
@@ -54,7 +55,11 @@ export const verifierCredentialRequestAndVerification = WorkflowChecklist({
 					level: 'MUST',
 					text: 'Include a `DIDAuthentication` query in the request’s `query` array, alongside the `QueryByExample` credential query.'
 				},
-				{ level: 'MUST', text: 'Express any errors as ProblemDetails objects.' }
+				{
+					id: 'vcalm.verifier-vpr-problemdetails',
+					level: 'MUST',
+					text: 'Express any errors as ProblemDetails objects.'
+				}
 			]
 		},
 		{
@@ -63,26 +68,32 @@ export const verifierCredentialRequestAndVerification = WorkflowChecklist({
 				'Validate the verifiablePresentation structure, the holder DIDAuthentication proof, then verify each credential’s signature (in any cryptosuite declared by the data-integrity-cryptosuites additive profile), schema, status, and issuer trust.',
 			requirements: [
 				{
+					id: 'vcalm.verifier-vp-vcdm',
 					level: 'MUST',
 					text: 'Verify the verifiablePresentation against VCDM 2.0.'
 				},
 				{
+					id: 'vcalm.verifier-vp-proof',
 					level: 'MUST',
 					text: 'Resolve holder DIDs (did:key / did:web) and verify the presentation proof signature, creation date, challenge, and `expires` using any cryptosuite declared by the data-integrity-cryptosuites additive profile.'
 				},
 				{
+					id: 'vcalm.verifier-credential-schema',
 					level: 'MUST',
 					text: 'Validate VCDM 2.0 + Open Badges 3.0 schema, required fields, and credential expiration on each extracted credential.'
 				},
 				{
+					id: 'vcalm.verifier-credential-proof',
 					level: 'MUST',
 					text: 'Verify credential proofs using every cryptosuite declared by the data-integrity-cryptosuites additive profile.'
 				},
 				{
+					id: 'vcalm.verifier-status-list',
 					level: 'MUST',
 					text: 'Implement Bitstring Status List verification, including status-list signature and freshness, and handle status-service unavailability.'
 				},
 				{
+					id: 'vcalm.verifier-trust-registry',
 					level: 'MUST',
 					text: 'Integrate with trust registries to query issuer authorization and revocation.'
 				},
@@ -91,7 +102,11 @@ export const verifierCredentialRequestAndVerification = WorkflowChecklist({
 					level: 'MUST',
 					text: 'Encrypt web-service endpoints with at least TLS 1.2.'
 				},
-				{ level: 'SHOULD', text: 'Cache status information appropriately.' }
+				{
+					id: 'vcalm.verifier-cache-status',
+					level: 'SHOULD',
+					text: 'Cache status information appropriately.'
+				}
 			]
 		},
 		{

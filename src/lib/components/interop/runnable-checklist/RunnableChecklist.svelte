@@ -3,86 +3,85 @@
 
 	import { InlineMarkup } from '$lib/components/interop/inline-markup/index.js';
 	import { ProfileBadge } from '$lib/components/interop/profile-badge/index.js';
-	import { stepStateToRequirementStatus } from '$lib/components/interop/requirement-status-row/index.js';
+	import {
+		RequirementStatusRow,
+		stepStateToRequirementStatus
+	} from '$lib/components/interop/requirement-status-row/index.js';
 	import { RoleBadge } from '$lib/components/interop/role-badge/index.js';
 	import { RunStatusIndicator } from '$lib/components/interop/run-status-indicator/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
 	import {
 		profileHref,
-		type ChecklistRunState,
 		type Profile,
 		type Role,
 		type StepRunState,
 		type Workflow,
 		type WorkflowChecklist as WorkflowChecklistData
 	} from '$lib/interop/index.js';
-
-	import {
-		requirementLevelClass,
-		requirementLevelVariant
-	} from '../workflow-checklist/requirement-level-badge.js';
+	import type { RequirementStatus } from '$lib/interop/run-history/requirement-status.js';
 
 	let {
 		checklist,
 		profile,
 		workflow,
 		role,
-		runState = 'idle',
-		perStep,
 		topOfPage,
+		headerBadge,
 		rightColumn,
 		belowSteps,
-		stepState,
-		requirementState
+		statuses
 	}: {
 		checklist: WorkflowChecklistData;
 		profile: Profile;
 		workflow: Workflow;
 		role: Role;
-		runState?: ChecklistRunState;
-		perStep?: StepRunState[];
 		topOfPage?: Snippet;
+		/**
+		 * Optional live badge rendered in the header row, alongside the role/profile badges. The
+		 * page owns it (driven by its own transient `runState`, which is not derivable from the
+		 * persisted `statuses` map) — see `RunStateBadge`.
+		 */
+		headerBadge?: Snippet;
 		rightColumn: Snippet;
 		/**
 		 * Rendered inside the left checklist column, below the steps — used for additive sections
 		 * so they align to the requirements width instead of spanning the full page width.
 		 */
 		belowSteps?: Snippet;
-		stepState?: Snippet<[{ stepIndex: number; stepRunState: StepRunState }]>;
 		/**
-		 * Optional per-requirement renderer. When provided, the left column renders this snippet
-		 * for each requirement instead of the static disabled checkbox — used by runnable pages to
-		 * light requirements up with live pass/fail/warn/pending status inline.
+		 * Display-only per-requirement statuses keyed by requirement id. The left column renders each
+		 * requirement's row from `statuses[requirement.id]` via `RequirementStatusRow`, and each step
+		 * header's indicator is aggregated from its requirements' statuses. A requirement whose id is
+		 * missing from the map renders as `pending` (defensive default).
 		 */
-		requirementState?: Snippet<
-			[
-				{
-					requirement: WorkflowChecklistData['steps'][number]['requirements'][number];
-					stepIndex: number;
-					reqIndex: number;
-				}
-			]
-		>;
+		statuses?: Record<string, RequirementStatus>;
 	} = $props();
 
-	const stepCount = $derived(checklist.steps.length);
-	const stepStates = $derived<StepRunState[]>(
-		perStep && perStep.length === stepCount
-			? perStep
-			: Array.from({ length: stepCount }, () => 'pending')
-	);
+	/** Defensive default for a requirement id missing from the `statuses` map. */
+	const PENDING_STATUS: RequirementStatus = { tone: 'pending', label: 'PENDING' };
+
+	/**
+	 * Aggregate a step's per-requirement statuses into a single step-header run state (reusing the
+	 * shared `stepStateToRequirementStatus` mapping for the indicator). A `fail` in any requirement
+	 * fails the step; an `in-flight` keeps it in progress; any unresolved requirement leaves it
+	 * pending; a wholly-skipped step reads as skipped; otherwise the step is complete.
+	 */
+	function stepRunStateFor(step: WorkflowChecklistData['steps'][number]): StepRunState {
+		if (step.requirements.length === 0) return 'pending';
+		const tones = step.requirements.map((r) => (statuses?.[r.id] ?? PENDING_STATUS).tone);
+		if (tones.some((t) => t === 'fail')) return 'failed';
+		if (tones.some((t) => t === 'in-flight')) return 'in-flight';
+		if (tones.some((t) => t === 'pending')) return 'pending';
+		if (tones.every((t) => t === 'skipped')) return 'skipped';
+		return 'complete';
+	}
 </script>
 
 <section class="space-y-4">
 	<div class="flex flex-wrap items-center gap-3">
 		<RoleBadge {role} />
 		<ProfileBadge {profile} href={profileHref(profile.slug)} />
-		{#if runState === 'awaiting-wallet' || runState === 'wallet-connected'}
-			<Badge class="border-live-border bg-live-soft text-live">Live · in flight</Badge>
-		{:else if runState === 'complete'}
-			<Badge class="border-success-border bg-success-soft text-success">Run complete</Badge>
-		{:else if runState === 'error'}
-			<Badge variant="destructive">Run failed</Badge>
+		{#if headerBadge}
+			{@render headerBadge()}
 		{/if}
 	</div>
 	<h1 class="text-display-lg">{workflow.name}</h1>
@@ -100,12 +99,11 @@
 		<h2 class="text-headline-md">Steps</h2>
 		<ol class="space-y-10">
 			{#each checklist.steps as step, i (step.title)}
-				{@const state = stepStates[i] ?? 'pending'}
 				<li class="space-y-3">
 					<header class="flex flex-wrap items-baseline gap-3">
 						<span class="text-headline-md font-mono text-primary">{i + 1}.</span>
 						<h3 class="text-headline-md">{step.title}</h3>
-						<RunStatusIndicator status={stepStateToRequirementStatus(state)} />
+						<RunStatusIndicator status={stepStateToRequirementStatus(stepRunStateFor(step))} />
 					</header>
 					<InlineMarkup
 						text={step.summary}
@@ -113,35 +111,15 @@
 					/>
 					{#if step.requirements.length}
 						<ul class="space-y-2 pl-6">
-							{#each step.requirements as req, j (req.text)}
-								{#if requirementState}
-									<li>
-										{@render requirementState({ requirement: req, stepIndex: i, reqIndex: j })}
-									</li>
-								{:else}
-									<li class="flex items-start gap-3">
-										<input
-											type="checkbox"
-											disabled
-											class="mt-1 size-4 shrink-0 rounded border-border bg-card"
-											aria-label="static"
-										/>
-										<span class="flex flex-wrap items-baseline gap-2">
-											<Badge
-												variant={requirementLevelVariant[req.level]}
-												class={requirementLevelClass[req.level]}>{req.level}</Badge
-											>
-											<InlineMarkup text={req.text} class="text-body-md text-foreground" />
-										</span>
-									</li>
-								{/if}
+							{#each step.requirements as req (req.text)}
+								<li>
+									<RequirementStatusRow
+										requirement={req}
+										status={statuses?.[req.id] ?? PENDING_STATUS}
+									/>
+								</li>
 							{/each}
 						</ul>
-					{/if}
-					{#if stepState}
-						<div class="lg:hidden">
-							{@render stepState({ stepIndex: i, stepRunState: state })}
-						</div>
 					{/if}
 				</li>
 			{/each}
@@ -153,17 +131,6 @@
 
 	<div class="space-y-6 lg:col-span-2">
 		{@render rightColumn()}
-		{#if stepState}
-			<ol class="hidden space-y-10 lg:block">
-				{#each checklist.steps as step, i (step.title + ':aside')}
-					{@const state = stepStates[i] ?? 'pending'}
-					<li class="space-y-2">
-						<p class="text-label-md text-muted-foreground">Step {i + 1} · {step.title}</p>
-						{@render stepState({ stepIndex: i, stepRunState: state })}
-					</li>
-				{/each}
-			</ol>
-		{/if}
 	</div>
 </section>
 

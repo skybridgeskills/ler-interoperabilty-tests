@@ -4,8 +4,12 @@ import { TestRunRecord } from '$lib/interop/run-history/test-run-record.js';
 /** Maximum number of runs retained per (role, workflow, profile) combination. */
 export const MAX_RUNS_PER_COMBINATION = 3;
 
-/** localStorage key. `.v1` suffix lets future schema changes migrate. */
-const STORAGE_KEY = 'lits.run-history.v1';
+/**
+ * localStorage key. The `.v2` suffix pins the flat run-record schema; the `.v1`
+ * store is abandoned (not migrated) and cleared on first write.
+ */
+const STORAGE_KEY = 'lits.run-history.v2';
+const LEGACY_STORAGE_KEY = 'lits.run-history.v1';
 
 type HistoryMap = Record<string, TestRunRecord[]>;
 
@@ -58,6 +62,16 @@ export function runsFor(
 	return map[runCombinationKey(role, workflow, profile)] ?? [];
 }
 
+/** Find a single run by its `id`, scanning every combination bucket. */
+export function runById(id: string): TestRunRecord | undefined {
+	const map = readMap();
+	for (const records of Object.values(map)) {
+		const found = records.find((r) => r.id === id);
+		if (found) return found;
+	}
+	return undefined;
+}
+
 /** The latest run for every known combination, keyed by combination key. */
 export function allLatestRuns(): Map<string, TestRunRecord> {
 	const map = readMap();
@@ -106,5 +120,7 @@ function readMap(): HistoryMap {
 
 function writeMap(map: HistoryMap): void {
 	if (typeof localStorage === 'undefined') return;
+	// Abandon the pre-v2 store — its records use the old discriminated shape.
+	localStorage.removeItem(LEGACY_STORAGE_KEY);
 	localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
 }

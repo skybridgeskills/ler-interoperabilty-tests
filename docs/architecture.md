@@ -127,15 +127,53 @@ under `src/lib/client/`:
   validated away on read via `RoleSlug`/`ProfileSlug` schemas.
 - **Run history** (`client/run-history/run-history-store.ts`) — the latest 3
   `TestRunRecord`s per `(role, workflow, profile)` combination, key
-  `lits.run-history.v1`. Pure model + status derivation live in
+  `lits.run-history.v2`. Pure model + status derivation live in
   `interop/run-history/`; only the store touches `localStorage`. Reads
   `safeParse` every entry and drop malformed ones — never throw to the UI.
 
-Both keys are `.v1`-suffixed so a future schema change can migrate rather than
-break. Retention is per-combination and isolated in `applyRetention()`, shaped
-to later preserve a `pinned` flag (reserved on `TestRunRecord`, unset in MVP)
-without an API change. See
-[`docs/adr/2026-06-10-run-history-local-persistence.md`](adr/2026-06-10-run-history-local-persistence.md).
+The run record is a **flat, id-keyed v2 shape** (see the ADR below), not a
+discriminated `payload` union:
+
+```
+{ id, role, workflow, profile, ranAt, status,
+  checklistFingerprint,
+  statuses: Record<requirementId, RequirementStatus>,
+  error?, pinned? }
+```
+
+`id` (`crypto.randomUUID()`) and `ranAt` (ISO string) default in the factory.
+`status` is `passed | failed | incomplete`. `statuses` holds the
+presentation-ready per-requirement rows keyed by requirement id — the persisted
+`RequirementStatus` (`{ tone, label, message?, attested? }`) deliberately omits
+the live-only `raw` debug body (the in-memory `RequirementStatusView` adds it
+back). `checklistFingerprint` is an order-independent djb2 hash over the
+combined checklist's `id␟level␟text` rows (base + additives), used only for
+equality-based drift detection.
+
+The selection key stays `.v1`; run history bumped to `.v2` and **abandons** the
+old v1 store rather than migrating it (v1 records lacked per-row statuses and a
+fingerprint, so rendering them as reports would fabricate data). The store never
+reads `.v1` and clears it on first write (`LEGACY_STORAGE_KEY`). Retention is
+per-combination and isolated in `applyRetention()` (cap 3), shaped to later
+preserve a `pinned` flag (reserved on `TestRunRecord`, unset in MVP) without an
+API change. `runById(id)` scans the buckets to resolve a single run for the
+reopen route. See
+[`docs/adr/2026-07-11-run-history-v2-flat-record.md`](adr/2026-07-11-run-history-v2-flat-record.md)
+(supersedes [`2026-06-10-run-history-local-persistence.md`](adr/2026-06-10-run-history-local-persistence.md)).
+
+### Reopening a run — the view-only `/runs/[id]` route
+
+`src/routes/runs/[id]/` renders a saved run as a shareable, print-to-PDF report.
+It is **client-only** (`prerender = false`, `ssr = false`) — the record lives in
+`localStorage`, whose id is unknown at build time. After mount it resolves the
+record via `runById(id)`, re-derives the live combined checklist through
+`interop/accessors` (`combinationFor` + `additiveChecklistsForCombination`), and
+runs a strict `checklistFingerprint` drift check
+(`reopenStateFor` → `not-found | outdated | render`). An **outdated** run (the
+checklist drifted since the run) is blocked and prompts a re-run — never
+migrated or partially reconciled. A **current** run repaints the display-only
+`RunnableChecklist` (fed the persisted `statuses` map) plus a `RunHistorySummary`,
+and prints via the browser's own print dialog (`window.print()`).
 
 ## Test harness
 

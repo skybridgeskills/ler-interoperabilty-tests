@@ -1,21 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-	exchangeRunRecord,
-	issuerReportRunRecord,
-	type TestRunRecord
-} from '$lib/interop/run-history/test-run-record.js';
+import type { RequirementStatus } from '$lib/interop/run-history/requirement-status.js';
+import { type TestRunRecord, testRunRecord } from '$lib/interop/run-history/test-run-record.js';
 
 import {
 	allLatestRuns,
 	clearRunHistory,
 	latestRunFor,
 	recordRun,
+	runById,
 	runCombinationKey,
 	runsFor
 } from './run-history-store.js';
 
-const STORAGE_KEY = 'lits.run-history.v1';
+const STORAGE_KEY = 'lits.run-history.v2';
+const LEGACY_STORAGE_KEY = 'lits.run-history.v1';
 
 let backing: Map<string, string>;
 
@@ -31,13 +30,31 @@ beforeEach(() => {
 
 afterEach(() => vi.unstubAllGlobals());
 
+const passStatus: Record<string, RequirementStatus> = {
+	'vcalm.signature-valid': { tone: 'pass', label: 'PASS' }
+};
+
 function walletRun(ranAt: string): TestRunRecord {
-	const record = exchangeRunRecord({
+	const record = testRunRecord({
 		role: 'wallet',
 		workflow: 'credential-issuance',
 		profile: 'vcalm',
-		exchangeState: 'complete',
-		derived: { run: 'complete', perStep: ['complete'] }
+		status: 'passed',
+		checklistFingerprint: 'wallet-fp',
+		statuses: passStatus
+	});
+	record.ranAt = ranAt;
+	return record;
+}
+
+function issuerRun(ranAt: string): TestRunRecord {
+	const record = testRunRecord({
+		role: 'issuer',
+		workflow: 'direct-credential-verification',
+		profile: 'ob3-direct-delivery',
+		status: 'passed',
+		checklistFingerprint: 'issuer-fp',
+		statuses: {}
 	});
 	record.ranAt = ranAt;
 	return record;
@@ -60,16 +77,7 @@ describe('recordRun retention', () => {
 	});
 
 	it('evicts per-combination, leaving other combinations untouched', () => {
-		const other = issuerReportRunRecord({
-			role: 'issuer',
-			workflow: 'direct-credential-verification',
-			profile: 'ob3-direct-delivery',
-			verified: true,
-			failingMustCount: 0
-		});
-		other.ranAt = '2026-06-01T00:00:00.000Z';
-		recordRun(other);
-
+		recordRun(issuerRun('2026-06-01T00:00:00.000Z'));
 		recordRun(walletRun('2026-06-02T00:00:00.000Z'));
 		recordRun(walletRun('2026-06-03T00:00:00.000Z'));
 		recordRun(walletRun('2026-06-04T00:00:00.000Z'));
@@ -79,6 +87,43 @@ describe('recordRun retention', () => {
 		expect(runsFor('issuer', 'direct-credential-verification', 'ob3-direct-delivery')).toHaveLength(
 			1
 		);
+	});
+});
+
+describe('v2 round-trip', () => {
+	it('persists and reads back a full flat record', () => {
+		const record = walletRun('2026-06-01T00:00:00.000Z');
+		recordRun(record);
+
+		const [read] = runsFor('wallet', 'credential-issuance', 'vcalm');
+		expect(read).toEqual(record);
+		expect(read.checklistFingerprint).toBe('wallet-fp');
+		expect(read.statuses['vcalm.signature-valid']).toEqual({ tone: 'pass', label: 'PASS' });
+	});
+
+	it('writes under the .v2 key and clears the legacy .v1 store', () => {
+		backing.set(LEGACY_STORAGE_KEY, JSON.stringify({ stale: [] }));
+		recordRun(walletRun('2026-06-01T00:00:00.000Z'));
+
+		expect(backing.has(STORAGE_KEY)).toBe(true);
+		expect(backing.has(LEGACY_STORAGE_KEY)).toBe(false);
+	});
+});
+
+describe('runById', () => {
+	it('finds a run by its id across combinations', () => {
+		const wallet = walletRun('2026-06-01T00:00:00.000Z');
+		const issuer = issuerRun('2026-06-02T00:00:00.000Z');
+		recordRun(wallet);
+		recordRun(issuer);
+
+		expect(runById(wallet.id)?.id).toBe(wallet.id);
+		expect(runById(issuer.id)?.id).toBe(issuer.id);
+	});
+
+	it('returns undefined for an unknown id', () => {
+		recordRun(walletRun('2026-06-01T00:00:00.000Z'));
+		expect(runById('no-such-id')).toBeUndefined();
 	});
 });
 
@@ -113,22 +158,23 @@ describe('malformed localStorage', () => {
 		);
 		expect(latestRunFor('wallet', 'credential-issuance', 'vcalm')).toBeUndefined();
 	});
+
+	it('does not read the legacy .v1 key', () => {
+		backing.set(
+			LEGACY_STORAGE_KEY,
+			JSON.stringify({
+				'wallet:credential-issuance:vcalm': [walletRun('2026-06-01T00:00:00.000Z')]
+			})
+		);
+		expect(runsFor('wallet', 'credential-issuance', 'vcalm')).toEqual([]);
+	});
 });
 
 describe('allLatestRuns', () => {
 	it('returns one entry per combination keyed by runCombinationKey', () => {
 		recordRun(walletRun('2026-06-01T00:00:00.000Z'));
 		recordRun(walletRun('2026-06-02T00:00:00.000Z'));
-
-		const issuer = issuerReportRunRecord({
-			role: 'issuer',
-			workflow: 'direct-credential-verification',
-			profile: 'ob3-direct-delivery',
-			verified: true,
-			failingMustCount: 0
-		});
-		issuer.ranAt = '2026-06-03T00:00:00.000Z';
-		recordRun(issuer);
+		recordRun(issuerRun('2026-06-03T00:00:00.000Z'));
 
 		const latest = allLatestRuns();
 		expect(latest.size).toBe(2);

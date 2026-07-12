@@ -127,11 +127,13 @@ describe('scoreVerifierRun', () => {
 		});
 	});
 
-	it('resolves id-less checklist rows as n/a, like the issuer check-runner', async () => {
+	it('resolves unscored checklist rows as automated n/a, like the issuer check-runner', async () => {
 		const { report } = await score();
-		const unkeyed = report.groups[0].outcomes.filter((o) => o.id.startsWith('unkeyed:'));
-		expect(unkeyed.length).toBeGreaterThan(0);
-		expect(unkeyed.every((o) => o.status === 'n/a' && o.source === 'automated')).toBe(true);
+		const unscored = report.groups[0].outcomes.filter(
+			(o) => o.message === 'No automated check registered for this requirement yet.'
+		);
+		expect(unscored.length).toBeGreaterThan(0);
+		expect(unscored.every((o) => o.status === 'n/a' && o.source === 'automated')).toBe(true);
 	});
 
 	it('builds reveal activity per pass in run order with mapped statuses', async () => {

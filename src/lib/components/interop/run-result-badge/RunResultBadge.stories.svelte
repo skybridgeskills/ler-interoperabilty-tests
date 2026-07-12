@@ -1,30 +1,33 @@
 <script lang="ts" module>
 	import { defineMeta } from '@storybook/addon-svelte-csf';
 
-	import { exchangeRunRecord, issuerReportRunRecord } from '$lib/interop/index.js';
+	import { statusFromExchange, statusFromIssuerReport, testRunRecord } from '$lib/interop/index.js';
 
 	import { RunResultBadge } from './index.js';
 
-	const passed = issuerReportRunRecord({
+	const passed = testRunRecord({
 		role: 'issuer',
 		workflow: 'direct-credential-issuance',
 		profile: 'ob3-direct-delivery',
-		verified: true,
-		failingMustCount: 0
+		status: statusFromIssuerReport({ verified: true }),
+		checklistFingerprint: '',
+		statuses: {}
 	});
-	const failed = issuerReportRunRecord({
+	const failed = testRunRecord({
 		role: 'issuer',
 		workflow: 'direct-credential-issuance',
 		profile: 'ob3-direct-delivery',
-		verified: false,
-		failingMustCount: 2
+		status: statusFromIssuerReport({ verified: false }),
+		checklistFingerprint: '',
+		statuses: {}
 	});
-	const incomplete = exchangeRunRecord({
+	const incomplete = testRunRecord({
 		role: 'wallet',
 		workflow: 'credential-acceptance',
 		profile: 'vcalm',
-		exchangeState: 'active',
-		derived: { run: 'awaiting-wallet', perStep: ['in-flight', 'pending'] }
+		status: statusFromExchange({ run: 'awaiting-wallet', perStep: ['in-flight', 'pending'] }),
+		checklistFingerprint: '',
+		statuses: {}
 	});
 
 	const { Story } = defineMeta({

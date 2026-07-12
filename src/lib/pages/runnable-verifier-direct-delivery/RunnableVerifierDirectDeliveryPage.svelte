@@ -1,26 +1,28 @@
 <script lang="ts">
 	import { recordRun } from '$lib/client/run-history/index.js';
 	import { MobileWalletDrawer } from '$lib/components/interop/mobile-wallet-drawer/index.js';
-	import {
-		RequirementStatusRow,
-		verifierOutcomeToRequirementStatus
-	} from '$lib/components/interop/requirement-status-row/index.js';
+	import { statusesFromVerifierOutcomes } from '$lib/components/interop/requirement-status-row/index.js';
 	import {
 		RunResultCard,
 		type RunResultOutcome
 	} from '$lib/components/interop/run-result-card/index.js';
-	import { RunnableChecklist } from '$lib/components/interop/runnable-checklist/index.js';
+	import {
+		RunnableChecklist,
+		RunStateBadge
+	} from '$lib/components/interop/runnable-checklist/index.js';
 	import { VerifierPassesWallet } from '$lib/components/interop/test-wallet/index.js';
 	import {
 		combinationFor,
+		combinedRequirements,
 		roleBySlug,
-		verifierReportRunRecord,
+		runChecklistFingerprint,
+		statusFromVerifierReport,
+		testRunRecord,
 		workflowBySlug,
 		type ChecklistRunState,
 		type PassAttestation,
 		type PassVerdict,
 		type RejectionReason,
-		type StepRunState,
 		type VerifierRunDefinition,
 		type VerifierRunnerReport
 	} from '$lib/interop/index.js';
@@ -28,9 +30,7 @@
 
 	import {
 		buildAttestation,
-		deriveStepStates,
 		handOffActivity,
-		outcomeForRequirement,
 		outcomesById,
 		passArtifactViews,
 		revealedActivity,
@@ -57,7 +57,14 @@
 		'direct-credential-verification',
 		'ob3-direct-delivery'
 	)!;
-	const stepCount = combo.checklist.steps.length;
+	// Combined requirement set — the fingerprint and the persisted `statuses` map are both
+	// keyed against these ids.
+	const requirements = combinedRequirements(
+		'verifier',
+		'direct-credential-verification',
+		'ob3-direct-delivery'
+	);
+	const checklistFingerprint = runChecklistFingerprint(requirements);
 
 	let stage = $state<Stage>('idle');
 	let run = $state<VerifierRunDefinition | undefined>(undefined);
@@ -85,6 +92,9 @@
 			: []
 	);
 	const byId = $derived(outcomesById(report));
+	// Persisted, presentation-ready per-requirement statuses (keyed by requirement id).
+	// The left column renders these live, and the run record persists this exact map.
+	const statuses = $derived(statusesFromVerifierOutcomes(requirements, byId));
 
 	const walletState = $derived(
 		stage === 'idle' ? 'idle' : stage === 'done' ? 'done' : stage === 'error' ? 'error' : 'running'
@@ -102,14 +112,6 @@
 					? 'idle'
 					: 'wallet-connected'
 	);
-	const perStep = $derived<StepRunState[]>(
-		report
-			? deriveStepStates(combo.checklist.steps, byId)
-			: Array.from({ length: stepCount }, (_, i) =>
-					busy && i === stepCount - 1 ? 'in-flight' : 'pending'
-				)
-	);
-
 	const resultOutcome = $derived<RunResultOutcome | undefined>(
 		stage === 'done'
 			? report?.verified
@@ -192,13 +194,13 @@
 			report = scored;
 			stage = 'done';
 			recordRun(
-				verifierReportRunRecord({
+				testRunRecord({
 					role: 'verifier',
 					workflow: 'direct-credential-verification',
 					profile: 'ob3-direct-delivery',
-					verified: scored.verified,
-					failingMustCount: scored.failingMustCount,
-					attestedPassCount: attestations.length
+					status: statusFromVerifierReport({ verified: scored.verified }),
+					checklistFingerprint,
+					statuses
 				})
 			);
 		} catch (e) {
@@ -219,14 +221,10 @@
 	}
 </script>
 
-<RunnableChecklist
-	checklist={combo.checklist}
-	profile={combo.profile}
-	{workflow}
-	{role}
-	{runState}
-	{perStep}
->
+<RunnableChecklist checklist={combo.checklist} profile={combo.profile} {workflow} {role} {statuses}>
+	{#snippet headerBadge()}
+		<RunStateBadge {runState} />
+	{/snippet}
 	{#snippet rightColumn()}
 		<MobileWalletDrawer ctaLabel={stage === 'idle' ? 'Start verifying' : undefined}>
 			<RunResultCard
@@ -249,12 +247,5 @@
 				onReset={reset}
 			/>
 		</MobileWalletDrawer>
-	{/snippet}
-
-	{#snippet requirementState({ requirement })}
-		<RequirementStatusRow
-			{requirement}
-			status={verifierOutcomeToRequirementStatus(outcomeForRequirement(byId, requirement))}
-		/>
 	{/snippet}
 </RunnableChecklist>

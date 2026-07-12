@@ -1,41 +1,29 @@
 import { outcomeBadge } from '$lib/components/interop/issuer-runner/requirement-report/outcome-status-badge.js';
 import type { StepRunState } from '$lib/interop/index.js';
+import type {
+	RequirementStatus,
+	RequirementStatusTone
+} from '$lib/interop/run-history/requirement-status.js';
 import type { VerifierCheckOutcome } from '$lib/interop/verifier-run/index.js';
 import type { CheckOutcome } from '$lib/server/domain/issuer-runner/check-outcome.js';
+
+// The persisted status type + tone union now live framework- and server-free in
+// `$lib/interop/run-history/requirement-status.ts`. Re-exported here so existing
+// component imports keep resolving; the mappers below (which need `CheckOutcome`)
+// stay in `components/`.
+export type { RequirementStatusTone };
 
 /** RFC 2119 conformance level for a checklist requirement. */
 export type RequirementLevel = 'MUST' | 'SHOULD' | 'MAY';
 
 /**
- * Semantic status of one requirement row, independent of colors/markup. The
- * row component maps `tone` to dot + pill classes; the mappers below produce it
- * from either a resolved {@link CheckOutcome} (issuer flow) or a
- * {@link StepRunState} (external-wallet flow).
+ * The live, in-memory superset of the persisted {@link RequirementStatus}: it
+ * adds `raw` (the collapsible `<details>` body) which is never persisted. The
+ * mappers below return this; only `raw` is dropped when writing run history.
  */
-export type RequirementStatusTone =
-	| 'pass'
-	| 'warn'
-	| 'fail'
-	| 'pending'
-	| 'in-flight'
-	| 'skipped'
-	| 'n/a';
-
-/** Normalized, presentation-ready status for one requirement row. */
-export type RequirementStatusView = {
-	tone: RequirementStatusTone;
-	/** Uppercase pill text, e.g. `PASS`, `IN PROGRESS`, `PENDING`, `FAIL · MUST`. */
-	label: string;
-	/** Inline message (fail/warn) or details message; optional. */
-	message?: string;
-	/** Raw body for the collapsible `<details>`; optional. */
+export type RequirementStatusView = RequirementStatus & {
+	/** Raw body for the collapsible `<details>`; optional, live-only. */
 	raw?: unknown;
-	/**
-	 * Set when the row was resolved from the operator's attestation of their own
-	 * system's behavior (verifier acceptance passes) rather than an automated
-	 * check — the row renders a small ATTESTED pill next to the status label.
-	 */
-	attested?: boolean;
 };
 
 /**

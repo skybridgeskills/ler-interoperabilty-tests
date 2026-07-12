@@ -1,79 +1,56 @@
 import { z } from 'zod';
 
 import { ProfileSlug, RoleSlug, WorkflowSlug } from '$lib/interop/profile-schema.js';
-import {
-	ChecklistRunState,
-	StepRunState,
-	type RunStateDerivation
-} from '$lib/interop/runner-state.js';
+import type { RunStateDerivation } from '$lib/interop/runner-state.js';
 import { ZodFactory } from '$lib/util/zod-factory.js';
+
+import { RequirementStatus } from './requirement-status.js';
 
 /** Outcome of a single recorded test run. */
 export const RunStatus = ZodFactory(z.enum(['passed', 'failed', 'incomplete']));
 export type RunStatus = ReturnType<typeof RunStatus>;
 
-/** Snapshot of an exchange-runner run (wallet/verifier flows). */
-const ExchangeRunPayload = z.object({
-	kind: z.literal('exchange'),
-	exchangeId: z.string().optional(),
-	exchangeState: z.enum(['pending', 'active', 'complete', 'invalid']),
-	derived: z.object({
-		run: ChecklistRunState.schema,
-		perStep: z.array(StepRunState.schema)
-	})
-});
-export type ExchangeRunPayload = z.infer<typeof ExchangeRunPayload>;
-
-/** Snapshot of an issuer-report run (direct credential verification). */
-const IssuerReportRunPayload = z.object({
-	kind: z.literal('issuer-report'),
-	verified: z.boolean(),
-	failingMustCount: z.number().int().nonnegative(),
-	fatalError: z.object({ message: z.string(), hint: z.string().optional() }).optional()
-});
-export type IssuerReportRunPayload = z.infer<typeof IssuerReportRunPayload>;
-
-/** Snapshot of a wallet-runner run (the test wallet completed a holder flow + conformance check). */
-const WalletReportRunPayload = z.object({
-	kind: z.literal('wallet-report'),
-	verified: z.boolean(),
-	failingMustCount: z.number().int().nonnegative(),
-	exchangeId: z.string().optional(),
-	exchangeState: z.enum(['pending', 'active', 'complete', 'invalid'])
-});
-export type WalletReportRunPayload = z.infer<typeof WalletReportRunPayload>;
-
-/** Snapshot of a verifier-report run (attested acceptance passes scored against ground truth). */
-const VerifierReportRunPayload = z.object({
-	kind: z.literal('verifier-report'),
-	verified: z.boolean(),
-	failingMustCount: z.number().int().nonnegative(),
-	attestedPassCount: z.number().int().nonnegative()
-});
-export type VerifierReportRunPayload = z.infer<typeof VerifierReportRunPayload>;
-
 /**
  * A persisted record of one test run for a (role, workflow, profile)
- * combination. Framework-free + validated via the {@link TestRunRecord}
- * factory; the localStorage store handles retention/persistence.
+ * combination. The v2 shape is flat and framework-free: it stores the overall
+ * `status`, a per-requirement `statuses` map (keyed by requirement id), and a
+ * `checklistFingerprint` used to detect drift against the live checklist. The
+ * localStorage store handles retention/persistence.
  */
 export const TestRunRecord = ZodFactory(
 	z.object({
+		id: z.string().default(() => crypto.randomUUID()),
 		role: RoleSlug.schema,
 		workflow: WorkflowSlug.schema,
 		profile: ProfileSlug.schema,
-		ranAt: z.string(), // ISO timestamp
+		ranAt: z.string().default(() => new Date().toISOString()), // ISO timestamp
 		status: RunStatus.schema,
-		pinned: z.boolean().optional(), // reserved for future manual-pin feature (MVP: unset)
-		payload: z.discriminatedUnion('kind', [
-			ExchangeRunPayload,
-			IssuerReportRunPayload,
-			WalletReportRunPayload,
-			VerifierReportRunPayload
-		])
+		/** djb2 fingerprint of the combined checklist this run scored against. */
+		checklistFingerprint: z.string(),
+		/** Presentation-ready per-requirement statuses, keyed by requirement id. */
+		statuses: z.record(z.string(), RequirementStatus.schema),
+		/** Fatal error that aborted the run, if any. */
+		error: z.object({ message: z.string(), hint: z.string().optional() }).optional(),
+		pinned: z.boolean().optional() // reserved for future manual-pin feature (MVP: unset)
 	})
 );
 export type TestRunRecord = ReturnType<typeof TestRunRecord>;
+
+/**
+ * Assemble + validate a v2 run record. `id` and `ranAt` default in the factory,
+ * so callers supply only the run's semantic content.
+ */
+export function testRunRecord(args: {
+	role: RoleSlug;
+	workflow: WorkflowSlug;
+	profile: ProfileSlug;
+	status: RunStatus;
+	checklistFingerprint: string;
+	statuses: Record<string, RequirementStatus>;
+	error?: { message: string; hint?: string };
+}): TestRunRecord {
+	return TestRunRecord({ ...args });
+}
 
 /** Derive a run status from an exchange-runner derivation. */
 export function statusFromExchange(d: RunStateDerivation): RunStatus {
@@ -86,54 +63,6 @@ export function statusFromExchange(d: RunStateDerivation): RunStatus {
 export function statusFromIssuerReport(r: { verified: boolean; fatalError?: unknown }): RunStatus {
 	if (r.fatalError) return 'failed';
 	return r.verified ? 'passed' : 'failed';
-}
-
-/** Assemble + validate a full exchange-run record (stamps `ranAt` now). */
-export function exchangeRunRecord(args: {
-	role: RoleSlug;
-	workflow: WorkflowSlug;
-	profile: ProfileSlug;
-	exchangeId?: string;
-	exchangeState: 'pending' | 'active' | 'complete' | 'invalid';
-	derived: RunStateDerivation;
-}): TestRunRecord {
-	return TestRunRecord({
-		role: args.role,
-		workflow: args.workflow,
-		profile: args.profile,
-		ranAt: new Date().toISOString(),
-		status: statusFromExchange(args.derived),
-		payload: {
-			kind: 'exchange',
-			exchangeId: args.exchangeId,
-			exchangeState: args.exchangeState,
-			derived: { run: args.derived.run, perStep: args.derived.perStep }
-		}
-	});
-}
-
-/** Assemble + validate a full issuer-report run record (stamps `ranAt` now). */
-export function issuerReportRunRecord(args: {
-	role: RoleSlug;
-	workflow: WorkflowSlug;
-	profile: ProfileSlug;
-	verified: boolean;
-	failingMustCount: number;
-	fatalError?: { message: string; hint?: string };
-}): TestRunRecord {
-	return TestRunRecord({
-		role: args.role,
-		workflow: args.workflow,
-		profile: args.profile,
-		ranAt: new Date().toISOString(),
-		status: statusFromIssuerReport(args),
-		payload: {
-			kind: 'issuer-report',
-			verified: args.verified,
-			failingMustCount: args.failingMustCount,
-			fatalError: args.fatalError
-		}
-	});
 }
 
 /** Derive a run status from a wallet-runner result. */
@@ -152,54 +81,4 @@ export function statusFromWalletReport(r: {
  */
 export function statusFromVerifierReport(r: { verified: boolean }): RunStatus {
 	return r.verified ? 'passed' : 'failed';
-}
-
-/** Assemble + validate a full verifier-report run record (stamps `ranAt` now). */
-export function verifierReportRunRecord(args: {
-	role: RoleSlug;
-	workflow: WorkflowSlug;
-	profile: ProfileSlug;
-	verified: boolean;
-	failingMustCount: number;
-	attestedPassCount: number;
-}): TestRunRecord {
-	return TestRunRecord({
-		role: args.role,
-		workflow: args.workflow,
-		profile: args.profile,
-		ranAt: new Date().toISOString(),
-		status: statusFromVerifierReport(args),
-		payload: {
-			kind: 'verifier-report',
-			verified: args.verified,
-			failingMustCount: args.failingMustCount,
-			attestedPassCount: args.attestedPassCount
-		}
-	});
-}
-
-/** Assemble + validate a full wallet-report run record (stamps `ranAt` now). */
-export function walletRunRecord(args: {
-	role: RoleSlug;
-	workflow: WorkflowSlug;
-	profile: ProfileSlug;
-	verified: boolean;
-	failingMustCount: number;
-	exchangeId?: string;
-	exchangeState: 'pending' | 'active' | 'complete' | 'invalid';
-}): TestRunRecord {
-	return TestRunRecord({
-		role: args.role,
-		workflow: args.workflow,
-		profile: args.profile,
-		ranAt: new Date().toISOString(),
-		status: statusFromWalletReport(args),
-		payload: {
-			kind: 'wallet-report',
-			verified: args.verified,
-			failingMustCount: args.failingMustCount,
-			exchangeId: args.exchangeId,
-			exchangeState: args.exchangeState
-		}
-	});
 }

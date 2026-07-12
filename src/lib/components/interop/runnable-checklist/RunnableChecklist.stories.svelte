@@ -9,12 +9,9 @@
 	} from '$lib/interop/index.js';
 
 	import { ExchangeRunnerPanel } from '../exchange-runner/index.js';
-	import {
-		RequirementStatusRow,
-		stepStateToRequirementStatus
-	} from '../requirement-status-row/index.js';
+	import { statusesFromStepStates } from '../requirement-status-row/index.js';
 
-	import { RunnableChecklist } from './index.js';
+	import { RunnableChecklist, RunStateBadge } from './index.js';
 
 	const { Story } = defineMeta({
 		title: 'Interop/RunnableChecklist',
@@ -46,11 +43,17 @@
 	const oid4vciUrl =
 		'openid-credential-offer://?credential_offer_uri=http%3A%2F%2Flocalhost%3A4004%2Fworkflows%2Fclaim%2Fexchanges%2Fexample-uuid-1234%2Fopenid%2Fcredential-offer';
 
-	// Step-derived requirement status, mirroring what `RunnableWalletAcceptancePage`
+	// Step-derived requirement statuses, mirroring what `RunnableWalletAcceptancePage`
 	// passes: every requirement in a step shares its parent step's run state.
-	function statusFor(steps: StepRunState[], stepIndex: number) {
-		return stepStateToRequirementStatus(steps[stepIndex] ?? 'pending');
-	}
+	const pendingStatuses = statusesFromStepStates(combo.checklist.steps, allPending);
+	const awaitingStatuses = statusesFromStepStates(combo.checklist.steps, awaitingPerStep);
+	const connectedStatuses = statusesFromStepStates(combo.checklist.steps, connectedPerStep);
+	const completeStatuses = statusesFromStepStates(combo.checklist.steps, allComplete);
+	const skippedStatuses = statusesFromStepStates(combo.checklist.steps, allSkipped);
+	const oid4AwaitingStatuses = statusesFromStepStates(
+		oid4Combo.checklist.steps,
+		oid4AwaitingPerStep
+	);
 </script>
 
 <Story name="Idle" asChild>
@@ -60,17 +63,16 @@
 			profile={combo.profile}
 			{workflow}
 			{role}
-			runState="idle"
-			perStep={allPending}
+			statuses={pendingStatuses}
 		>
+			{#snippet headerBadge()}
+				<RunStateBadge runState="idle" />
+			{/snippet}
 			{#snippet rightColumn()}
 				<ExchangeRunnerPanel
 					data={{ intent: 'issuance', protocol: 'vcalm', run: 'idle', perStep: allPending }}
 					actions={noopActions}
 				/>
-			{/snippet}
-			{#snippet requirementState({ requirement, stepIndex })}
-				<RequirementStatusRow {requirement} status={statusFor(allPending, stepIndex)} />
 			{/snippet}
 		</RunnableChecklist>
 	</div>
@@ -83,9 +85,11 @@
 			profile={combo.profile}
 			{workflow}
 			{role}
-			runState="awaiting-wallet"
-			perStep={awaitingPerStep}
+			statuses={awaitingStatuses}
 		>
+			{#snippet headerBadge()}
+				<RunStateBadge runState="awaiting-wallet" />
+			{/snippet}
 			{#snippet rightColumn()}
 				<ExchangeRunnerPanel
 					data={{
@@ -99,9 +103,6 @@
 					actions={noopActions}
 				/>
 			{/snippet}
-			{#snippet requirementState({ requirement, stepIndex })}
-				<RequirementStatusRow {requirement} status={statusFor(awaitingPerStep, stepIndex)} />
-			{/snippet}
 		</RunnableChecklist>
 	</div>
 </Story>
@@ -113,9 +114,11 @@
 			profile={combo.profile}
 			{workflow}
 			{role}
-			runState="wallet-connected"
-			perStep={connectedPerStep}
+			statuses={connectedStatuses}
 		>
+			{#snippet headerBadge()}
+				<RunStateBadge runState="wallet-connected" />
+			{/snippet}
 			{#snippet rightColumn()}
 				<ExchangeRunnerPanel
 					data={{
@@ -129,9 +132,6 @@
 					actions={noopActions}
 				/>
 			{/snippet}
-			{#snippet requirementState({ requirement, stepIndex })}
-				<RequirementStatusRow {requirement} status={statusFor(connectedPerStep, stepIndex)} />
-			{/snippet}
 		</RunnableChecklist>
 	</div>
 </Story>
@@ -143,9 +143,11 @@
 			profile={oid4Combo.profile}
 			{workflow}
 			{role}
-			runState="awaiting-wallet"
-			perStep={oid4AwaitingPerStep}
+			statuses={oid4AwaitingStatuses}
 		>
+			{#snippet headerBadge()}
+				<RunStateBadge runState="awaiting-wallet" />
+			{/snippet}
 			{#snippet rightColumn()}
 				<ExchangeRunnerPanel
 					data={{
@@ -159,9 +161,6 @@
 					actions={noopActions}
 				/>
 			{/snippet}
-			{#snippet requirementState({ requirement, stepIndex })}
-				<RequirementStatusRow {requirement} status={statusFor(oid4AwaitingPerStep, stepIndex)} />
-			{/snippet}
 		</RunnableChecklist>
 	</div>
 </Story>
@@ -173,9 +172,11 @@
 			profile={combo.profile}
 			{workflow}
 			{role}
-			runState="complete"
-			perStep={allComplete}
+			statuses={completeStatuses}
 		>
+			{#snippet headerBadge()}
+				<RunStateBadge runState="complete" />
+			{/snippet}
 			{#snippet rightColumn()}
 				<ExchangeRunnerPanel
 					data={{
@@ -188,9 +189,6 @@
 					actions={{ ...noopActions, onReset: () => {} }}
 				/>
 			{/snippet}
-			{#snippet requirementState({ requirement, stepIndex })}
-				<RequirementStatusRow {requirement} status={statusFor(allComplete, stepIndex)} />
-			{/snippet}
 		</RunnableChecklist>
 	</div>
 </Story>
@@ -202,9 +200,11 @@
 			profile={combo.profile}
 			{workflow}
 			{role}
-			runState="error"
-			perStep={allSkipped}
+			statuses={skippedStatuses}
 		>
+			{#snippet headerBadge()}
+				<RunStateBadge runState="error" />
+			{/snippet}
 			{#snippet rightColumn()}
 				<ExchangeRunnerPanel
 					data={{
@@ -219,9 +219,6 @@
 					}}
 					actions={noopActions}
 				/>
-			{/snippet}
-			{#snippet requirementState({ requirement, stepIndex })}
-				<RequirementStatusRow {requirement} status={statusFor(allSkipped, stepIndex)} />
 			{/snippet}
 		</RunnableChecklist>
 	</div>

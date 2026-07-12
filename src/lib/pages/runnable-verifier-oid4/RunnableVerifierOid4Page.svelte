@@ -1,23 +1,25 @@
 <script lang="ts">
 	import { recordRun } from '$lib/client/run-history/index.js';
 	import { MobileWalletDrawer } from '$lib/components/interop/mobile-wallet-drawer/index.js';
-	import {
-		RequirementStatusRow,
-		verifierOutcomeToRequirementStatus
-	} from '$lib/components/interop/requirement-status-row/index.js';
+	import { statusesFromVerifierOutcomes } from '$lib/components/interop/requirement-status-row/index.js';
 	import {
 		RunResultCard,
 		type RunResultOutcome
 	} from '$lib/components/interop/run-result-card/index.js';
-	import { RunnableChecklist } from '$lib/components/interop/runnable-checklist/index.js';
+	import {
+		RunnableChecklist,
+		RunStateBadge
+	} from '$lib/components/interop/runnable-checklist/index.js';
 	import { VerifierPassesWallet } from '$lib/components/interop/test-wallet/index.js';
 	import {
 		combinationFor,
+		combinedRequirements,
 		roleBySlug,
-		verifierReportRunRecord,
+		runChecklistFingerprint,
+		statusFromVerifierReport,
+		testRunRecord,
 		workflowBySlug,
-		type ChecklistRunState,
-		type StepRunState
+		type ChecklistRunState
 	} from '$lib/interop/index.js';
 	import type {
 		PassAttestation,
@@ -34,7 +36,6 @@
 		buildAttestation,
 		currentOutcomesById,
 		defaultReuseRequest,
-		outcomeForRequirement,
 		passArtifactViews,
 		presentedActivity,
 		replaceEvidence,
@@ -43,7 +44,6 @@
 		scoreRequestBody,
 		scoringActivity,
 		startedActivity,
-		stepStatesFor,
 		verdictEchoActivity
 	} from './oid4-verify-flow.js';
 	import PresentationRequestField from './PresentationRequestField.svelte';
@@ -66,7 +66,14 @@
 	const role = roleBySlug('verifier')!;
 	const workflow = workflowBySlug('credential-request-and-verification')!;
 	const combo = combinationFor('verifier', 'credential-request-and-verification', 'oid4')!;
-	const steps = combo.checklist.steps;
+	// Combined requirement set — the fingerprint and the persisted `statuses` map are both
+	// keyed against these ids.
+	const requirements = combinedRequirements(
+		'verifier',
+		'credential-request-and-verification',
+		'oid4'
+	);
+	const checklistFingerprint = runChecklistFingerprint(requirements);
 
 	let stage = $state<Stage>('idle');
 	let plan = $state<VerifierRunPlan | undefined>(undefined);
@@ -115,6 +122,9 @@
 		plan ? passArtifactViews({ plan, evidence, attestations, report }) : []
 	);
 	const byId = $derived(currentOutcomesById(report, floorOutcomes));
+	// Persisted, presentation-ready per-requirement statuses (keyed by requirement id).
+	// The left column renders these live, and the run record persists this exact map.
+	const statuses = $derived(statusesFromVerifierOutcomes(requirements, byId));
 
 	const walletState = $derived(
 		stage === 'idle' ? 'idle' : stage === 'done' ? 'done' : stage === 'error' ? 'error' : 'running'
@@ -131,7 +141,6 @@
 					? 'idle'
 					: 'wallet-connected'
 	);
-	const perStep = $derived<StepRunState[]>(stepStatesFor({ steps, report, busy: active }));
 	const resultOutcome = $derived<RunResultOutcome | undefined>(
 		stage === 'done'
 			? report?.verified
@@ -278,13 +287,13 @@
 			report = scored;
 			stage = 'done';
 			recordRun(
-				verifierReportRunRecord({
+				testRunRecord({
 					role: 'verifier',
 					workflow: 'credential-request-and-verification',
 					profile: 'oid4',
-					verified: scored.verified,
-					failingMustCount: scored.failingMustCount,
-					attestedPassCount: attestations.length
+					status: statusFromVerifierReport({ verified: scored.verified }),
+					checklistFingerprint,
+					statuses
 				})
 			);
 		} catch (e) {
@@ -320,14 +329,10 @@
 	}
 </script>
 
-<RunnableChecklist
-	checklist={combo.checklist}
-	profile={combo.profile}
-	{workflow}
-	{role}
-	{runState}
-	{perStep}
->
+<RunnableChecklist checklist={combo.checklist} profile={combo.profile} {workflow} {role} {statuses}>
+	{#snippet headerBadge()}
+		<RunStateBadge {runState} />
+	{/snippet}
 	{#snippet rightColumn()}
 		{#snippet requestField()}
 			<PresentationRequestField
@@ -370,12 +375,5 @@
 				onReset={reset}
 			/>
 		</MobileWalletDrawer>
-	{/snippet}
-
-	{#snippet requirementState({ requirement })}
-		<RequirementStatusRow
-			{requirement}
-			status={verifierOutcomeToRequirementStatus(outcomeForRequirement(byId, requirement))}
-		/>
 	{/snippet}
 </RunnableChecklist>

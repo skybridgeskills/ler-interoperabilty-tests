@@ -7,13 +7,17 @@
 	import { MobileWalletDrawer } from '$lib/components/interop/mobile-wallet-drawer/index.js';
 	import {
 		RequirementStatusRow,
-		outcomeToRequirementStatus
+		outcomeToRequirementStatus,
+		statusesFromOutcomes
 	} from '$lib/components/interop/requirement-status-row/index.js';
 	import {
 		RunResultCard,
 		type RunResultOutcome
 	} from '$lib/components/interop/run-result-card/index.js';
-	import { RunnableChecklist } from '$lib/components/interop/runnable-checklist/index.js';
+	import {
+		RunnableChecklist,
+		RunStateBadge
+	} from '$lib/components/interop/runnable-checklist/index.js';
 	import { DirectDeliveryWallet } from '$lib/components/interop/test-wallet/index.js';
 	import {
 		sampleCredentialsByResultType,
@@ -22,11 +26,13 @@
 	import {
 		additiveChecklistsForCombination,
 		combinationFor,
-		issuerReportRunRecord,
+		combinedRequirements,
 		roleBySlug,
+		runChecklistFingerprint,
+		statusFromIssuerReport,
+		testRunRecord,
 		workflowBySlug,
-		type ChecklistRunState,
-		type StepRunState
+		type ChecklistRunState
 	} from '$lib/interop/index.js';
 	import type { WalletActivity, WalletArtifact } from '$lib/interop/wallet-activity.js';
 	import type { CheckOutcome } from '$lib/server/domain/issuer-runner/check-outcome.js';
@@ -51,12 +57,19 @@
 	const role = roleBySlug('issuer')!;
 	const workflow = workflowBySlug('direct-credential-issuance')!;
 	const combo = combinationFor('issuer', 'direct-credential-issuance', 'ob3-direct-delivery')!;
-	const stepCount = combo.checklist.steps.length;
 	const additives = additiveChecklistsForCombination(
 		'ob3-direct-delivery',
 		'issuer',
 		'direct-credential-issuance'
 	);
+	// Combined requirement set (base + applicable additives) — the fingerprint and the
+	// persisted `statuses` map are both keyed against these ids.
+	const requirements = combinedRequirements(
+		'issuer',
+		'direct-credential-issuance',
+		'ob3-direct-delivery'
+	);
+	const checklistFingerprint = runChecklistFingerprint(requirements);
 
 	/** The verify endpoint spreads the report and adds the normalized wallet fields. */
 	type VerifyResponse = IssuerRunnerReport & {
@@ -104,23 +117,10 @@
 			: {}
 	);
 
-	function deriveStepStates(): StepRunState[] {
-		return combo.checklist.steps.map((step) => {
-			const outs = step.requirements
-				.map((r) => (r.id ? outcomesById[r.id] : undefined))
-				.filter((o): o is CheckOutcome => !!o);
-			if (outs.some((o) => o.status === 'fail')) return 'failed';
-			if (step.requirements.length > 0 && outs.length === step.requirements.length)
-				return 'complete';
-			if (outs.length > 0) return 'in-flight';
-			return 'pending';
-		});
-	}
-
-	const perStep = $derived<StepRunState[]>(
-		status === 'done' || status === 'error'
-			? deriveStepStates()
-			: Array.from({ length: stepCount }, () => 'pending')
+	// Persisted, presentation-ready per-requirement statuses (keyed by requirement id).
+	// The left column renders these live, and the run record persists this exact map.
+	const statuses = $derived(
+		statusesFromOutcomes(requirements, { ...outcomesById, ...additiveOutcomesById })
 	);
 
 	// Paste-and-verify is a single request, not a live wallet flow: never show the
@@ -172,13 +172,17 @@
 			status = res.ok ? 'done' : 'error';
 			// Record this completed verification (passed iff verified and no fatalError).
 			recordRun(
-				issuerReportRunRecord({
+				testRunRecord({
 					role: 'issuer',
 					workflow: 'direct-credential-issuance',
 					profile: 'ob3-direct-delivery',
-					verified: result.verified,
-					failingMustCount: failingMustCount(result),
-					fatalError: result.fatalError
+					status: statusFromIssuerReport({
+						verified: result.verified,
+						fatalError: result.fatalError
+					}),
+					checklistFingerprint,
+					statuses,
+					error: result.fatalError
 				})
 			);
 		} catch (e) {
@@ -210,14 +214,10 @@
 	}
 </script>
 
-<RunnableChecklist
-	checklist={combo.checklist}
-	profile={combo.profile}
-	{workflow}
-	{role}
-	{runState}
-	{perStep}
->
+<RunnableChecklist checklist={combo.checklist} profile={combo.profile} {workflow} {role} {statuses}>
+	{#snippet headerBadge()}
+		<RunStateBadge {runState} />
+	{/snippet}
 	{#snippet rightColumn()}
 		<MobileWalletDrawer ctaLabel={status === 'idle' ? 'Verify a credential' : undefined}>
 			<RunResultCard
@@ -239,12 +239,6 @@
 		</MobileWalletDrawer>
 	{/snippet}
 
-	{#snippet requirementState({ requirement })}
-		<RequirementStatusRow
-			{requirement}
-			status={outcomeToRequirementStatus(requirement.id ? outcomesById[requirement.id] : undefined)}
-		/>
-	{/snippet}
 	{#snippet belowSteps()}
 		{#if additives.length}
 			<section class="space-y-6">

@@ -13,20 +13,25 @@
 	} from '$lib/components/interop/exchange-runner/index.js';
 	import { RequirementReport } from '$lib/components/interop/issuer-runner/requirement-report/index.js';
 	import {
-		outcomeToRequirementStatus,
-		RequirementStatusRow,
-		stepStateToRequirementStatus
+		statusesFromOutcomes,
+		statusesFromStepStates
 	} from '$lib/components/interop/requirement-status-row/index.js';
-	import { RunnableChecklist } from '$lib/components/interop/runnable-checklist/index.js';
+	import {
+		RunnableChecklist,
+		RunStateBadge
+	} from '$lib/components/interop/runnable-checklist/index.js';
 	import {
 		combinationFor,
+		combinedRequirements,
 		roleBySlug,
-		walletRunRecord,
+		runChecklistFingerprint,
+		statusFromWalletReport,
+		testRunRecord,
 		workflowBySlug,
 		type ChecklistRunState,
 		type StepRunState
 	} from '$lib/interop/index.js';
-	import type { ChecklistRequirement, ProfileSlug } from '$lib/interop/profile-schema.js';
+	import type { ProfileSlug } from '$lib/interop/profile-schema.js';
 	import type { CheckOutcome } from '$lib/server/domain/issuer-runner/check-outcome.js';
 	import type { IssuerRunnerReport } from '$lib/server/domain/issuer-runner/issuer-runner-report.js';
 
@@ -70,6 +75,9 @@
 		skipped: 'The run errored before reaching this step.'
 	};
 
+	/** Per-step disclosure copy, in the `{ message }` shape `statusesFromStepStates` expects. */
+	const detailFor = (state: StepRunState) => ({ message: stepDetailCopy[state] });
+
 	let exchangeId = $state<string | undefined>(undefined);
 	// The single protocol link this profile presents (VCALM `iu` OR the OID4VP request).
 	let interactionUrl = $state<string | undefined>(undefined);
@@ -83,6 +91,20 @@
 	// undefined, requirement rows fall back to their step-derived status.
 	let report = $state<IssuerRunnerReport | undefined>(undefined);
 	let outcomes = $state<Record<string, CheckOutcome>>({});
+
+	// Combined requirement set — the fingerprint and the persisted per-requirement `statuses` map are
+	// both keyed against these ids. Tier A: once settled, each requirement carries its own scored
+	// outcome; pre-settle the rows share their step's live run state.
+	const requirements = $derived(combinedRequirements('wallet', 'credential-presentation', profile));
+	const checklistFingerprint = $derived(runChecklistFingerprint(requirements));
+	// Presentation-ready per-requirement statuses (keyed by requirement id). After the exchange
+	// settles these come from the scored per-requirement outcomes; while in flight they mirror the
+	// step-level progress so the left column lights up live.
+	const statuses = $derived(
+		report
+			? statusesFromOutcomes(requirements, outcomes)
+			: statusesFromStepStates(combo.checklist.steps, perStep, detailFor)
+	);
 
 	let pollHandle: { stop: () => void } | undefined;
 	// Score + record exactly once per run.
@@ -157,14 +179,13 @@
 
 			recorded = true;
 			recordRun(
-				walletRunRecord({
+				testRunRecord({
 					role: 'wallet',
 					workflow: 'credential-presentation',
 					profile,
-					verified,
-					failingMustCount: result.failingMustCount,
-					exchangeId: id,
-					exchangeState: result.state
+					status: statusFromWalletReport({ verified, exchangeState: result.state }),
+					checklistFingerprint,
+					statuses: statusesFromOutcomes(requirements, byId)
 				})
 			);
 		} catch (e) {
@@ -251,15 +272,6 @@
 		}
 	}
 
-	/** Report status for a requirement: scored outcome once settled, else step-derived. */
-	function requirementStatusFor(requirement: ChecklistRequirement, stepIndex: number) {
-		if (report) {
-			return outcomeToRequirementStatus(requirement.id ? outcomes[requirement.id] : undefined);
-		}
-		const state = perStep[stepIndex] ?? 'pending';
-		return stepStateToRequirementStatus(state, { message: stepDetailCopy[state] });
-	}
-
 	onDestroy(() => {
 		pollHandle?.stop();
 		pollHandle = undefined;
@@ -276,14 +288,10 @@
 	});
 </script>
 
-<RunnableChecklist
-	checklist={combo.checklist}
-	profile={combo.profile}
-	{workflow}
-	{role}
-	{runState}
-	{perStep}
->
+<RunnableChecklist checklist={combo.checklist} profile={combo.profile} {workflow} {role} {statuses}>
+	{#snippet headerBadge()}
+		<RunStateBadge {runState} />
+	{/snippet}
 	{#snippet rightColumn()}
 		<ExchangeRunnerPanel
 			data={panelData}
@@ -294,8 +302,5 @@
 				<RequirementReport {report} />
 			</div>
 		{/if}
-	{/snippet}
-	{#snippet requirementState({ requirement, stepIndex })}
-		<RequirementStatusRow {requirement} status={requirementStatusFor(requirement, stepIndex)} />
 	{/snippet}
 </RunnableChecklist>

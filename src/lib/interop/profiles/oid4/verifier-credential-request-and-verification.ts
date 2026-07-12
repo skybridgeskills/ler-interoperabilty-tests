@@ -43,38 +43,86 @@ export const verifierCredentialRequestAndVerification = WorkflowChecklist({
 					level: 'MUST',
 					text: 'Provide a response endpoint (e.g. `direct_post`) that receives the presentation `vp_token`.'
 				},
-				{ level: 'MUST', text: 'Validate presentation structure and format.' },
-				{ level: 'MUST', text: 'Extract credentials from presentations.' },
 				{
+					id: 'oid4.verifier-validate-presentation',
+					level: 'MUST',
+					text: 'Validate presentation structure and format.'
+				},
+				{
+					id: 'oid4.verifier-extract-credentials',
+					level: 'MUST',
+					text: 'Extract credentials from presentations.'
+				},
+				{
+					id: 'oid4.verifier-credential-schema',
 					level: 'MUST',
 					text: 'Validate VCDM 2.0 + Open Badges 3.0 schema, required fields, and credential expiration on each credential.'
 				},
 				{
+					id: 'oid4.verifier-credential-proof',
 					level: 'MUST',
 					text: 'Verify credential proofs using every cryptosuite declared by the data-integrity-cryptosuites additive profile.'
 				},
-				{ level: 'MUST', text: 'Resolve issuer DIDs to obtain verification keys.' },
-				{ level: 'MUST', text: 'Validate proof creation dates and expiration.' },
-				{ level: 'MUST', text: 'Handle signature verification failures gracefully.' },
-				{ level: 'MUST', text: 'Implement Bitstring Status List verification.' },
-				{ level: 'MUST', text: 'Validate status-list signature and freshness.' },
+				{
+					id: 'oid4.verifier-resolve-issuer-dids',
+					level: 'MUST',
+					text: 'Resolve issuer DIDs to obtain verification keys.'
+				},
+				{
+					id: 'oid4.verifier-validate-dates',
+					level: 'MUST',
+					text: 'Validate proof creation dates and expiration.'
+				},
+				{
+					id: 'oid4.verifier-signature-failure-handling',
+					level: 'MUST',
+					text: 'Handle signature verification failures gracefully.'
+				},
+				{
+					id: 'oid4.verifier-status-list',
+					level: 'MUST',
+					text: 'Implement Bitstring Status List verification.'
+				},
+				{
+					id: 'oid4.verifier-status-list-freshness',
+					level: 'MUST',
+					text: 'Validate status-list signature and freshness.'
+				},
 				{
 					id: 'oid4.verifier-response-tls',
 					level: 'MUST',
 					text: 'Encrypt web-service endpoints with at least TLS 1.2.'
 				},
-				{ level: 'SHOULD', text: 'Handle status-service unavailability.' },
-				{ level: 'SHOULD', text: 'Cache status information appropriately.' },
 				{
+					id: 'oid4.verifier-status-service-unavailability',
+					level: 'SHOULD',
+					text: 'Handle status-service unavailability.'
+				},
+				{
+					id: 'oid4.verifier-cache-status',
+					level: 'SHOULD',
+					text: 'Cache status information appropriately.'
+				},
+				{
+					id: 'oid4.verifier-trust-registry',
 					level: 'SHOULD',
 					text: 'Integrate with trust registries to query issuer authorization and revocation.'
 				},
 				{
+					id: 'oid4.verifier-attack-protection',
 					level: 'SHOULD',
 					text: 'Implement protection against replay attacks, credential forgery, and status-list manipulation.'
 				},
-				{ level: 'SHOULD', text: 'Implement proper error logging and reporting.' },
-				{ level: 'SHOULD', text: 'Maintain current trust registry data.' }
+				{
+					id: 'oid4.verifier-error-logging',
+					level: 'SHOULD',
+					text: 'Implement proper error logging and reporting.'
+				},
+				{
+					id: 'oid4.verifier-trust-registry-maintenance',
+					level: 'SHOULD',
+					text: 'Maintain current trust registry data.'
+				}
 			]
 		},
 		{
