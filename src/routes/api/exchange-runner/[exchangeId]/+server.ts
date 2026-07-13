@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 
 import { deriveRunStateFromExchange } from '$lib/interop/index.js';
 import { appContext } from '$lib/server/app-context.js';
-import { TransactionServiceError } from '$lib/server/domain/exchange-runner/index.js';
+import { TransactionServiceError, WorkflowId } from '$lib/server/domain/exchange-runner/index.js';
 
 export const GET = async ({ params, url }: { params: { exchangeId: string }; url: URL }) => {
 	const { transactionServiceClient, exchangeRunnerConfig, logger } = appContext();
@@ -23,11 +23,17 @@ export const GET = async ({ params, url }: { params: { exchangeId: string }; url
 	// acceptance × VCALM checklist length); other runnable pages override.
 	const stepCount = clampStepCount(url.searchParams.get('stepCount'), 5);
 
+	// Which workflow this exchange belongs to. The page carries it back from the
+	// create result; unknown/absent values fall back to the issuance (`claim`)
+	// path so existing acceptance-page polls keep working.
+	const workflow = WorkflowId.schema.catch('claim').parse(url.searchParams.get('workflow'));
+
 	try {
-		const exchange = await transactionServiceClient.getExchange(params.exchangeId);
+		const exchange = await transactionServiceClient.getExchange(workflow, params.exchangeId);
 		const derived = deriveRunStateFromExchange(
 			{ state: exchange.state, variables: exchange.variables },
-			stepCount
+			stepCount,
+			workflow
 		);
 		return json({ exchange, derived });
 	} catch (e) {

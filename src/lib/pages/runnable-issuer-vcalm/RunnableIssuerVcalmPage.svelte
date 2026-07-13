@@ -7,22 +7,28 @@
 	import { MobileWalletDrawer } from '$lib/components/interop/mobile-wallet-drawer/index.js';
 	import {
 		RequirementStatusRow,
-		outcomeToRequirementStatus
+		outcomeToRequirementStatus,
+		statusesFromOutcomes
 	} from '$lib/components/interop/requirement-status-row/index.js';
 	import {
 		RunResultCard,
 		type RunResultOutcome
 	} from '$lib/components/interop/run-result-card/index.js';
-	import { RunnableChecklist } from '$lib/components/interop/runnable-checklist/index.js';
+	import {
+		RunnableChecklist,
+		RunStateBadge
+	} from '$lib/components/interop/runnable-checklist/index.js';
 	import { VcalmIssuerFlowWallet } from '$lib/components/interop/test-wallet/index.js';
 	import {
 		additiveChecklistsForCombination,
 		combinationFor,
-		issuerReportRunRecord,
+		combinedRequirements,
 		roleBySlug,
+		runChecklistFingerprint,
+		statusFromIssuerReport,
+		testRunRecord,
 		workflowBySlug,
-		type ChecklistRunState,
-		type StepRunState
+		type ChecklistRunState
 	} from '$lib/interop/index.js';
 	import type { WalletActivity, WalletArtifact } from '$lib/interop/wallet-activity.js';
 	import type { CheckOutcome } from '$lib/server/domain/issuer-runner/check-outcome.js';
@@ -52,12 +58,15 @@
 	const role = roleBySlug('issuer')!;
 	const workflow = workflowBySlug('credential-issuance')!;
 	const combo = combinationFor('issuer', 'credential-issuance', 'vcalm')!;
-	const stepCount = combo.checklist.steps.length;
 	const additives = additiveChecklistsForCombination(
 		combo.profile.slug,
 		'issuer',
 		'credential-issuance'
 	);
+	// Combined requirement set (base + applicable additives) — the fingerprint and the
+	// persisted `statuses` map are both keyed against these ids.
+	const requirements = combinedRequirements('issuer', 'credential-issuance', 'vcalm');
+	const checklistFingerprint = runChecklistFingerprint(requirements);
 
 	onMount(() => {
 		selectionStore.hydrate();
@@ -76,7 +85,6 @@
 	let additiveOutcomesById = $state<Record<string, CheckOutcome>>({});
 	let raw = $state<RunRaw>({});
 	let runState = $state<ChecklistRunState>('idle');
-	let perStep = $state<StepRunState[]>(Array.from({ length: stepCount }, () => 'pending'));
 	let activity = $state<WalletActivity[]>([]);
 	let artifacts = $state<WalletArtifact[]>([]);
 
@@ -97,6 +105,12 @@
 						: 'not-verified'
 	);
 
+	// Persisted, presentation-ready per-requirement statuses (keyed by requirement id).
+	// The left column renders these live, and the run record persists this exact map.
+	const statuses = $derived(
+		statusesFromOutcomes(requirements, { ...outcomesById, ...additiveOutcomesById })
+	);
+
 	function reset() {
 		busy = false;
 		done = false;
@@ -109,34 +123,8 @@
 		additiveOutcomesById = {};
 		raw = {};
 		runState = 'idle';
-		perStep = Array.from({ length: stepCount }, () => 'pending');
 		activity = [];
 		artifacts = [];
-	}
-
-	/**
-	 * Derive each step's indicator status from its requirements' outcomes: `failed` if any
-	 * requirement failed, `complete` when all its requirements resolved without a failure, and
-	 * `pending` when none have run yet (i.e. the flow stopped before reaching this step).
-	 */
-	function deriveStepStates(): StepRunState[] {
-		return combo.checklist.steps.map((step) => {
-			const outs = step.requirements
-				.map((r) => (r.id ? outcomesById[r.id] : undefined))
-				.filter((o): o is CheckOutcome => !!o);
-			if (outs.some((o) => o.status === 'fail')) return 'failed';
-			if (step.requirements.length > 0 && outs.length === step.requirements.length)
-				return 'complete';
-			if (outs.length > 0) return 'in-flight';
-			return 'pending';
-		});
-	}
-
-	/** Map a checklist step index to the raw response body most relevant to it. */
-	function rawForStep(stepIndex: number): unknown {
-		if (stepIndex <= 1) return raw.interaction;
-		if (stepIndex === 2) return raw.didAuth;
-		return raw.delivery ?? raw.verify;
 	}
 
 	async function run() {
@@ -150,10 +138,6 @@
 		activity = [];
 		artifacts = [];
 		runState = 'awaiting-wallet';
-		perStep = [
-			'in-flight',
-			...Array.from({ length: stepCount - 1 }, () => 'pending' as StepRunState)
-		];
 		try {
 			const res = await fetch('/api/wallet-runner/issuer-vcalm/run', {
 				method: 'POST',
@@ -168,7 +152,6 @@
 				const body = (await res.json().catch(() => ({}))) as RunError;
 				error = { message: body.message ?? `Run responded ${res.status}`, hint: body.hint };
 				runState = 'error';
-				perStep = Array.from({ length: stepCount }, () => 'skipped');
 				return;
 			}
 			const data = (await res.json()) as RunResponse;
@@ -186,15 +169,15 @@
 			done = true;
 
 			runState = !data.blocked && data.verified ? 'complete' : 'error';
-			perStep = deriveStepStates();
 
 			recordRun(
-				issuerReportRunRecord({
+				testRunRecord({
 					role: 'issuer',
 					workflow: 'credential-issuance',
 					profile: 'vcalm',
-					verified: data.verified,
-					failingMustCount: data.failingMustCount
+					status: statusFromIssuerReport({ verified: data.verified }),
+					checklistFingerprint,
+					statuses
 				})
 			);
 		} catch (e) {
@@ -203,21 +186,16 @@
 				hint: 'Confirm the interaction URL is reachable from this server.'
 			};
 			runState = 'error';
-			perStep = Array.from({ length: stepCount }, () => 'skipped');
 		} finally {
 			busy = false;
 		}
 	}
 </script>
 
-<RunnableChecklist
-	checklist={combo.checklist}
-	profile={combo.profile}
-	{workflow}
-	{role}
-	{runState}
-	{perStep}
->
+<RunnableChecklist checklist={combo.checklist} profile={combo.profile} {workflow} {role} {statuses}>
+	{#snippet headerBadge()}
+		<RunStateBadge {runState} />
+	{/snippet}
 	{#snippet rightColumn()}
 		<MobileWalletDrawer ctaLabel={walletState === 'idle' ? 'Run the test wallet' : undefined}>
 			<RunResultCard
@@ -238,15 +216,6 @@
 				onReset={reset}
 			/>
 		</MobileWalletDrawer>
-	{/snippet}
-	{#snippet requirementState({ requirement, stepIndex })}
-		<RequirementStatusRow
-			{requirement}
-			status={outcomeToRequirementStatus(
-				requirement.id ? outcomesById[requirement.id] : undefined,
-				done ? rawForStep(stepIndex) : undefined
-			)}
-		/>
 	{/snippet}
 	{#snippet belowSteps()}
 		{#if additives.length}

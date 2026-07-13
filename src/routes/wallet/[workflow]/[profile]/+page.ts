@@ -1,19 +1,12 @@
-import { checklistEntriesFor, loadChecklist } from '$lib/interop/checklist-loader.js';
+import { loadChecklist } from '$lib/interop/checklist-loader.js';
 
-export const prerender = true;
-
-// `wallet/credential-acceptance/{vcalm,oid4}` and `wallet/credential-presentation/oid4`
-// are shadowed by their runnable routes (dynamic at request time). Exclude them
-// from prerender entries so SvelteKit doesn't try to bake a static copy at the
-// same paths.
-export const entries = () =>
-	checklistEntriesFor('wallet').filter(
-		(e) =>
-			!(
-				e.workflow === 'credential-acceptance' &&
-				(e.profile === 'vcalm' || e.profile === 'oid4')
-			) && !(e.workflow === 'credential-presentation' && e.profile === 'oid4')
-	);
+// Every wallet workflow×profile combo now has its own concrete runnable route
+// (`credential-acceptance/{vcalm,oid4}`, `credential-presentation/{vcalm,oid4}`),
+// each `prerender = false`. Those shadow this dynamic route by specificity, so it
+// prerenders nothing — it stays as an SSR fallback (rendered on demand) for any
+// future wallet combo that has no concrete route yet. Kept (not deleted) because
+// `checklist-href.ts` resolves `/wallet/[workflow]/[profile]` via typed `resolve()`.
+export const prerender = false;
 
 export function load({ params }: { params: { workflow: string; profile: string } }) {
 	return loadChecklist('wallet', params);

@@ -1,9 +1,25 @@
-import { json } from '@sveltejs/kit';
+import { json, type RequestEvent } from '@sveltejs/kit';
+import { z } from 'zod';
 
 import { appContext } from '$lib/server/app-context.js';
-import { TransactionServiceError } from '$lib/server/domain/exchange-runner/index.js';
+import {
+	suiteVerifyDefaults,
+	TransactionServiceError
+} from '$lib/server/domain/exchange-runner/index.js';
+import { ZodFactory } from '$lib/util/zod-factory.js';
 
-export const POST = async () => {
+/**
+ * Create-request body. Defaults to `issuance` so the acceptance page's
+ * bodyless `POST` keeps working unchanged; a verify run sends
+ * `{ intent: 'verification' }`.
+ */
+const CreateExchangeIntent = ZodFactory(
+	z.object({
+		intent: z.enum(['issuance', 'verification']).default('issuance')
+	})
+);
+
+export const POST = async ({ request }: RequestEvent) => {
 	const { transactionServiceClient, exchangeRunnerConfig, idService, logger } = appContext();
 
 	if (!exchangeRunnerConfig.enabled) {
@@ -17,10 +33,18 @@ export const POST = async () => {
 		);
 	}
 
-	const retrievalId = idService.uuid();
+	const { intent } = CreateExchangeIntent.schema.parse(await readJsonBody(request));
 
 	try {
-		const result = await transactionServiceClient.createExchange({ retrievalId });
+		const result =
+			intent === 'verification'
+				? await transactionServiceClient.createVerificationExchange({
+						vprCredentialType: suiteVerifyDefaults.vprCredentialType,
+						vprContext: suiteVerifyDefaults.vprContext
+					})
+				: await transactionServiceClient.createIssuanceExchange({
+						retrievalId: idService.uuid()
+					});
 		return json(result);
 	} catch (e) {
 		if (e instanceof TransactionServiceError) {
@@ -50,3 +74,13 @@ export const POST = async () => {
 		);
 	}
 };
+
+/** Parse a JSON body, treating an empty/absent/invalid body as `{}`. */
+async function readJsonBody(request: Request): Promise<unknown> {
+	try {
+		const text = await request.text();
+		return text.trim() ? JSON.parse(text) : {};
+	} catch {
+		return {};
+	}
+}

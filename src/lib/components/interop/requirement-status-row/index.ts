@@ -1,5 +1,10 @@
 export { default as RequirementStatusRow } from './RequirementStatusRow.svelte';
 export {
+	statusesFromOutcomes,
+	statusesFromStepStates,
+	statusesFromVerifierOutcomes
+} from './build-run-statuses.js';
+export {
 	outcomeToRequirementStatus,
 	runStatusToneClasses,
 	stepStateToRequirementStatus,

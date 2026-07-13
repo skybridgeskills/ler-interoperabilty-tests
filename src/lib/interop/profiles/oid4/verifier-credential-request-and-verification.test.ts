@@ -62,13 +62,13 @@ describe('oid4 verifier floor rows', () => {
 			'oid4.verifier-request-endpoint',
 			'oid4.verifier-request-tls'
 		]);
-		const step2Ids = priorSteps[1].requirements.map((r) => r.id).filter((id) => id !== undefined);
-		expect(step2Ids).toEqual(['oid4.verifier-response-endpoint', 'oid4.verifier-response-tls']);
+		const step2Ids = priorSteps[1].requirements.map((r) => r.id);
+		expect(step2Ids).toContain('oid4.verifier-response-endpoint');
+		expect(step2Ids).toContain('oid4.verifier-response-tls');
 	});
 
-	it('keeps every other pre-existing row id-less', () => {
-		const idless = priorRequirements.filter((r) => r.id === undefined);
-		expect(idless).toHaveLength(priorRequirements.length - Object.keys(floorRows).length);
+	it('now assigns an id to every pre-existing row', () => {
+		expect(priorRequirements.every((r) => r.id !== undefined)).toBe(true);
 	});
 });
 

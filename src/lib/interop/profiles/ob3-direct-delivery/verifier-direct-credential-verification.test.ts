@@ -27,12 +27,12 @@ describe('verifier acceptance step', () => {
 		expect(acceptanceStep?.requirements.every((r) => r.level === 'MUST')).toBe(true);
 	});
 
-	it('keeps every pre-existing capability row id-less', () => {
+	it('now assigns an id to every pre-existing capability row', () => {
 		const priorSteps = verifierDirectCredentialVerification.steps.slice(0, -1);
 		expect(priorSteps).toHaveLength(6);
 		for (const step of priorSteps) {
 			for (const requirement of step.requirements) {
-				expect(requirement.id).toBeUndefined();
+				expect(requirement.id).toBeDefined();
 			}
 		}
 	});

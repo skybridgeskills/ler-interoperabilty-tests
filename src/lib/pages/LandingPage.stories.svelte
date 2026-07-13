@@ -1,8 +1,8 @@
 <script lang="ts" module>
 	import { defineMeta } from '@storybook/addon-svelte-csf';
 
-	import { runCombinationKey } from '$lib/client/run-history/index.js';
-	import { exchangeRunRecord, issuerReportRunRecord } from '$lib/interop/index.js';
+	import { recordRun } from '$lib/client/run-history/index.js';
+	import { statusFromExchange, statusFromIssuerReport, testRunRecord } from '$lib/interop/index.js';
 
 	import LandingPage from './LandingPage.svelte';
 
@@ -18,27 +18,24 @@
 				additiveProfiles: ['data-integrity-cryptosuites']
 			})
 		);
-		const passed = issuerReportRunRecord({
-			role: 'issuer',
-			workflow: 'direct-credential-issuance',
-			profile: 'ob3-direct-delivery',
-			verified: true,
-			failingMustCount: 0
-		});
-		const incomplete = exchangeRunRecord({
-			role: 'wallet',
-			workflow: 'credential-acceptance',
-			profile: 'vcalm',
-			exchangeState: 'active',
-			derived: { run: 'awaiting-wallet', perStep: ['in-flight', 'pending'] }
-		});
-		localStorage.setItem(
-			'lits.run-history.v1',
-			JSON.stringify({
-				[runCombinationKey('issuer', 'direct-credential-issuance', 'ob3-direct-delivery')]: [
-					passed
-				],
-				[runCombinationKey('wallet', 'credential-acceptance', 'vcalm')]: [incomplete]
+		recordRun(
+			testRunRecord({
+				role: 'issuer',
+				workflow: 'direct-credential-issuance',
+				profile: 'ob3-direct-delivery',
+				status: statusFromIssuerReport({ verified: true }),
+				checklistFingerprint: '',
+				statuses: {}
+			})
+		);
+		recordRun(
+			testRunRecord({
+				role: 'wallet',
+				workflow: 'credential-acceptance',
+				profile: 'vcalm',
+				status: statusFromExchange({ run: 'awaiting-wallet', perStep: ['in-flight', 'pending'] }),
+				checklistFingerprint: '',
+				statuses: {}
 			})
 		);
 	}

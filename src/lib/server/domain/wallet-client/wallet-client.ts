@@ -7,10 +7,6 @@ import {
 	type WalletReport
 } from '$lib/server/domain/wallet-runner/index.js';
 
-import type {
-	PresentationDriver,
-	PresentationDriverResult
-} from './drivers/oid4vp-presentation.js';
 import type { DriverExchange, ProtocolDriver } from './protocol-driver.js';
 
 /** Result of one wallet acceptance run: what happened + the conformance report. */
@@ -23,24 +19,15 @@ export type WalletRunResult = {
 	presentation?: unknown;
 };
 
-/** Result of one wallet presentation run: the constructed response + the conformance report. */
-export type WalletPresentResult = PresentationDriverResult & { report: WalletReport };
-
 export type AcceptCredentialArgs = {
 	profile: ProfileSlug;
 	cryptosuite?: WalletCryptosuite;
 	exchange: DriverExchange;
 };
 
-export type PresentCredentialArgs = {
-	request: unknown;
-	cryptosuite?: WalletCryptosuite;
-};
-
 /** The wallet client: completes a holder flow for a profile and reports conformance. */
 export interface WalletClient {
 	acceptCredential(args: AcceptCredentialArgs): Promise<WalletRunResult>;
-	presentCredential(args: PresentCredentialArgs): Promise<WalletPresentResult>;
 }
 
 /**
@@ -51,7 +38,6 @@ export interface WalletClient {
  */
 export function RealWalletClient(deps: {
 	drivers: Partial<Record<ProfileSlug, ProtocolDriver>>;
-	presentationDriver?: PresentationDriver;
 	checker?: ExchangeCheckerType;
 }): WalletClient {
 	const checker = deps.checker ?? ExchangeChecker();
@@ -82,30 +68,6 @@ export function RealWalletClient(deps: {
 		return { ...result, report };
 	}
 
-	async function presentCredential(args: PresentCredentialArgs): Promise<WalletPresentResult> {
-		if (!deps.presentationDriver) {
-			throw new Error('No OID4VP presentation driver registered.');
-		}
-		const result = await deps.presentationDriver.runPresentation({
-			request: args.request,
-			cryptosuite: args.cryptosuite ?? 'eddsa-rdfc-2022'
-		});
-		const report = checker.run({
-			role: 'wallet',
-			workflow: 'credential-presentation',
-			profile: 'oid4',
-			ctx: {
-				profile: 'oid4',
-				exchange: { state: result.matched && result.verify.verified ? 'complete' : 'invalid' },
-				presentation: result.vpToken,
-				credential: result.credential,
-				verify: result.verify,
-				holder: result.holder
-			}
-		});
-		return { ...result, report };
-	}
-
-	return { acceptCredential, presentCredential };
+	return { acceptCredential };
 }
 export type RealWalletClient = ReturnType<typeof RealWalletClient>;

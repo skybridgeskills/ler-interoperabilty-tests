@@ -9,12 +9,18 @@ import {
 
 describe('ChecklistRequirement', () => {
 	it('parses a valid MUST clause', () => {
-		const r = ChecklistRequirement({ level: 'MUST', text: 'Do the thing.' });
-		expect(r).toEqual({ level: 'MUST', text: 'Do the thing.' });
+		const r = ChecklistRequirement({
+			id: 'test.do-the-thing',
+			level: 'MUST',
+			text: 'Do the thing.'
+		});
+		expect(r).toEqual({ id: 'test.do-the-thing', level: 'MUST', text: 'Do the thing.' });
 	});
 
 	it('rejects an unknown level', () => {
-		expect(() => ChecklistRequirement({ level: 'COULD' as 'MUST', text: 'x' })).toThrow();
+		expect(() =>
+			ChecklistRequirement({ id: 'test.bad-level', level: 'COULD' as 'MUST', text: 'x' })
+		).toThrow();
 	});
 });
 

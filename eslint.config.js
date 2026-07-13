@@ -93,7 +93,8 @@ export default defineConfig(
 		files: [
 			'src/lib/components/interop/**/*.svelte',
 			'src/lib/pages/**/*.svelte',
-			'src/routes/profiles/**/*.svelte'
+			'src/routes/profiles/**/*.svelte',
+			'src/routes/runs/**/*.svelte'
 		],
 		rules: {
 			'svelte/no-navigation-without-resolve': 'off'

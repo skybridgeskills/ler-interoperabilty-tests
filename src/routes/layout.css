@@ -68,51 +68,59 @@
 	--radius: 0.5rem;
 }
 
-/* Tokyo Night — dark surface (primary aesthetic) */
-.dark {
-	--background: hsl(234 16% 13%);
-	--foreground: hsl(230 73% 86%);
-	--card: hsl(232 17% 17%);
-	--card-foreground: hsl(230 73% 86%);
-	--popover: hsl(232 17% 17%);
-	--popover-foreground: hsl(230 73% 86%);
-	--primary: hsl(217 87% 73%);
-	--primary-foreground: hsl(234 16% 13%);
-	--secondary: hsl(231 13% 23%);
-	--secondary-foreground: hsl(230 73% 86%);
-	--muted: hsl(231 12% 20%);
-	--muted-foreground: hsl(229 28% 70%);
-	--accent: hsl(261 84% 78%);
-	--accent-foreground: hsl(234 16% 13%);
-	--warning: hsl(35 65% 64%);
-	--warning-foreground: hsl(234 16% 13%);
-	--destructive: hsl(350 89% 71%);
-	--destructive-foreground: hsl(234 16% 13%);
-	--live: hsl(22 95% 64%);
-	--live-foreground: hsl(20 60% 12%);
-	--live-soft: hsl(20 50% 18%);
-	--live-border: hsl(22 80% 50%);
-	/* Requirement (blue) — dark surface. */
-	--requirement: hsl(217 87% 73%);
-	--requirement-foreground: hsl(234 16% 13%);
-	--requirement-soft: hsl(217 42% 22%);
-	--requirement-border: hsl(217 48% 45%);
-	/* Success (green) — dark surface. result-pass aliases resolve per-scope. */
-	--success: hsl(142 52% 62%);
-	--success-foreground: hsl(234 16% 13%);
-	--success-soft: hsl(142 28% 18%);
-	--success-border: hsl(142 38% 42%);
-	/* Run result — dark surface (fail/incomplete/progress alias and resolve per-scope). */
-	--result-fail-soft: hsl(350 38% 22%);
-	--result-fail-border: hsl(350 48% 48%);
-	--border: hsl(231 12% 25%);
-	--input: hsl(231 12% 25%);
-	--ring: hsl(217 87% 73%);
-	--chart-1: hsl(217 87% 73%);
-	--chart-2: hsl(261 84% 78%);
-	--chart-3: hsl(180 70% 65%);
-	--chart-4: hsl(35 65% 64%);
-	--chart-5: hsl(350 89% 71%);
+/*
+ * Tokyo Night — dark surface (primary aesthetic).
+ * Wrapped in `@media screen` so that when printing we fall back to the `:root`
+ * light tokens — an ink-friendly, legible report regardless of the active
+ * on-screen theme. The `@media print` block near the end of this file owns the
+ * rest of the print layout (hidden chrome, page breaks, the run-report document).
+ */
+@media screen {
+	.dark {
+		--background: hsl(234 16% 13%);
+		--foreground: hsl(230 73% 86%);
+		--card: hsl(232 17% 17%);
+		--card-foreground: hsl(230 73% 86%);
+		--popover: hsl(232 17% 17%);
+		--popover-foreground: hsl(230 73% 86%);
+		--primary: hsl(217 87% 73%);
+		--primary-foreground: hsl(234 16% 13%);
+		--secondary: hsl(231 13% 23%);
+		--secondary-foreground: hsl(230 73% 86%);
+		--muted: hsl(231 12% 20%);
+		--muted-foreground: hsl(229 28% 70%);
+		--accent: hsl(261 84% 78%);
+		--accent-foreground: hsl(234 16% 13%);
+		--warning: hsl(35 65% 64%);
+		--warning-foreground: hsl(234 16% 13%);
+		--destructive: hsl(350 89% 71%);
+		--destructive-foreground: hsl(234 16% 13%);
+		--live: hsl(22 95% 64%);
+		--live-foreground: hsl(20 60% 12%);
+		--live-soft: hsl(20 50% 18%);
+		--live-border: hsl(22 80% 50%);
+		/* Requirement (blue) — dark surface. */
+		--requirement: hsl(217 87% 73%);
+		--requirement-foreground: hsl(234 16% 13%);
+		--requirement-soft: hsl(217 42% 22%);
+		--requirement-border: hsl(217 48% 45%);
+		/* Success (green) — dark surface. result-pass aliases resolve per-scope. */
+		--success: hsl(142 52% 62%);
+		--success-foreground: hsl(234 16% 13%);
+		--success-soft: hsl(142 28% 18%);
+		--success-border: hsl(142 38% 42%);
+		/* Run result — dark surface (fail/incomplete/progress alias and resolve per-scope). */
+		--result-fail-soft: hsl(350 38% 22%);
+		--result-fail-border: hsl(350 48% 48%);
+		--border: hsl(231 12% 25%);
+		--input: hsl(231 12% 25%);
+		--ring: hsl(217 87% 73%);
+		--chart-1: hsl(217 87% 73%);
+		--chart-2: hsl(261 84% 78%);
+		--chart-3: hsl(180 70% 65%);
+		--chart-4: hsl(35 65% 64%);
+		--chart-5: hsl(350 89% 71%);
+	}
 }
 
 @theme inline {
@@ -235,5 +243,65 @@
 	pre,
 	kbd {
 		@apply font-mono;
+	}
+}
+
+/*
+ * Print — the shareable run report at `/runs/[id]`.
+ *
+ * The route wraps its render in `.run-report` (only faithful, non-outdated runs
+ * ever reach that render). Forced-light comes from the `@media screen`-scoped
+ * `.dark` block above; app chrome and interactive-only controls are hidden with
+ * Tailwind's `print:hidden` on the elements themselves (app header, the
+ * Re-run / Print buttons). This block owns the page setup, the document reflow,
+ * and the page-break behaviour.
+ */
+@media print {
+	:root {
+		color-scheme: light;
+	}
+
+	@page {
+		margin: 16mm;
+	}
+
+	/*
+	 * Render the checklist's tone dots, RFC-2119 level chips, and soft result
+	 * surfaces faithfully — background colours are dropped from print by default,
+	 * which would erase the status dots entirely.
+	 */
+	.run-report {
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+	}
+
+	/*
+	 * Lead the document with the run summary (result verdict + identity), then the
+	 * checklist steps. On screen the two-column grid collapses to a single column
+	 * (steps first); for print we reflow to a flex column and pull the summary
+	 * (the grid's last child) to the top.
+	 */
+	.run-report section.grid {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+	.run-report section.grid > div:last-child {
+		order: -1;
+	}
+
+	/*
+	 * Page breaks: never split a single requirement row, the summary card, or an
+	 * expandable details block; keep a step heading attached to the start of its
+	 * body rather than stranded at the foot of a page.
+	 */
+	.run-report ul li,
+	.run-report .run-history-summary,
+	.run-report details {
+		break-inside: avoid;
+	}
+	.run-report ol > li > header {
+		break-inside: avoid;
+		break-after: avoid;
 	}
 }

@@ -2,4 +2,4 @@
 	import { RunnableWalletPresentationPage } from '$lib/pages/runnable-wallet-presentation/index.js';
 </script>
 
-<RunnableWalletPresentationPage />
+<RunnableWalletPresentationPage profile="oid4" />

@@ -2,19 +2,23 @@ import { describe, expect, it } from 'vitest';
 
 import type { RunStateDerivation } from '$lib/interop/runner-state.js';
 
+import type { RequirementStatus } from './requirement-status.js';
 import {
 	TestRunRecord,
-	exchangeRunRecord,
-	issuerReportRunRecord,
 	statusFromExchange,
 	statusFromIssuerReport,
 	statusFromVerifierReport,
-	verifierReportRunRecord
+	statusFromWalletReport,
+	testRunRecord
 } from './test-run-record.js';
 
 function derivation(run: RunStateDerivation['run']): RunStateDerivation {
 	return { run, perStep: ['pending'] };
 }
+
+const statuses: Record<string, RequirementStatus> = {
+	'vcalm.signature-valid': { tone: 'pass', label: 'PASS' }
+};
 
 describe('statusFromExchange', () => {
 	it('maps complete to passed', () => {
@@ -48,84 +52,65 @@ describe('statusFromIssuerReport', () => {
 	});
 });
 
-describe('exchangeRunRecord', () => {
-	it('produces a parseable record with the correct status, kind, and ISO ranAt', () => {
-		const record = exchangeRunRecord({
-			role: 'wallet',
-			workflow: 'credential-issuance',
-			profile: 'vcalm',
-			exchangeId: 'abc',
-			exchangeState: 'complete',
-			derived: derivation('complete')
-		});
-
-		expect(() => TestRunRecord.schema.parse(record)).not.toThrow();
-		expect(record.status).toBe('passed');
-		expect(record.payload.kind).toBe('exchange');
-		expect(new Date(record.ranAt).toISOString()).toBe(record.ranAt);
-	});
-});
-
-describe('issuerReportRunRecord', () => {
-	it('produces a parseable record with the correct status, kind, and ISO ranAt', () => {
-		const record = issuerReportRunRecord({
-			role: 'issuer',
-			workflow: 'direct-credential-verification',
-			profile: 'ob3-direct-delivery',
-			verified: true,
-			failingMustCount: 0
-		});
-
-		expect(() => TestRunRecord.schema.parse(record)).not.toThrow();
-		expect(record.status).toBe('passed');
-		expect(record.payload.kind).toBe('issuer-report');
-		expect(new Date(record.ranAt).toISOString()).toBe(record.ranAt);
+describe('statusFromWalletReport', () => {
+	it('derives passed/failed/incomplete from exchange state + verified', () => {
+		expect(statusFromWalletReport({ verified: true, exchangeState: 'complete' })).toBe('passed');
+		expect(statusFromWalletReport({ verified: false, exchangeState: 'complete' })).toBe('failed');
+		expect(statusFromWalletReport({ verified: true, exchangeState: 'pending' })).toBe('incomplete');
+		expect(statusFromWalletReport({ verified: true, exchangeState: 'invalid' })).toBe('failed');
 	});
 });
 
 describe('statusFromVerifierReport', () => {
-	it('maps verified to passed', () => {
+	it('maps verified to passed and not-verified to failed', () => {
 		expect(statusFromVerifierReport({ verified: true })).toBe('passed');
-	});
-
-	it('maps not-verified to failed', () => {
 		expect(statusFromVerifierReport({ verified: false })).toBe('failed');
 	});
 });
 
-describe('verifierReportRunRecord', () => {
-	it('produces a parseable record with the correct status, kind, and ISO ranAt', () => {
-		const record = verifierReportRunRecord({
-			role: 'verifier',
-			workflow: 'direct-credential-verification',
-			profile: 'ob3-direct-delivery',
-			verified: true,
-			failingMustCount: 0,
-			attestedPassCount: 4
+describe('testRunRecord', () => {
+	it('produces a parseable v2 record, defaulting id + ISO ranAt', () => {
+		const record = testRunRecord({
+			role: 'wallet',
+			workflow: 'credential-issuance',
+			profile: 'vcalm',
+			status: 'passed',
+			checklistFingerprint: 'deadbeef',
+			statuses
 		});
 
 		expect(() => TestRunRecord.schema.parse(record)).not.toThrow();
 		expect(record.status).toBe('passed');
-		expect(record.payload.kind).toBe('verifier-report');
+		expect(record.checklistFingerprint).toBe('deadbeef');
+		expect(record.statuses['vcalm.signature-valid']).toEqual({ tone: 'pass', label: 'PASS' });
+		expect(typeof record.id).toBe('string');
+		expect(record.id.length).toBeGreaterThan(0);
 		expect(new Date(record.ranAt).toISOString()).toBe(record.ranAt);
 	});
 
-	it('marks a not-verified run failed and keeps the attested pass count', () => {
-		const record = verifierReportRunRecord({
-			role: 'verifier',
+	it('gives each record a distinct id', () => {
+		const args = {
+			role: 'wallet',
+			workflow: 'credential-issuance',
+			profile: 'vcalm',
+			status: 'passed',
+			checklistFingerprint: 'f',
+			statuses
+		} as const;
+		expect(testRunRecord(args).id).not.toBe(testRunRecord(args).id);
+	});
+
+	it('carries an optional error', () => {
+		const record = testRunRecord({
+			role: 'issuer',
 			workflow: 'direct-credential-verification',
 			profile: 'ob3-direct-delivery',
-			verified: false,
-			failingMustCount: 2,
-			attestedPassCount: 4
+			status: 'failed',
+			checklistFingerprint: 'f',
+			statuses: {},
+			error: { message: 'boom', hint: 'retry' }
 		});
-
-		expect(record.status).toBe('failed');
-		expect(record.payload).toMatchObject({
-			kind: 'verifier-report',
-			failingMustCount: 2,
-			attestedPassCount: 4
-		});
+		expect(record.error).toEqual({ message: 'boom', hint: 'retry' });
 	});
 });
 
@@ -136,21 +121,33 @@ describe('TestRunRecord validation', () => {
 				role: 'wallet',
 				workflow: 'credential-issuance',
 				profile: 'vcalm',
-				ranAt: new Date().toISOString(),
-				payload: { kind: 'issuer-report', verified: true, failingMustCount: 0 }
+				checklistFingerprint: 'f',
+				statuses: {}
 			})
 		).toThrow();
 	});
 
-	it('rejects an unknown payload.kind', () => {
+	it('rejects a record missing the checklist fingerprint', () => {
 		expect(() =>
 			TestRunRecord.schema.parse({
 				role: 'wallet',
 				workflow: 'credential-issuance',
 				profile: 'vcalm',
-				ranAt: new Date().toISOString(),
 				status: 'passed',
-				payload: { kind: 'mystery' }
+				statuses: {}
+			})
+		).toThrow();
+	});
+
+	it('rejects a malformed status entry', () => {
+		expect(() =>
+			TestRunRecord.schema.parse({
+				role: 'wallet',
+				workflow: 'credential-issuance',
+				profile: 'vcalm',
+				status: 'passed',
+				checklistFingerprint: 'f',
+				statuses: { 'some.req': { tone: 'mystery', label: 'X' } }
 			})
 		).toThrow();
 	});

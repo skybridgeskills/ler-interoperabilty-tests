@@ -1,9 +1,19 @@
+import { oid4vciHooks } from './fake-oid4vci-hooks.js';
 import {
-	type CreateExchangeRequest,
+	clone,
+	type ExchangeStore,
+	newUuid,
+	requireRecord
+} from './fake-transaction-service-shared.js';
+import { fakeVerifyProtocols, verifyHooks } from './fake-verify-hooks.js';
+import {
 	type CreateExchangeResult,
+	type CreateIssuanceExchangeRequest,
+	type CreateVerificationExchangeRequest,
 	type ExchangeRecord,
 	TransactionServiceError,
-	type TransactionServiceClient
+	type TransactionServiceClient,
+	type WorkflowId
 } from './transaction-service-client.js';
 
 /**
@@ -15,6 +25,27 @@ export interface FakeTransactionServiceTestHooks {
 	advanceToActive(exchangeId: string, vars?: Record<string, unknown>): void;
 	advanceToComplete(exchangeId: string, vars?: Record<string, unknown>): void;
 	advanceToInvalid(exchangeId: string, reason?: string): void;
+	/**
+	 * Verify sync pass: hold at `active` with a queued `verifyTask` (the async
+	 * Open Badges pass window).
+	 */
+	advanceVerifyToActive(
+		exchangeId: string,
+		opts?: { openBadgesCredentialIndices?: number[] }
+	): void;
+	/**
+	 * Verify async pass settled: finalize to `complete`/`invalid` with a
+	 * populated `variables.results.default`. Pass `{ verified: false }` for the
+	 * invalid outcome.
+	 */
+	advanceVerifyToComplete(
+		exchangeId: string,
+		opts?: {
+			verified?: boolean;
+			verifiablePresentation?: Record<string, unknown>;
+			summary?: unknown[];
+		}
+	): void;
 	/**
 	 * OID4VCI: wallet fetched the credential offer → pre-auth code minted.
 	 * State stays `pending` (mirrors the real service).
@@ -43,23 +74,25 @@ export type FakeTransactionServiceClient = TransactionServiceClient &
 export function FakeTransactionServiceClient({
 	host = 'http://fake.test'
 }: { host?: string } = {}): FakeTransactionServiceClient {
-	const store = new Map<string, ExchangeRecord>();
+	const store: ExchangeStore = new Map<string, ExchangeRecord>();
 
-	async function createExchange(req: CreateExchangeRequest): Promise<CreateExchangeResult> {
+	async function createIssuanceExchange(
+		req: CreateIssuanceExchangeRequest
+	): Promise<CreateExchangeResult> {
 		const exchangeId = newUuid();
-		const record: ExchangeRecord = {
+		store.set(exchangeId, {
 			exchangeId,
 			workflowId: 'claim',
 			state: 'pending',
 			variables: { retrievalId: req.retrievalId }
-		};
-		store.set(exchangeId, record);
+		});
 		const credentialOfferUri = `${host}/workflows/claim/exchanges/${exchangeId}/openid/credential-offer`;
 		const oid4vciDeepLink = `openid-credential-offer://?credential_offer_uri=${encodeURIComponent(
 			credentialOfferUri
 		)}`;
 		return {
 			exchangeId,
+			workflowId: 'claim',
 			protocols: {
 				iu: `${host}/interactions/${exchangeId}`,
 				vcapi: `${host}/workflows/claim/exchanges/${exchangeId}`,
@@ -74,16 +107,36 @@ export function FakeTransactionServiceClient({
 		};
 	}
 
-	async function getExchange(exchangeId: string): Promise<ExchangeRecord> {
+	async function createVerificationExchange(
+		req: CreateVerificationExchangeRequest
+	): Promise<CreateExchangeResult> {
+		const exchangeId = newUuid();
+		store.set(exchangeId, {
+			exchangeId,
+			workflowId: 'verify',
+			state: 'pending',
+			variables: {
+				vprCredentialType: req.vprCredentialType,
+				vprContext: req.vprContext,
+				...(req.trustedIssuers ? { trustedIssuers: req.trustedIssuers } : {}),
+				...(req.vprClaims ? { vprClaims: req.vprClaims } : {})
+			}
+		});
+		return {
+			exchangeId,
+			workflowId: 'verify',
+			protocols: fakeVerifyProtocols(host, exchangeId, req.vprCredentialType)
+		};
+	}
+
+	async function getExchange(_workflowId: WorkflowId, exchangeId: string): Promise<ExchangeRecord> {
 		const record = store.get(exchangeId);
-		if (!record) {
-			throw new TransactionServiceError(404, `Exchange ${exchangeId} not found`);
-		}
+		if (!record) throw new TransactionServiceError(404, `Exchange ${exchangeId} not found`);
 		return clone(record);
 	}
 
 	function advanceToActive(exchangeId: string, vars: Record<string, unknown> = {}): void {
-		const record = requireRecord(exchangeId);
+		const record = requireRecord(store, exchangeId);
 		store.set(exchangeId, {
 			...record,
 			state: 'active',
@@ -92,7 +145,7 @@ export function FakeTransactionServiceClient({
 	}
 
 	function advanceToComplete(exchangeId: string, vars: Record<string, unknown> = {}): void {
-		const record = requireRecord(exchangeId);
+		const record = requireRecord(store, exchangeId);
 		store.set(exchangeId, {
 			...record,
 			state: 'complete',
@@ -101,61 +154,11 @@ export function FakeTransactionServiceClient({
 	}
 
 	function advanceToInvalid(exchangeId: string, reason = 'fake-test-failure'): void {
-		const record = requireRecord(exchangeId);
+		const record = requireRecord(store, exchangeId);
 		store.set(exchangeId, {
 			...record,
 			state: 'invalid',
 			variables: { ...(record.variables ?? {}), invalidReason: reason }
-		});
-	}
-
-	/**
-	 * Merge a patch into `variables.oid4vci`, optionally transitioning state.
-	 * Mirrors the real dcc service, which records OID4VCI runtime state under
-	 * `variables.oid4vci` and only flips to `complete` at the credential endpoint.
-	 */
-	function patchOid4vci(
-		exchangeId: string,
-		patch: Record<string, unknown>,
-		state?: ExchangeRecord['state']
-	): void {
-		const record = requireRecord(exchangeId);
-		const priorVars = record.variables ?? {};
-		const priorOid4vci = (priorVars.oid4vci as Record<string, unknown> | undefined) ?? {};
-		store.set(exchangeId, {
-			...record,
-			...(state ? { state } : {}),
-			variables: {
-				...priorVars,
-				oid4vci: { ...priorOid4vci, ...patch }
-			}
-		});
-	}
-
-	function advanceOid4vciOfferFetched(exchangeId: string): void {
-		patchOid4vci(exchangeId, { preAuthorizedCode: `fake-preauth-${newUuid()}` });
-	}
-
-	function advanceOid4vciTokenIssued(exchangeId: string): void {
-		patchOid4vci(exchangeId, { codeUsed: true, accessToken: `fake-access-${newUuid()}` });
-	}
-
-	function advanceOid4vciNonceIssued(exchangeId: string): void {
-		patchOid4vci(exchangeId, { cNonce: `fake-cnonce-${newUuid()}` });
-	}
-
-	function advanceOid4vciComplete(exchangeId: string, vars: Record<string, unknown> = {}): void {
-		const record = requireRecord(exchangeId);
-		const priorVars = record.variables ?? {};
-		const priorOid4vci = (priorVars.oid4vci as Record<string, unknown> | undefined) ?? {};
-		store.set(exchangeId, {
-			...record,
-			state: 'complete',
-			variables: {
-				...priorVars,
-				...vars,
-				oid4vci: { ...priorOid4vci, nonceUsed: true }
-			}
 		});
 	}
 
@@ -172,35 +175,17 @@ export function FakeTransactionServiceClient({
 		store.clear();
 	}
 
-	function requireRecord(exchangeId: string): ExchangeRecord {
-		const record = store.get(exchangeId);
-		if (!record) throw new TransactionServiceError(404, `Exchange ${exchangeId} not found`);
-		return record;
-	}
-
 	return {
-		createExchange,
+		createIssuanceExchange,
+		createVerificationExchange,
 		getExchange,
 		advanceToActive,
 		advanceToComplete,
 		advanceToInvalid,
-		advanceOid4vciOfferFetched,
-		advanceOid4vciTokenIssued,
-		advanceOid4vciNonceIssued,
-		advanceOid4vciComplete,
+		...verifyHooks(store),
+		...oid4vciHooks(store),
 		getStored,
 		listExchanges,
 		clear
 	};
-}
-
-function newUuid(): string {
-	if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-		return crypto.randomUUID();
-	}
-	return `fake-${Math.random().toString(36).slice(2, 12)}`;
-}
-
-function clone<T>(value: T): T {
-	return JSON.parse(JSON.stringify(value)) as T;
 }

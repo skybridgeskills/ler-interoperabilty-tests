@@ -1,8 +1,15 @@
 # Run-history local persistence model
 
-- Status: accepted
+- Status: superseded
 - Date: 2026-06-10
+- Superseded by: [2026-07-11 Run-history v2: flat, id-keyed record with checklist-drift detection](./2026-07-11-run-history-v2-flat-record.md)
 - Context: Landing personalization + run history (homepage console)
+
+> **Superseded (2026-07-11).** The discriminated-`payload` record described here
+> was replaced by a flat, id-keyed v2 record that stores per-requirement
+> statuses plus a checklist-drift fingerprint. The `localStorage` medium,
+> per-combination retention (cap 3), and framework-free model still hold; the
+> record shape and `.v1` key do not. See the superseding ADR.
 
 ## Context
 

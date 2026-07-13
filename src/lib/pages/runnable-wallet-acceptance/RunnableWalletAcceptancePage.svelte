@@ -7,16 +7,22 @@
 		type ExchangePollResponse
 	} from '$lib/client/exchange-runner/index.js';
 	import { recordRun } from '$lib/client/run-history/index.js';
-	import { ExchangeRunnerPanel } from '$lib/components/interop/exchange-runner/index.js';
 	import {
-		RequirementStatusRow,
-		stepStateToRequirementStatus
-	} from '$lib/components/interop/requirement-status-row/index.js';
-	import { RunnableChecklist } from '$lib/components/interop/runnable-checklist/index.js';
+		ExchangeRunnerPanel,
+		type ExchangeProtocolId
+	} from '$lib/components/interop/exchange-runner/index.js';
+	import { statusesFromStepStates } from '$lib/components/interop/requirement-status-row/index.js';
+	import {
+		RunnableChecklist,
+		RunStateBadge
+	} from '$lib/components/interop/runnable-checklist/index.js';
 	import {
 		combinationFor,
-		exchangeRunRecord,
+		combinedRequirements,
 		roleBySlug,
+		runChecklistFingerprint,
+		statusFromExchange,
+		testRunRecord,
 		type ChecklistRunState,
 		type RunStateDerivation,
 		type StepRunState,
@@ -35,7 +41,8 @@
 	const stepCount = $derived(combo.checklist.steps.length);
 
 	const isOid4 = $derived(profile === 'oid4');
-	const headerLabel = $derived(isOid4 ? 'Live · OID4VCI offer' : 'Live · interaction URL');
+	// The panel derives its QR header label from this protocol id.
+	const protocol = $derived<ExchangeProtocolId>(isOid4 ? 'oid4vci' : 'vcalm');
 
 	type CreateExchangeBody = {
 		exchangeId: string;
@@ -57,11 +64,8 @@
 		skipped: 'The run errored before reaching this step.'
 	};
 
-	/** Step-derived status view for every requirement in the step at `stepIndex`. */
-	function requirementStatusForStep(stepIndex: number) {
-		const state = perStep[stepIndex] ?? 'pending';
-		return stepStateToRequirementStatus(state, { message: stepDetailCopy[state] });
-	}
+	/** Per-step disclosure copy, in the `{ message }` shape `statusesFromStepStates` expects. */
+	const detailFor = (state: StepRunState) => ({ message: stepDetailCopy[state] });
 
 	let exchangeId = $state<string | undefined>(undefined);
 	// The single protocol link this profile presents (VCALM `iu` or the OID4VCI deep link).
@@ -73,27 +77,31 @@
 	);
 	let runnerError = $state<RunnerError | undefined>(undefined);
 
+	// Combined requirement set — the fingerprint and the persisted step-level `statuses` map are
+	// both keyed against these ids. Tier B: every requirement in a step shares its step's status.
+	const requirements = $derived(combinedRequirements('wallet', 'credential-acceptance', profile));
+	const checklistFingerprint = $derived(runChecklistFingerprint(requirements));
+	// Presentation-ready per-requirement statuses (keyed by requirement id). The left column renders
+	// these live, and each recorded run persists this exact map (built from the final `perStep`).
+	const statuses = $derived(statusesFromStepStates(combo.checklist.steps, perStep, detailFor));
+
 	let pollHandle: { stop: () => void } | undefined;
 
 	// Run-history recording: record exactly once when a run reaches a terminal
 	// state (complete → passed, error/timeout → failed). Reset per run.
 	let recorded = false;
-	let lastExchangeState: 'pending' | 'active' | 'complete' | 'invalid' = 'pending';
 
-	function recordWalletRun(
-		exchangeState: 'pending' | 'active' | 'complete' | 'invalid',
-		derived: RunStateDerivation
-	) {
+	function recordWalletRun(derived: RunStateDerivation) {
 		if (recorded) return;
 		recorded = true;
 		recordRun(
-			exchangeRunRecord({
+			testRunRecord({
 				role: 'wallet',
 				workflow: 'credential-acceptance',
 				profile,
-				exchangeId,
-				exchangeState,
-				derived
+				status: statusFromExchange(derived),
+				checklistFingerprint,
+				statuses: statusesFromStepStates(combo.checklist.steps, derived.perStep, detailFor)
 			})
 		);
 	}
@@ -105,7 +113,6 @@
 		perStep = Array.from({ length: stepCount }, () => 'pending');
 		runnerError = undefined;
 		recorded = false;
-		lastExchangeState = 'pending';
 		pollHandle?.stop();
 		pollHandle = undefined;
 	}
@@ -132,7 +139,7 @@
 		runState = 'error';
 		runnerError = error;
 		perStep = Array.from({ length: stepCount }, () => 'skipped');
-		recordWalletRun(lastExchangeState, { run: 'error', perStep });
+		recordWalletRun({ run: 'error', perStep });
 	}
 
 	function startPolling(id: string) {
@@ -143,9 +150,8 @@
 				onUpdate: (response: ExchangePollResponse) => {
 					runState = response.derived.run;
 					perStep = response.derived.perStep;
-					lastExchangeState = response.exchange.state;
 					if (response.derived.run === 'complete' || response.derived.run === 'error') {
-						recordWalletRun(response.exchange.state, response.derived);
+						recordWalletRun(response.derived);
 					}
 				},
 				onError: (e: ExchangePollError) => {
@@ -174,7 +180,6 @@
 	async function initiate() {
 		runnerError = undefined;
 		recorded = false;
-		lastExchangeState = 'pending';
 		try {
 			const data = await createExchange();
 			if (!data) return;
@@ -209,23 +214,20 @@
 	});
 
 	const panelData = $derived({
+		intent: 'issuance' as const,
+		protocol,
 		run: runState,
 		perStep,
 		interactionUrl,
-		headerLabel,
 		exchangeId,
 		error: runnerError
 	});
 </script>
 
-<RunnableChecklist
-	checklist={combo.checklist}
-	profile={combo.profile}
-	{workflow}
-	{role}
-	{runState}
-	{perStep}
->
+<RunnableChecklist checklist={combo.checklist} profile={combo.profile} {workflow} {role} {statuses}>
+	{#snippet headerBadge()}
+		<RunStateBadge {runState} />
+	{/snippet}
 	{#snippet rightColumn()}
 		<ExchangeRunnerPanel
 			data={panelData}
@@ -235,8 +237,5 @@
 				onReset: setIdle
 			}}
 		/>
-	{/snippet}
-	{#snippet requirementState({ requirement, stepIndex })}
-		<RequirementStatusRow {requirement} status={requirementStatusForStep(stepIndex)} />
 	{/snippet}
 </RunnableChecklist>

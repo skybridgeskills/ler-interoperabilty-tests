@@ -23,6 +23,11 @@ export const oid4ProfileMeta = {
 	keyComponents: [
 		{ label: 'Exchange Protocols', value: 'OID4VCI v1.0 (issuance), OID4VP v1.0 (presentation)' },
 		{
+			label: 'OID4VP Presentation',
+			value:
+				'Unsigned request with the `redirect_uri` client_id scheme; DCQL query; `vp_token` returned via `direct_post`.'
+		},
+		{
 			label: 'Cryptographic Suite',
 			value: 'See data-integrity-cryptosuites additive (EdDSA or ECDSA)'
 		},

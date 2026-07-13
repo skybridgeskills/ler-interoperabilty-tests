@@ -62,21 +62,15 @@ describe('vcalm verifier floor rows', () => {
 			'vcalm.verifier-vpr-query',
 			'vcalm.verifier-request-tls'
 		]);
-		expect(priorSteps[1].requirements.map((r) => r.id)).toEqual([
-			'vcalm.verifier-interaction-endpoint',
-			undefined
-		]);
-		expect(priorSteps[2].requirements.map((r) => r.id)).toEqual([
-			'vcalm.verifier-vpr-didauth',
-			undefined
-		]);
-		const step4Ids = priorSteps[3].requirements.map((r) => r.id).filter((id) => id !== undefined);
-		expect(step4Ids).toEqual(['vcalm.verifier-response-tls']);
+		expect(priorSteps[1].requirements.map((r) => r.id)).toContain(
+			'vcalm.verifier-interaction-endpoint'
+		);
+		expect(priorSteps[2].requirements.map((r) => r.id)).toContain('vcalm.verifier-vpr-didauth');
+		expect(priorSteps[3].requirements.map((r) => r.id)).toContain('vcalm.verifier-response-tls');
 	});
 
-	it('keeps every other pre-existing row id-less', () => {
-		const idless = priorRequirements.filter((r) => r.id === undefined);
-		expect(idless).toHaveLength(priorRequirements.length - Object.keys(floorRows).length);
+	it('now assigns an id to every pre-existing row', () => {
+		expect(priorRequirements.every((r) => r.id !== undefined)).toBe(true);
 	});
 });
 

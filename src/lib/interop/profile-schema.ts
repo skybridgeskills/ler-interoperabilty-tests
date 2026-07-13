@@ -30,15 +30,16 @@ export type ProfileSlug = ReturnType<typeof ProfileSlug>;
  * One MUST / SHOULD / MAY clause inside a checklist step. The level mirrors
  * RFC 2119 conformance language as used by the source profile docs.
  *
- * `id` is an optional stable key used by the issuer-runner check
- * registry to map a requirement to its automated check function.
- * Existing checklists may omit it; new checklists added in support of
- * the runner should set it (kebab-case, namespaced by profile slug —
- * e.g. `ob3-direct-delivery.signature-valid`).
+ * `id` is a required stable key used by the runner check registries to
+ * map a requirement to its automated check function, and by persisted
+ * run records to key statuses back to their requirement. It is
+ * kebab-case, namespaced by profile slug — e.g.
+ * `ob3-direct-delivery.signature-valid`. Where a runner scores a
+ * requirement, this id equals the outcome id that runner emits.
  */
 export const ChecklistRequirement = ZodFactory(
 	z.object({
-		id: z.string().optional(),
+		id: z.string(),
 		level: z.enum(['MUST', 'SHOULD', 'MAY']),
 		text: z.string()
 	})
