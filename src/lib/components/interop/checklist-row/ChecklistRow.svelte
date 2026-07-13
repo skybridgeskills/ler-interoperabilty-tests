@@ -77,8 +77,9 @@
 
 	let expanded = $state(false);
 
-	// Only offer the expander when there's more than the single latest run.
-	const canExpand = $derived(recentRuns.length > 1);
+	// Offer the expander whenever there's at least one retained run, so even a
+	// single run is openable as a report from the homepage.
+	const canExpand = $derived(recentRuns.length >= 1);
 
 	// Live combined requirements for drift detection; recomputed if the row's
 	// combination changes. Empty for an invalid combination → nothing flagged.
@@ -123,7 +124,8 @@
 				<span aria-hidden="true" class={`transition-transform ${expanded ? 'rotate-90' : ''}`}>
 					›
 				</span>
-				{recentRuns.length} runs
+				{recentRuns.length}
+				{recentRuns.length === 1 ? 'run' : 'runs'}
 			</button>
 		{/if}
 
