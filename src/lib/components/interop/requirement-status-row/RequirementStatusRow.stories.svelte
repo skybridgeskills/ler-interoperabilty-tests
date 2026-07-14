@@ -142,6 +142,17 @@
 	</div>
 </Story>
 
+<Story name="Fail (MUST) — no evidence, no Details control" asChild>
+	<!--
+		A FAIL row whose message is shown inline and that carries no `raw` evidence must NOT render an
+		empty "Details" disclosure. There should be exactly the inline error line below and no Details
+		summary at all.
+	-->
+	<div class="max-w-2xl bg-background p-6">
+		<RequirementStatusRow requirement={mustReq} status={outcomeToRequirementStatus(failOutcome)} />
+	</div>
+</Story>
+
 <Story name="Fail (SHOULD) — advisory (amber)" asChild>
 	<div class="max-w-2xl bg-background p-6">
 		<RequirementStatusRow
