@@ -28,7 +28,8 @@
 		headerBadge,
 		rightColumn,
 		belowSteps,
-		statuses
+		statuses,
+		requirementState
 	}: {
 		checklist: WorkflowChecklistData;
 		profile: Profile;
@@ -54,6 +55,16 @@
 		 * missing from the map renders as `pending` (defensive default).
 		 */
 		statuses?: Record<string, RequirementStatus>;
+		/**
+		 * Optional per-requirement row renderer for the base steps. When supplied, each requirement is
+		 * rendered through this snippet (used by the issuer flow to attach live-only `raw` evidence to
+		 * its rows). When omitted, rows render from the persisted `statuses[requirement.id]` map
+		 * (verifier / wallet-acceptance flows are untouched). Step-header aggregation always uses
+		 * `statuses`, so callers that supply `requirementState` still pass `statuses`.
+		 */
+		requirementState?: Snippet<
+			[{ requirement: WorkflowChecklistData['steps'][number]['requirements'][number] }]
+		>;
 	} = $props();
 
 	/** Defensive default for a requirement id missing from the `statuses` map. */
@@ -113,10 +124,14 @@
 						<ul class="space-y-2 pl-6">
 							{#each step.requirements as req (req.text)}
 								<li>
-									<RequirementStatusRow
-										requirement={req}
-										status={statuses?.[req.id] ?? PENDING_STATUS}
-									/>
+									{#if requirementState}
+										{@render requirementState({ requirement: req })}
+									{:else}
+										<RequirementStatusRow
+											requirement={req}
+											status={statuses?.[req.id] ?? PENDING_STATUS}
+										/>
+									{/if}
 								</li>
 							{/each}
 						</ul>

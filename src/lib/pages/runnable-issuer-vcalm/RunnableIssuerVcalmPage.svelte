@@ -33,6 +33,8 @@
 	import type { WalletActivity, WalletArtifact } from '$lib/interop/wallet-activity.js';
 	import type { CheckOutcome } from '$lib/server/domain/issuer-runner/check-outcome.js';
 
+	import { evidenceForRequirement } from './vcalm-issuer-evidence.js';
+
 	/**
 	 * Runnable issuer × credential-issuance × VCALM page. The user pastes the interaction URL they
 	 * generated on their issuer; a single `POST /api/wallet-runner/issuer-vcalm/run` drives the test
@@ -195,6 +197,15 @@
 <RunnableChecklist checklist={combo.checklist} profile={combo.profile} {workflow} {role} {statuses}>
 	{#snippet headerBadge()}
 		<RunStateBadge {runState} />
+	{/snippet}
+	{#snippet requirementState({ requirement })}
+		<RequirementStatusRow
+			{requirement}
+			status={outcomeToRequirementStatus(
+				outcomesById[requirement.id],
+				done ? evidenceForRequirement(requirement.id, raw) : undefined
+			)}
+		/>
 	{/snippet}
 	{#snippet rightColumn()}
 		<MobileWalletDrawer ctaLabel={walletState === 'idle' ? 'Run the test wallet' : undefined}>
