@@ -47,6 +47,20 @@ export const ExchangeProtocols = ZodFactory(
 );
 export type ExchangeProtocols = ReturnType<typeof ExchangeProtocols>;
 
+/**
+ * Envelope returned by `GET /workflows/:workflowId/exchanges/:exchangeId/protocols`.
+ *
+ * The protocols object itself is byte-identical to the one `POST …/exchanges`
+ * returns — the transaction service builds both with the same `getProtocols()`
+ * — but the GET wraps it in a `{ protocols }` envelope where the POST returns it
+ * bare. {@link TransactionServiceClient.getProtocols} unwraps it so both paths
+ * hand callers the same {@link CreateExchangeResult}.
+ */
+export const ExchangeProtocolsEnvelope = ZodFactory(
+	z.object({ protocols: ExchangeProtocols.schema })
+);
+export type ExchangeProtocolsEnvelope = ReturnType<typeof ExchangeProtocolsEnvelope>;
+
 /** Exchange state from `GET /workflows/:workflowId/exchanges/:exchangeId`. */
 export const ExchangeState = ZodFactory(z.enum(['pending', 'active', 'complete', 'invalid']));
 export type ExchangeState = ReturnType<typeof ExchangeState>;
@@ -108,6 +122,13 @@ export interface TransactionServiceClient {
 	createIssuanceExchange(req: CreateIssuanceExchangeRequest): Promise<CreateExchangeResult>;
 	createVerificationExchange(req: CreateVerificationExchangeRequest): Promise<CreateExchangeResult>;
 	getExchange(workflowId: WorkflowId, exchangeId: string): Promise<ExchangeRecord>;
+	/**
+	 * Read the protocols of an exchange this suite did not necessarily mint.
+	 * Backs attach mode: an exchange minted out-of-band (CLI, another harness)
+	 * is adopted by id, and the wallet-facing links come from the service rather
+	 * than being derived locally.
+	 */
+	getProtocols(workflowId: WorkflowId, exchangeId: string): Promise<CreateExchangeResult>;
 }
 
 /** Network-layer / API error surfaced from the real client. */
@@ -166,7 +187,24 @@ export function RealTransactionServiceClient(
 		return ExchangeRecord(await res.json());
 	}
 
-	return { createIssuanceExchange, createVerificationExchange, getExchange };
+	/**
+	 * The service leaves this route unauthenticated (the wallet's own entry
+	 * points read it), but we send `baseHeaders` anyway to keep the client
+	 * uniform. The `exchangeId` echoed back is the caller's — this endpoint is
+	 * addressed by id, so there is nothing to extract from `iu`.
+	 */
+	async function getProtocols(
+		workflowId: WorkflowId,
+		exchangeId: string
+	): Promise<CreateExchangeResult> {
+		const url = `${config.transactionServiceUrl}/workflows/${workflowId}/exchanges/${exchangeId}/protocols`;
+		const res = await fetch(url, { headers: baseHeaders });
+		if (!res.ok) throw new TransactionServiceError(res.status, await res.text());
+		const { protocols } = ExchangeProtocolsEnvelope(await res.json());
+		return { exchangeId, protocols, workflowId };
+	}
+
+	return { createIssuanceExchange, createVerificationExchange, getExchange, getProtocols };
 }
 
 /** Pull the exchange UUID out of an interaction URL like `…/interactions/<id>`. */

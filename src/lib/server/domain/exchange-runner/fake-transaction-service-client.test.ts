@@ -72,6 +72,42 @@ describe('FakeTransactionServiceClient', () => {
 		});
 	});
 
+	describe('getProtocols (attach mode)', () => {
+		it('re-reads a claim exchange and returns exactly the protocols its mint returned', async () => {
+			const client = FakeTransactionServiceClient();
+			const minted = await client.createIssuanceExchange({ retrievalId: 'x' });
+
+			const adopted = await client.getProtocols('claim', minted.exchangeId);
+
+			expect(adopted).toEqual(minted);
+		});
+
+		it('re-reads a verify exchange, echoing the requested credential type back into the VPR', async () => {
+			const client = FakeTransactionServiceClient();
+			const minted = await client.createVerificationExchange({
+				vprCredentialType: ['OpenBadgeCredential'],
+				vprContext: ['ctx']
+			});
+
+			const adopted = await client.getProtocols('verify', minted.exchangeId);
+
+			expect(adopted).toEqual(minted);
+		});
+
+		it('throws 404 for unknown ids, and for an id looked up under the wrong workflow', async () => {
+			const client = FakeTransactionServiceClient();
+			const { exchangeId } = await client.createIssuanceExchange({ retrievalId: 'x' });
+
+			await expect(client.getProtocols('claim', 'does-not-exist')).rejects.toMatchObject({
+				status: 404,
+				name: 'TransactionServiceError'
+			});
+			await expect(client.getProtocols('verify', exchangeId)).rejects.toMatchObject({
+				status: 404
+			});
+		});
+	});
+
 	it('clear() empties the store; listExchanges() reflects what is there', async () => {
 		const client = FakeTransactionServiceClient();
 		await client.createIssuanceExchange({ retrievalId: 'a' });

@@ -1,3 +1,4 @@
+import { fakeClaimProtocols } from './fake-claim-protocols.js';
 import { oid4vciHooks } from './fake-oid4vci-hooks.js';
 import {
 	clone,
@@ -86,24 +87,10 @@ export function FakeTransactionServiceClient({
 			state: 'pending',
 			variables: { retrievalId: req.retrievalId }
 		});
-		const credentialOfferUri = `${host}/workflows/claim/exchanges/${exchangeId}/openid/credential-offer`;
-		const oid4vciDeepLink = `openid-credential-offer://?credential_offer_uri=${encodeURIComponent(
-			credentialOfferUri
-		)}`;
 		return {
 			exchangeId,
 			workflowId: 'claim',
-			protocols: {
-				iu: `${host}/interactions/${exchangeId}`,
-				vcapi: `${host}/workflows/claim/exchanges/${exchangeId}`,
-				lcw: `${host}/lcw?xid=${exchangeId}`,
-				OID4VCI: oid4vciDeepLink,
-				verifiablePresentationRequest: {
-					query: { type: 'DIDAuthentication' },
-					challenge: `challenge-${exchangeId}`,
-					domain: host
-				}
-			}
+			protocols: fakeClaimProtocols(host, exchangeId)
 		};
 	}
 
@@ -133,6 +120,31 @@ export function FakeTransactionServiceClient({
 		const record = store.get(exchangeId);
 		if (!record) throw new TransactionServiceError(404, `Exchange ${exchangeId} not found`);
 		return clone(record);
+	}
+
+	/**
+	 * Attach-mode read: rebuild the protocols of an exchange already in the
+	 * store. Mirrors the real service, which resolves the exchange under the
+	 * workflow in the path — an id looked up under the wrong workflow is a 404,
+	 * not a silent cross-workflow answer.
+	 */
+	async function getProtocols(
+		workflowId: WorkflowId,
+		exchangeId: string
+	): Promise<CreateExchangeResult> {
+		const record = store.get(exchangeId);
+		if (!record || (record.workflowId ?? workflowId) !== workflowId) {
+			throw new TransactionServiceError(404, `Exchange ${exchangeId} not found`);
+		}
+		if (workflowId === 'verify') {
+			const requested = record.variables?.vprCredentialType;
+			return {
+				exchangeId,
+				workflowId,
+				protocols: fakeVerifyProtocols(host, exchangeId, asStringArray(requested))
+			};
+		}
+		return { exchangeId, workflowId, protocols: fakeClaimProtocols(host, exchangeId) };
 	}
 
 	function advanceToActive(exchangeId: string, vars: Record<string, unknown> = {}): void {
@@ -179,6 +191,7 @@ export function FakeTransactionServiceClient({
 		createIssuanceExchange,
 		createVerificationExchange,
 		getExchange,
+		getProtocols,
 		advanceToActive,
 		advanceToComplete,
 		advanceToInvalid,
@@ -188,4 +201,9 @@ export function FakeTransactionServiceClient({
 		listExchanges,
 		clear
 	};
+}
+
+/** Narrow a stored `variables` entry back to the `string[]` the mint put there. */
+function asStringArray(value: unknown): string[] {
+	return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
 }

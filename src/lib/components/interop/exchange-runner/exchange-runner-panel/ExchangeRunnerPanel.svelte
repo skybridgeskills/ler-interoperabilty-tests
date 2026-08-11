@@ -43,6 +43,19 @@
 		verification: 'The wallet successfully presented a credential, and we verified it.'
 	} as const;
 
+	/**
+	 * Attach mode: the page adopted an exchange it did not mint, so no action
+	 * here can produce one. Say so instead of showing a control that cannot work.
+	 */
+	const ATTACHED_COPY = {
+		heading: 'Attached to an external exchange',
+		body: 'This page is showing an exchange minted outside the suite. Its QR code appears as soon as the exchange’s protocols load. Minting is unavailable here — mint another exchange with the CLI and open this page with its `?exchangeId=`.'
+	} as const;
+
+	/** No `onInitiate` means attach mode: the surface offers no path to minting. */
+	const canInitiate = $derived(!!actions.onInitiate);
+	const canRetry = $derived(!!(actions.onRetry ?? actions.onInitiate));
+
 	const copy = $derived({
 		headerLabel: HEADER_LABEL[data.protocol],
 		idle: IDLE_COPY[data.intent],
@@ -55,7 +68,7 @@
 		if (busy) return;
 		busy = true;
 		try {
-			await actions.onInitiate();
+			await actions.onInitiate?.();
 		} finally {
 			busy = false;
 		}
@@ -65,7 +78,7 @@
 		if (busy) return;
 		busy = true;
 		try {
-			await (actions.onRetry ?? actions.onInitiate)();
+			await (actions.onRetry ?? actions.onInitiate)?.();
 		} finally {
 			busy = false;
 		}
@@ -73,7 +86,7 @@
 </script>
 
 <aside class="space-y-6">
-	{#if data.run === 'idle'}
+	{#if data.run === 'idle' && canInitiate}
 		<div class="space-y-3 rounded-md border border-live-border bg-live-soft p-5">
 			<p class="text-label-md text-live">Live test runner</p>
 			<h3 class="text-headline-md text-foreground">{copy.idle.heading}</h3>
@@ -87,6 +100,12 @@
 				{busy ? busyLabel : initiateLabel}
 			</Button>
 		</div>
+	{:else if data.run === 'idle'}
+		<div class="space-y-3 rounded-md border border-border bg-muted/40 p-5">
+			<p class="text-label-md text-muted-foreground">Attached mode</p>
+			<h3 class="text-headline-md text-foreground">{ATTACHED_COPY.heading}</h3>
+			<p class="text-body-md text-foreground">{ATTACHED_COPY.body}</p>
+		</div>
 	{:else if data.run === 'error'}
 		<div class="space-y-3 rounded-md border border-destructive bg-destructive/10 p-5">
 			<p class="text-label-md text-destructive">Exchange failed</p>
@@ -96,9 +115,11 @@
 			{#if data.error?.hint}
 				<p class="text-body-md text-muted-foreground">{data.error.hint}</p>
 			{/if}
-			<Button type="button" variant="outline" disabled={busy} onclick={retry}>
-				{busy ? busyLabel : 'Retry'}
-			</Button>
+			{#if canRetry}
+				<Button type="button" variant="outline" disabled={busy} onclick={retry}>
+					{busy ? busyLabel : 'Retry'}
+				</Button>
+			{/if}
 		</div>
 	{:else if data.run === 'complete'}
 		<div class="space-y-3 rounded-md border border-primary/40 bg-primary/5 p-5">

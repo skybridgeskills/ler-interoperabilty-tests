@@ -117,7 +117,14 @@ Full palette + semantic tokens: [`docs/design-system.md`](docs/design-system.md)
 ## Architecture
 
 [`docs/architecture.md`](docs/architecture.md) covers the provider DI
-system, request context, theme system, and test harness.
+system, request context, the exchange runner (minting **and attach
+mode**), theme system, and test harness.
+
+The runnable wallet pages can adopt an exchange minted outside the suite
+with `?exchangeId=…&workflow=claim|verify`. During a probe sitting,
+`TRANSACTION_SERVICE_URL` must point at the **host** transaction service
+rather than the digest-pinned compose image — see
+[`docker/README.md`](docker/README.md#attach-mode-and-probe-sittings).
 
 ## Contributing
 

@@ -82,6 +82,48 @@ pnpm dev:services
 
 Restart compose after every change to `.env`.
 
+## Attach mode and probe sittings
+
+The compose stack is **not** the right transaction service for an interop probe
+sitting. `compose.dev.yml` pins `dcc-transaction-service` **by digest**, and the
+pinned image predates the interop-harness work: it has no `exchangeIdPrefix` on
+mint, no exchange journal, and no PEX selector.
+
+Attach mode (`/wallet/credential-{acceptance,presentation}/{vcalm,oid4}?exchangeId=…&workflow=…`)
+adopts an exchange minted **outside** the suite. Point it at the pinned
+container and the CLI's exchange simply will not be there — or will come back
+without the probe tag and without the journal entry the run is scored from — and
+the failure reads exactly like a wallet defect. That misattribution is the whole
+risk: **check the harness before you blame the wallet.**
+
+So, during a sitting:
+
+1. Stop the composed transaction service, which otherwise holds port 4004:
+
+   ```sh
+   docker compose -f docker/compose.dev.yml stop transaction-service
+   ```
+
+2. Run the harness build of `dcc-transaction-service` on the **host**, on 4004.
+3. Point the suite at it in `.env`:
+
+   ```sh
+   TRANSACTION_SERVICE_URL=http://localhost:4004
+   ```
+
+4. Confirm you are talking to the harness, not the pinned image, before the
+   first probe:
+
+   ```sh
+   # Substitute <id> with an exchangeId the probe CLI just minted.
+   curl -fsS http://localhost:4004/workflows/claim/exchanges/<id>/protocols | jq .protocols
+   ```
+
+   A 404 here means the suite and the CLI are not looking at the same service.
+
+The signing service can stay on compose — the digest pin only bites for the
+transaction service.
+
 ## Troubleshooting
 
 - **`port is already allocated`** — another process is using 4004 or 4006. Kill it or change the host port in `compose.dev.yml`.
@@ -91,6 +133,10 @@ Restart compose after every change to `.env`.
 - **suite shows "DCC services unreachable"** — check `pnpm
 dev:services` is running and `curl -fsS http://localhost:4004/healthz`
   returns 200.
+- **a runnable page opened with `?exchangeId=` says the exchange was not
+  found** — the suite and whatever minted the exchange are pointed at
+  different transaction services. See
+  [Attach mode and probe sittings](#attach-mode-and-probe-sittings).
 
 ## Bumping the dcc-transaction-service image
 

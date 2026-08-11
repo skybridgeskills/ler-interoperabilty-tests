@@ -139,4 +139,43 @@ describe('RealTransactionServiceClient', () => {
 		const result = await client.createIssuanceExchange({ retrievalId: 'r-1' });
 		expect(result.protocols.OID4VCI).toBeUndefined();
 	});
+
+	it('getProtocols GETs the per-exchange protocols URL and unwraps the { protocols } envelope', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+			new Response(
+				JSON.stringify({
+					protocols: {
+						iu: 'http://lits.test:4004/interactions/abc-123?iuv=1',
+						vcapi: 'http://lits.test:4004/workflows/verify/exchanges/abc-123',
+						OID4VP: 'openid4vp://?client_id=x&request_uri=y',
+						verifiablePresentationRequest: { query: [] }
+					}
+				}),
+				{ status: 200, headers: { 'content-type': 'application/json' } }
+			)
+		);
+
+		const client = RealTransactionServiceClient(baseConfig);
+		const result = await client.getProtocols('verify', 'abc-123');
+
+		const [url, init] = fetchSpy.mock.calls[0]!;
+		expect(url).toBe('http://lits.test:4004/workflows/verify/exchanges/abc-123/protocols');
+		expect((init?.headers as Record<string, string>).Authorization).toBe('Bearer shh');
+		// Same `{ exchangeId, protocols, workflowId }` shape the create path returns,
+		// so the adopt route and the create route are interchangeable for callers.
+		expect(result.exchangeId).toBe('abc-123');
+		expect(result.workflowId).toBe('verify');
+		expect(result.protocols.OID4VP).toBe('openid4vp://?client_id=x&request_uri=y');
+	});
+
+	it('getProtocols surfaces a non-2xx as TransactionServiceError', async () => {
+		vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+			new Response(JSON.stringify({ code: 404, message: 'Exchange not found' }), { status: 404 })
+		);
+		const client = RealTransactionServiceClient(baseConfig);
+		await expect(client.getProtocols('claim', 'nope')).rejects.toMatchObject({
+			status: 404,
+			name: 'TransactionServiceError'
+		});
+	});
 });

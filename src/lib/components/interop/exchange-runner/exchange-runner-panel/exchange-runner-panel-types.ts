@@ -27,8 +27,18 @@ export type ExchangeRunnerPanelData = {
 	error?: { message: string; hint?: string };
 };
 
+/**
+ * What the panel is allowed to do. Every field is optional because attach mode
+ * passes none of them: a page showing an exchange minted outside the suite must
+ * offer no path to minting, and a button that silently does nothing is worse
+ * than an absent one. With no `onInitiate` the panel replaces the idle CTA with
+ * an explanation of why, rather than rendering a dead control.
+ */
 export type ExchangeRunnerActions = {
-	onInitiate: () => void | Promise<void>;
+	/** Mint a fresh exchange. Omitted in attach mode. */
+	onInitiate?: () => void | Promise<void>;
+	/** Mint again after a failure. Falls back to `onInitiate`; omitted in attach mode. */
 	onRetry?: () => void | Promise<void>;
+	/** Clear back to idle after a completed run. Omitted in attach mode — see above. */
 	onReset?: () => void | Promise<void>;
 };

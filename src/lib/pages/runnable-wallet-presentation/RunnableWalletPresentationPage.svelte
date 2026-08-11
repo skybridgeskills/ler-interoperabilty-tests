@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { onDestroy, untrack } from 'svelte';
+	import { onDestroy, onMount, untrack } from 'svelte';
 
 	import {
+		attachExchange,
 		pollExchange,
 		type ExchangePollError,
 		type ExchangePollResponse
@@ -29,6 +30,7 @@
 		testRunRecord,
 		workflowBySlug,
 		type ChecklistRunState,
+		type RunnerWorkflowId,
 		type StepRunState
 	} from '$lib/interop/index.js';
 	import type { ProfileSlug } from '$lib/interop/profile-schema.js';
@@ -46,7 +48,24 @@
 	// `profile` is fixed for the lifetime of the route mount. Black-box: the
 	// operator wallet drives a real verification exchange; we only observe the
 	// settled result and score it — no built-in wallet.
-	let { profile = 'vcalm' }: { profile?: ProfileSlug } = $props();
+	//
+	// `attachExchangeId` switches the page into attach mode: it adopts an
+	// exchange minted outside the suite (the probe CLI) instead of minting one,
+	// and offers no path to minting while it does. The route reads it off the URL
+	// and passes it in — this component stays parameterised for Storybook.
+	let {
+		profile = 'vcalm',
+		attachExchangeId = undefined,
+		attachWorkflow = undefined
+	}: {
+		profile?: ProfileSlug;
+		attachExchangeId?: string;
+		attachWorkflow?: RunnerWorkflowId;
+	} = $props();
+
+	const attached = $derived(attachExchangeId !== undefined);
+	/** The workflow this page's exchange lives under; verification unless told otherwise. */
+	const workflowId = $derived<RunnerWorkflowId>(attachWorkflow ?? 'verify');
 
 	const role = roleBySlug('wallet')!;
 	const workflow = workflowBySlug('credential-presentation')!;
@@ -110,6 +129,12 @@
 	// Score + record exactly once per run.
 	let scoring = false;
 	let recorded = false;
+
+	/** Step 1 in flight, the rest pending — the shape a run starts in. */
+	function seedPerStep(): StepRunState[] {
+		const rest: StepRunState[] = Array.from({ length: stepCount - 1 }, () => 'pending');
+		return ['in-flight', ...rest];
+	}
 
 	function setIdle() {
 		exchangeId = undefined;
@@ -234,8 +259,30 @@
 					});
 				}
 			},
-			{ stepCount, workflow: 'verify' }
+			{ stepCount, workflow: workflowId }
 		);
+	}
+
+	/**
+	 * Attach mode: adopt the exchange named in the route's `?exchangeId=`. Reads
+	 * its protocols and starts polling exactly as a minted run would — it never
+	 * creates an exchange, and there is no affordance here that could.
+	 */
+	async function attach(id: string) {
+		const result = await attachExchange({
+			exchangeId: id,
+			workflow: workflowId,
+			link: isOid4 ? 'OID4VP' : 'iu'
+		});
+		if (!result.ok) {
+			setError(result.error);
+			return;
+		}
+		exchangeId = result.exchangeId;
+		interactionUrl = result.interactionUrl;
+		runState = 'awaiting-wallet';
+		perStep = seedPerStep();
+		startPolling(result.exchangeId);
 	}
 
 	async function initiate() {
@@ -261,8 +308,7 @@
 				interactionUrl = data.protocols.iu;
 			}
 			runState = 'awaiting-wallet';
-			const restPending: StepRunState[] = Array.from({ length: stepCount - 1 }, () => 'pending');
-			perStep = ['in-flight', ...restPending];
+			perStep = seedPerStep();
 			startPolling(data.exchangeId);
 		} catch (e) {
 			setError({
@@ -271,6 +317,10 @@
 			});
 		}
 	}
+
+	onMount(() => {
+		if (attachExchangeId) void attach(attachExchangeId);
+	});
 
 	onDestroy(() => {
 		pollHandle?.stop();
@@ -293,9 +343,15 @@
 		<RunStateBadge {runState} />
 	{/snippet}
 	{#snippet rightColumn()}
+		<!--
+			Attach mode passes no actions at all: minting, retrying (which mints)
+			and resetting (whose only exit is minting) are all unavailable when the
+			exchange came from outside the suite. The panel says so in place of the
+			idle CTA.
+		-->
 		<ExchangeRunnerPanel
 			data={panelData}
-			actions={{ onInitiate: initiate, onRetry: initiate, onReset: setIdle }}
+			actions={attached ? {} : { onInitiate: initiate, onRetry: initiate, onReset: setIdle }}
 		/>
 		{#if report}
 			<div class="mt-6">

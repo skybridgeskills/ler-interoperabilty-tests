@@ -94,6 +94,56 @@ returns the package + git info from `appVersion()`. A third endpoint,
 `health-snapshot` structured log for Loki/Grafana (see
 `src/lib/server/health/`).
 
+## Exchange runner — minting, and attach mode
+
+The four runnable wallet routes
+(`/wallet/credential-{acceptance,presentation}/{vcalm,oid4}`) drive a real
+exchange against the DCC transaction service. There are two ways in, and the
+page's read path is identical afterwards.
+
+**Mint** (the default). The page `POST`s `/api/exchange-runner/create`, takes
+the one protocol link its profile speaks (`iu`, `OID4VCI`, or `OID4VP`), renders
+the QR, and polls `GET /api/exchange-runner/[exchangeId]?stepCount&workflow`
+every 2s until the exchange settles.
+
+**Attach** (`?exchangeId=…&workflow=claim|verify`). The exchange was minted
+_outside_ the suite — by an interop-probe CLI, or another harness — and the page
+adopts it by id:
+
+- `+page.ts` parses the query (`client/exchange-runner/attach-params.ts`) and
+  passes `attachExchangeId` / `attachWorkflow` in as props. **URL reading stays
+  at the route boundary**: the page components are also driven by Storybook
+  stories, so they stay parameterised rather than location-aware.
+- On mount, `attachExchange()` (`client/exchange-runner/attach-exchange.ts`)
+  `GET`s `/api/exchange-runner/[exchangeId]/protocols?workflow=…`, which returns
+  the same `{ exchangeId, protocols, workflowId }` body `create` does. The page
+  then sets `interactionUrl`, goes to `awaiting-wallet` and polls exactly as a
+  minted run does.
+- **Attach offers no path to minting.** No `onInitiate`, no `onRetry` (it would
+  mint) and no `onReset` (its only exit is minting) reach
+  `ExchangeRunnerPanel`; with no `onInitiate` the panel replaces its idle CTA
+  with an explanation instead of rendering a control that cannot work.
+- Attach renders **observations, not verdicts** — the per-step display and the
+  run record are unchanged, and `deriveRunStateFromExchange` maps steps
+  positionally, so a probe whose step shape differs from the checklist's will
+  show approximate per-step states.
+
+The adopt endpoint is a separate route from the poll endpoint on purpose: the
+poller ticks every 2s and does not need protocols, which never change. It
+mirrors the poll route's disabled-hint, workflow parsing and error mapping, so
+the runner API keeps one error vocabulary.
+
+`getProtocols` sits on the `TransactionServiceClient` interface beside
+`createIssuanceExchange` / `createVerificationExchange` / `getExchange`, and is
+implemented by both the real HTTP client and the in-memory fake. Note the wire
+asymmetry it absorbs: the transaction service's `POST …/exchanges` returns the
+protocols object bare, while `GET …/protocols` wraps it in `{ protocols }`.
+Callers see the one shape.
+
+> **During a probe sitting, point `TRANSACTION_SERVICE_URL` at the host dev
+> transaction service, not the pinned compose image** — see
+> [`docker/README.md`](../docker/README.md#attach-mode-and-probe-sittings).
+
 ## Theme system
 
 Lives in `src/routes/layout.css`:
