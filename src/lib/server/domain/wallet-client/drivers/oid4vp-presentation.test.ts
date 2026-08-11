@@ -31,6 +31,46 @@ function obRequest(typeConst = 'OpenBadgeCredential') {
 }
 
 describe('Oid4vpPresentationDriver', () => {
+	it('echoes `state` on the direct_post response when the request carries it', async () => {
+		// OID4VP 1.0 §8.2: the wallet MUST return `state` when the request had
+		// it. Verifiers use it as a replay/correlation guard and reject a
+		// response without it — dropping it fails an otherwise-correct exchange,
+		// which is exactly what happened against the dcc-transaction-service
+		// verifier before this was fixed.
+		const crypto = WalletCrypto();
+		const captured: { state?: string }[] = [];
+		const submit: SubmitResponse = async (_uri, body) => {
+			captured.push({ state: body.state });
+			return {};
+		};
+		const driver = Oid4vpPresentationDriver({ crypto, submit });
+
+		const result = await driver.runPresentation({
+			request: { ...obRequest(), state: 'state-abc' },
+			cryptosuite: 'eddsa-rdfc-2022'
+		});
+
+		expect(result.submitted).toBe(true);
+		expect(captured[0].state).toBe('state-abc');
+	});
+
+	it('omits `state` when the request did not carry one', async () => {
+		const crypto = WalletCrypto();
+		const captured: Record<string, unknown>[] = [];
+		const submit: SubmitResponse = async (_uri, body) => {
+			captured.push(body as unknown as Record<string, unknown>);
+			return {};
+		};
+		const driver = Oid4vpPresentationDriver({ crypto, submit });
+
+		await driver.runPresentation({
+			request: obRequest(),
+			cryptosuite: 'eddsa-rdfc-2022'
+		});
+
+		expect('state' in captured[0]).toBe(false);
+	});
+
 	it('uses an injected held credential instead of seeding (holder + embedded VC match)', async () => {
 		const crypto = WalletCrypto();
 		const holder = await crypto.generateKey('eddsa-rdfc-2022');
