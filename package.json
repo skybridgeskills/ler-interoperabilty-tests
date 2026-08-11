@@ -89,6 +89,7 @@
 		"@interop/ecdsa-multikey": "^2.3.0",
 		"@interop/security-document-loader": "^9.3.0",
 		"@interop/vc": "^11.0.3",
+		"@interop/vc-bitstring-status-list": "^3.0.4",
 		"clsx": "^2.1.1",
 		"pino": "^10.0.0",
 		"pino-pretty": "^13.0.0",
