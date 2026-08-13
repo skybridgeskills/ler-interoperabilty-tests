@@ -18,6 +18,61 @@ codebase evolves.
   delivery; see
   [`adr/2026-07-04-verifier-assessment-model.md`](adr/2026-07-04-verifier-assessment-model.md)).
 
+## Scenarios
+
+A **scenario** is the suite's runnable unit: one small, subtle measurement made of
+ordered steps, each with an optional action and its own fine-grained
+requirements. It replaces the combination `(role, workflow, profile)` as the
+thing you run. See
+[`adr/2026-08-13-scenario-as-runnable-unit.md`](adr/2026-08-13-scenario-as-runnable-unit.md).
+
+The model lives in `src/lib/interop/scenarios/` and is **client-safe** — nothing
+in it imports from `src/lib/server/`:
+
+| File                      | What it holds                                                                                               |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `scenario-schema.ts`      | `Scenario`, `ScenarioStep`, `ScenarioAction`, and the opaque `RecipeId` / `RequestId` / `IssuingIntent` ids |
+| `requirement-schema.ts`   | `Requirement`, `RequirementLevel`, `RequirementCheck`, `AttestedAnswer`                                     |
+| `membership.ts`           | `Membership`, `MembershipLevel`, `OneOfGroup`                                                               |
+| `scenario-fingerprint.ts` | `scenarioFingerprint()` — drift detection                                                                   |
+| `catalog-validation.ts`   | `validateCatalog()` / `assertValidCatalog()`                                                                |
+| `accessors.ts`            | `scenarioBySlug`, `scenariosFor`, `membershipsOfProfile`                                                    |
+| `all-scenarios.ts`        | the registry, validated at module evaluation                                                                |
+
+Four properties are load-bearing:
+
+- **`workflow` is taxonomy only.** It groups the catalog and never constrains
+  what a step's action may do.
+- **`ScenarioAction` is a closed union** (`issue`, `request-presentation`,
+  `deliver-direct`). Extending it is the only escape hatch — a new kind is
+  reviewed once and reusable forever, unlike a bespoke page.
+- **The level belongs to the membership, not the scenario.** A scenario carries
+  `memberships[]`, each `required | optional | { oneOf }`, exactly one naming a
+  base profile. So a profile is a _derived_ set of memberships
+  (`membershipsOfProfile`), not a list stored on the profile.
+- **Drift is derived, never declared.** There is no `version` field;
+  `scenarioFingerprint()` hashes scoring-relevant content (requirement ids,
+  levels, statements, answer kinds, `choose` options and right answers, step
+  actions) and excludes cosmetic fields (`name`, `blurb`, step `id`/`title`/
+  `summary`), so copy-editing never costs anyone their results.
+
+### Catalog validation
+
+`all-scenarios.ts` calls `assertValidCatalog()` at module evaluation and
+**throws**, naming every violation at once — an invalid catalog is a build-time
+authoring bug, not a runtime condition. `validateCatalog()` is the pure form
+that returns the list. Seven rules:
+
+1. Scenario slugs are unique.
+2. Step ids are unique within a scenario.
+3. Requirement ids are unique within a scenario.
+4. Exactly one membership names a base profile.
+5. **Every member of a `oneOf` group declares the same requirement ids.** The
+   load-bearing one: a group is one obligation, so the completion denominator
+   must not depend on which alternative the operator ran.
+6. A `choose` answer's `correct` is one of its own option values.
+7. Shuffled steps form a single contiguous run.
+
 ## Provider dependency injection
 
 The provider system in `src/lib/server/util/provider/` is a lightweight
