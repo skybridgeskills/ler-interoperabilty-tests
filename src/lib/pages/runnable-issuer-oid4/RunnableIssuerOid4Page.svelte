@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
-	import { recordRun } from '$lib/client/run-history/index.js';
 	import { selectionStore } from '$lib/client/selection/index.js';
 	import { AdditiveChecklistSection } from '$lib/components/interop/additive-checklist-section/index.js';
 	import { MobileWalletDrawer } from '$lib/components/interop/mobile-wallet-drawer/index.js';
@@ -24,9 +23,6 @@
 		combinationFor,
 		combinedRequirements,
 		roleBySlug,
-		runChecklistFingerprint,
-		statusFromIssuerReport,
-		testRunRecord,
 		workflowBySlug,
 		type ChecklistRunState
 	} from '$lib/interop/index.js';
@@ -73,10 +69,11 @@
 		'issuer',
 		'credential-issuance'
 	);
-	// Combined requirement set (base + applicable additives) — the fingerprint and the
-	// persisted `statuses` map are both keyed against these ids.
+	// The combined requirement set (base + applicable additives), keyed by id — what the
+	// per-requirement rows render against. This page no longer persists anything: the
+	// scenario run store replaced the combination-keyed one, and this page is not a
+	// scenario yet. It still runs; it just does not record.
 	const requirements = combinedRequirements('issuer', 'credential-issuance', 'oid4');
-	const checklistFingerprint = runChecklistFingerprint(requirements);
 
 	onMount(() => {
 		selectionStore.hydrate();
@@ -179,17 +176,6 @@
 			done = true;
 
 			runState = !data.blocked && data.verified ? 'complete' : 'error';
-
-			recordRun(
-				testRunRecord({
-					role: 'issuer',
-					workflow: 'credential-issuance',
-					profile: 'oid4',
-					status: statusFromIssuerReport({ verified: data.verified }),
-					checklistFingerprint,
-					statuses
-				})
-			);
 		} catch (e) {
 			error = {
 				message: e instanceof Error ? e.message : String(e),

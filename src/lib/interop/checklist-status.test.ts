@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { RequirementStatus, RequirementStatusTone } from './requirement-status.js';
+import { RequirementStatus, RequirementStatusTone } from './checklist-status.js';
 
 describe('RequirementStatusTone', () => {
 	it('accepts every known tone', () => {

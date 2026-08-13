@@ -1,14 +1,11 @@
 import { outcomeBadge } from '$lib/components/interop/issuer-runner/requirement-report/outcome-status-badge.js';
+import type { RequirementStatus, RequirementStatusTone } from '$lib/interop/checklist-status.js';
 import type { StepRunState } from '$lib/interop/index.js';
-import type {
-	RequirementStatus,
-	RequirementStatusTone
-} from '$lib/interop/run-history/requirement-status.js';
 import type { VerifierCheckOutcome } from '$lib/interop/verifier-run/index.js';
 import type { CheckOutcome } from '$lib/server/domain/issuer-runner/check-outcome.js';
 
 // The persisted status type + tone union now live framework- and server-free in
-// `$lib/interop/run-history/requirement-status.ts`. Re-exported here so existing
+// `$lib/interop/checklist-status.ts`. Re-exported here so existing
 // component imports keep resolving; the mappers below (which need `CheckOutcome`)
 // stay in `components/`.
 export type { RequirementStatusTone };

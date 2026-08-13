@@ -315,62 +315,75 @@ on subsequent navigations and OS-preference changes.
 
 ## Client-side persistence
 
-The homepage console keeps two pieces of state in `localStorage`, isolated
-under `src/lib/client/`:
+The app keeps two pieces of state in `localStorage`, isolated under
+`src/lib/client/`:
 
 - **Selection** (`client/selection/selection-store.svelte.ts`) — the user's
   chosen roles/profiles, key `lits.selection.v1`. A Svelte 5 runes store;
   hydrate from a browser `onMount` only (never during SSR). Unknown slugs are
   validated away on read via `RoleSlug`/`ProfileSlug` schemas.
-- **Run history** (`client/run-history/run-history-store.ts`) — the latest 3
-  `TestRunRecord`s per `(role, workflow, profile)` combination, key
-  `lits.run-history.v2`. Pure model + status derivation live in
-  `interop/run-history/`; only the store touches `localStorage`. Reads
-  `safeParse` every entry and drop malformed ones — never throw to the UI.
+- **Scenario runs** (`client/scenario-runs/scenario-run-store.ts`) — one
+  `ScenarioRunRecord` per scenario, key `lits.scenario-runs.v1`. The pure model
+  lives in `interop/scenario-run/`; only the store touches `localStorage`. It
+  `safeParse`s every entry and drops malformed ones — never throws to the UI.
 
-The run record is a **flat, id-keyed v2 shape** (see the ADR below), not a
-discriminated `payload` union:
+The record is a flat map keyed by scenario slug, **not** an array per bucket:
 
 ```
-{ id, role, workflow, profile, ranAt, status,
-  checklistFingerprint,
-  statuses: Record<requirementId, RequirementStatus>,
-  error?, pinned? }
+{ scenarioSlug, ranAt, fingerprint, status, outcomes, attempts }
 ```
 
-`id` (`crypto.randomUUID()`) and `ranAt` (ISO string) default in the factory.
-`status` is `passed | failed | incomplete`. `statuses` holds the
-presentation-ready per-requirement rows keyed by requirement id — the persisted
-`RequirementStatus` (`{ tone, label, message?, attested? }`) deliberately omits
-the live-only `raw` debug body (the in-memory `RequirementStatusView` adds it
-back). `checklistFingerprint` is an order-independent djb2 hash over the
-combined checklist's `id␟level␟text` rows (base + additives), used only for
-equality-based drift detection.
+**One result per scenario — the latest — plus an `attempts` counter.** Nothing
+in the UI wants more. Holding history costs one schema bump (the value type
+becomes an array; the record travels unchanged), which is priced as affordable
+and deliberately not pre-built. `recordScenarioRun` owns the increment, so no
+call site can get the count wrong.
 
-The selection key stays `.v1`; run history bumped to `.v2` and **abandons** the
-old v1 store rather than migrating it (v1 records lacked per-row statuses and a
-fingerprint, so rendering them as reports would fabricate data). The store never
-reads `.v1` and clears it on first write (`LEGACY_STORAGE_KEY`). Retention is
-per-combination and isolated in `applyRetention()` (cap 3), shaped to later
-preserve a `pinned` flag (reserved on `TestRunRecord`, unset in MVP) without an
-API change. `runById(id)` scans the buckets to resolve a single run for the
-reopen route. See
-[`docs/adr/2026-07-11-run-history-v2-flat-record.md`](adr/2026-07-11-run-history-v2-flat-record.md)
-(supersedes [`2026-06-10-run-history-local-persistence.md`](adr/2026-06-10-run-history-local-persistence.md)).
+Each entry of `outcomes` carries the raw answer, the **expected** answer, the
+derived status and the `automated | attested` source. Denormalising the expected
+answer is what lets a stored run render its reveal without the live definition.
 
-### Reopening a run — the view-only `/runs/[id]` route
+**Drift drops the record.** On read, each record's `fingerprint` is compared
+against the live scenario's; a mismatch — or a slug the catalog no longer holds
+— means the record is silently discarded and the row reverts to "not run". There
+is no `outdated` state to render. This is also what lets an export bundle carry
+no scenario definitions: records from a catalog that has moved on just drop.
 
-`src/routes/runs/[id]/` renders a saved run as a shareable, print-to-PDF report.
-It is **client-only** (`prerender = false`, `ssr = false`) — the record lives in
-`localStorage`, whose id is unknown at build time. After mount it resolves the
-record via `runById(id)`, re-derives the live combined checklist through
-`interop/accessors` (`combinationFor` + `additiveChecklistsForCombination`), and
-runs a strict `checklistFingerprint` drift check
-(`reopenStateFor` → `not-found | outdated | render`). An **outdated** run (the
-checklist drifted since the run) is blocked and prompts a re-run — never
-migrated or partially reconciled. A **current** run repaints the display-only
-`RunnableChecklist` (fed the persisted `statuses` map) plus a `RunHistorySummary`,
-and prints via the browser's own print dialog (`window.print()`).
+`lits.run-history.v2` and `.v1` are **removed on first write and never read**.
+There is no migration: those runs were keyed by a combination that is no longer
+runnable, their `statuses` used a deleted requirement vocabulary, and their
+`checklistFingerprint` hashed a `profile.checklists` that is on its way out. See
+[`docs/adr/2026-08-13-scenario-run-record-and-completion.md`](adr/2026-08-13-scenario-run-record-and-completion.md)
+(supersedes [`2026-07-11-run-history-v2-flat-record.md`](adr/2026-07-11-run-history-v2-flat-record.md)).
+
+### Completion and the meter
+
+`src/lib/interop/completion/` turns stored runs into the numbers the meter
+renders, for one `(profile, role)` set. Pure — it takes the runs and returns
+arithmetic.
+
+**The governing rule: the meter fills exactly when the badge becomes claimable.**
+They share a header, so `isClaimable()` is the single predicate both use; the
+meter never re-derives `met === total` on its own.
+
+Five rules, each with a test:
+
+1. **The unit is the requirement, not the scenario** — a row reads
+   `4/5 requirements met`, so the meter visibly adds up from its own rows, and a
+   scenario with four passes and one failing SHOULD is not flattened to a ✗.
+2. **A `oneOf` group is one obligation.** Members declare identical requirement
+   ids (catalog rule 5), so the group contributes that set once and stops gating
+   as soon as one member passes.
+3. **`optional` memberships are excluded from the base meter** and get their own
+   sub-meter. Including them would mean the base could never fill.
+4. **A blocked obligation does not shrink the denominator.** When
+   `resolveIssuingContext` reports the deployment cannot serve a pinned pair,
+   those requirements stay in `total` and contribute nothing to `met` — the
+   badge is blocked, because a shrinking denominator would let two deployments
+   issue badges that look identical and mean different things.
+5. **Only a `pass` outcome is met.** A failing SHOULD is therefore unmet here
+   while still not failing its scenario; both numbers come from the same
+   outcome map and answer different questions.
 
 ## Test harness
 

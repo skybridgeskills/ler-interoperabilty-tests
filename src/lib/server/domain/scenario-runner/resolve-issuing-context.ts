@@ -1,20 +1,8 @@
-import type { IssuingIntent } from '$lib/interop/scenarios/index.js';
+import type { CannotServe, IssuingIntent } from '$lib/interop/scenarios/index.js';
 
 import type { ExchangeRunnerConfig } from '../exchange-runner/exchange-runner-config.js';
 
-/**
- * Why a deployment cannot serve a pinned `(cryptosuite, didMethod)` pair.
- *
- * A typed reason rather than a message, because the UI renders the affected
- * scenario **disabled with the reason shown** — and, critically, **still counts
- * its requirements in the completion denominator**. A shrinking denominator
- * would let two deployments issue badges that look identical and mean different
- * things, so an unservable combination blocks the badge instead of quietly
- * making it easier.
- */
-export type CannotServe =
-	| { kind: 'cryptosuite-unavailable'; requested: string; available: string[] }
-	| { kind: 'did-method-unavailable'; requested: string; available: string[] };
+export type { CannotServe };
 
 /** The tenant identity and crypto axis an exchange will actually be minted under. */
 export type IssuingContext =
@@ -82,10 +70,4 @@ export function resolveIssuingContext(
 	}
 
 	return { ok: true, ...served };
-}
-
-/** Human-readable form of a {@link CannotServe}, for API bodies and disabled-state copy. */
-export function cannotServeMessage(reason: CannotServe): string {
-	const axis = reason.kind === 'cryptosuite-unavailable' ? 'cryptosuite' : 'DID method';
-	return `This deployment cannot issue with ${axis} "${reason.requested}". It serves: ${reason.available.join(', ')}.`;
 }

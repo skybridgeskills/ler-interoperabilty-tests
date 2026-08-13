@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
-	import { recordRun } from '$lib/client/run-history/index.js';
 	import { selectionStore } from '$lib/client/selection/index.js';
 	import { AdditiveChecklistSection } from '$lib/components/interop/additive-checklist-section/index.js';
 	import { MobileWalletDrawer } from '$lib/components/interop/mobile-wallet-drawer/index.js';
@@ -28,9 +27,6 @@
 		combinationFor,
 		combinedRequirements,
 		roleBySlug,
-		runChecklistFingerprint,
-		statusFromIssuerReport,
-		testRunRecord,
 		workflowBySlug,
 		type ChecklistRunState
 	} from '$lib/interop/index.js';
@@ -62,14 +58,15 @@
 		'issuer',
 		'direct-credential-issuance'
 	);
-	// Combined requirement set (base + applicable additives) — the fingerprint and the
-	// persisted `statuses` map are both keyed against these ids.
+	// The combined requirement set (base + applicable additives), keyed by id — what the
+	// per-requirement rows render against. This page no longer persists anything: the
+	// scenario run store replaced the combination-keyed one, and this page is not a
+	// scenario yet. It still runs; it just does not record.
 	const requirements = combinedRequirements(
 		'issuer',
 		'direct-credential-issuance',
 		'ob3-direct-delivery'
 	);
-	const checklistFingerprint = runChecklistFingerprint(requirements);
 
 	/** The verify endpoint spreads the report and adds the normalized wallet fields. */
 	type VerifyResponse = IssuerRunnerReport & {
@@ -171,20 +168,6 @@
 			artifacts = result.artifacts ?? [];
 			status = res.ok ? 'done' : 'error';
 			// Record this completed verification (passed iff verified and no fatalError).
-			recordRun(
-				testRunRecord({
-					role: 'issuer',
-					workflow: 'direct-credential-issuance',
-					profile: 'ob3-direct-delivery',
-					status: statusFromIssuerReport({
-						verified: result.verified,
-						fatalError: result.fatalError
-					}),
-					checklistFingerprint,
-					statuses,
-					error: result.fatalError
-				})
-			);
 		} catch (e) {
 			report = {
 				verified: false,

@@ -1,94 +1,36 @@
-<script lang="ts" module>
-	/** Absolute run timestamp, locale-aware (e.g. "Jul 11, 2026, 10:48 PM"). */
-	function formatAbsolute(iso: string): string {
-		const date = new Date(iso);
-		if (Number.isNaN(date.getTime())) return '';
-		return new Intl.DateTimeFormat(undefined, {
-			dateStyle: 'medium',
-			timeStyle: 'short'
-		}).format(date);
-	}
-
-	/** Coarse relative time ("3 hours ago", "just now") via Intl.RelativeTimeFormat. */
-	function formatRelative(iso: string, now: number = Date.now()): string {
-		const then = new Date(iso).getTime();
-		if (Number.isNaN(then)) return '';
-		const seconds = Math.round((then - now) / 1000);
-		const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
-		const units: [Intl.RelativeTimeFormatUnit, number][] = [
-			['year', 60 * 60 * 24 * 365],
-			['month', 60 * 60 * 24 * 30],
-			['day', 60 * 60 * 24],
-			['hour', 60 * 60],
-			['minute', 60]
-		];
-		for (const [unit, secondsPerUnit] of units) {
-			if (Math.abs(seconds) >= secondsPerUnit) {
-				return rtf.format(Math.round(seconds / secondsPerUnit), unit);
-			}
-		}
-		return rtf.format(seconds, 'second');
-	}
-</script>
-
 <script lang="ts">
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import {
-		combinedRequirements,
-		isRunOutdated,
 		type AdditiveProfileSlug,
 		type Profile,
 		type Role,
-		type TestRunRecord,
 		type Workflow
 	} from '$lib/interop/index.js';
 
 	import { RoleBadge } from '../role-badge/index.js';
-	import { RunResultBadge } from '../run-result-badge/index.js';
-
-	import { resolve } from '$app/paths';
 
 	/**
 	 * Shopping-cart-style row for one (role, workflow, profile) combination.
 	 * Selected rows are prominent; unselected rows are de-emphasized but still
-	 * readable and navigable. Presentational — selection/run data come via props.
+	 * readable and navigable. Purely presentational.
 	 *
-	 * When a combination has more than one retained run, the row can expand to
-	 * reveal its recent runs (newest-first), each deep-linking to `/runs/<id>`.
+	 * **Statusless.** It used to carry the combination's run history; that store
+	 * is gone, and a combination is not a scenario, so there is nothing to show.
+	 * The row survives only to list combinations that have not been migrated
+	 * yet, and is deleted with them.
 	 */
 	let {
 		combination,
 		selected,
-		latestRun,
-		recentRuns = [],
 		href,
 		appliedAdditives = []
 	}: {
 		combination: { role: Role; workflow: Workflow; profile: Profile };
 		selected: boolean;
-		/** Collapsed-state badge source (newest run for this combination). */
-		latestRun?: TestRunRecord;
-		/** Retained runs for this combination, newest-first (from `runsFor`). */
-		recentRuns?: TestRunRecord[];
 		href: string;
 		/** Selected additive profiles that apply to this row's combination. */
 		appliedAdditives?: { slug: AdditiveProfileSlug; name: string }[];
 	} = $props();
-
-	let expanded = $state(false);
-
-	// Only offer the expander when there's more than the single latest run.
-	const canExpand = $derived(recentRuns.length > 1);
-
-	// Live combined requirements for drift detection; recomputed if the row's
-	// combination changes. Empty for an invalid combination → nothing flagged.
-	const requirements = $derived(
-		combinedRequirements(combination.role.slug, combination.workflow.slug, combination.profile.slug)
-	);
-
-	function runHref(id: string): string {
-		return resolve('/runs/[id]', { id });
-	}
 </script>
 
 <div
@@ -111,22 +53,6 @@
 			</div>
 		</div>
 
-		<RunResultBadge record={latestRun} />
-
-		{#if canExpand}
-			<button
-				type="button"
-				onclick={() => (expanded = !expanded)}
-				aria-expanded={expanded}
-				class="inline-flex shrink-0 items-center gap-1 text-label-md text-muted-foreground hover:text-foreground"
-			>
-				<span aria-hidden="true" class={`transition-transform ${expanded ? 'rotate-90' : ''}`}>
-					›
-				</span>
-				{recentRuns.length} runs
-			</button>
-		{/if}
-
 		<a
 			{href}
 			class="shrink-0 text-label-md text-primary hover:underline"
@@ -135,32 +61,4 @@
 			Open checklist →
 		</a>
 	</div>
-
-	{#if canExpand && expanded}
-		<ul class="space-y-1.5 border-t border-border pt-3">
-			{#each recentRuns as run (run.id)}
-				{@const outdated = isRunOutdated(run, requirements)}
-				<li>
-					<a
-						href={runHref(run.id)}
-						class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-sm px-2 py-1.5 hover:bg-muted/50"
-					>
-						<RunResultBadge record={run} showTime={false} />
-						<span class="text-body-sm text-foreground">{formatRelative(run.ranAt)}</span>
-						<time class="text-label-md text-muted-foreground" datetime={run.ranAt}>
-							· {formatAbsolute(run.ranAt)}
-						</time>
-						{#if outdated}
-							<Badge
-								variant="outline"
-								class="border-result-fail-border text-[0.7rem] text-result-fail"
-							>
-								Outdated
-							</Badge>
-						{/if}
-					</a>
-				</li>
-			{/each}
-		</ul>
-	{/if}
 </div>

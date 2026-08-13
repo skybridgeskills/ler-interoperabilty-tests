@@ -2,7 +2,6 @@
 	import { onMount } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 
-	import { allLatestRuns, runCombinationKey, runsFor } from '$lib/client/run-history/index.js';
 	import { selectionStore } from '$lib/client/selection/index.js';
 	import { AdditiveProfileSelector } from '$lib/components/interop/additive-profile-selector/index.js';
 	import { ChecklistRow } from '$lib/components/interop/checklist-row/index.js';
@@ -20,8 +19,7 @@
 		roleBySlug,
 		sortCombinations,
 		workflowBySlug,
-		type ChecklistCombination,
-		type TestRunRecord
+		type ChecklistCombination
 	} from '$lib/interop/index.js';
 
 	import { resolve } from '$app/paths';
@@ -29,20 +27,9 @@
 	// Static set of rows — pure, SSR-safe.
 	const combos = allCombinations();
 
-	// Run history is browser-only; hydrate after mount to avoid SSR/localStorage.
-	let latestRuns = $state<Map<string, TestRunRecord>>(new Map());
-	let recentRuns = $state<Map<string, TestRunRecord[]>>(new Map());
-
 	onMount(() => {
-		// Both stores read localStorage — browser only.
+		// Reads localStorage — browser only.
 		selectionStore.hydrate();
-		latestRuns = allLatestRuns();
-		recentRuns = new Map(
-			combos.map((c) => [
-				runCombinationKey(c.role, c.workflow, c.profile),
-				runsFor(c.role, c.workflow, c.profile)
-			])
-		);
 	});
 
 	const selection = $derived(selectionStore.selection);
@@ -51,6 +38,11 @@
 	const otherCombos = $derived(sortedCombos.filter((c) => !isCombinationSelected(c, selection)));
 	const hasSelection = $derived(selectedCombos.length > 0);
 	const selectedAdditives = $derived(new SvelteSet(selectionStore.additiveProfiles));
+
+	/** Stable keyed-each identity for a combination row. */
+	function comboKey(combo: ChecklistCombination): string {
+		return `${combo.role}:${combo.workflow}:${combo.profile}`;
+	}
 
 	/** Selected additive profiles that apply to a given combination. */
 	function appliedAdditivesFor(combo: ChecklistCombination) {
@@ -116,9 +108,6 @@
 		<ChecklistRow
 			combination={{ role, workflow, profile }}
 			selected={isCombinationSelected(combo, selection)}
-			latestRun={latestRuns.get(runCombinationKey(combo.role, combo.workflow, combo.profile))}
-			recentRuns={recentRuns.get(runCombinationKey(combo.role, combo.workflow, combo.profile)) ??
-				[]}
 			href={checklistHref(combo.role, combo.workflow, combo.profile)}
 			appliedAdditives={appliedAdditivesFor(combo)}
 		/>
@@ -148,7 +137,7 @@
 				</p>
 			</header>
 			<div class="space-y-2">
-				{#each selectedCombos as combo (runCombinationKey(combo.role, combo.workflow, combo.profile))}
+				{#each selectedCombos as combo (comboKey(combo))}
 					{@render checklistRow(combo)}
 				{/each}
 			</div>
@@ -175,7 +164,7 @@
 				</p>
 			</summary>
 			<div class="mt-3 space-y-2">
-				{#each otherCombos as combo (runCombinationKey(combo.role, combo.workflow, combo.profile))}
+				{#each otherCombos as combo (comboKey(combo))}
 					{@render checklistRow(combo)}
 				{/each}
 			</div>

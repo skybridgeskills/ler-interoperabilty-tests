@@ -7,7 +7,6 @@
 		type ExchangePollError,
 		type ExchangePollResponse
 	} from '$lib/client/exchange-runner/index.js';
-	import { recordRun } from '$lib/client/run-history/index.js';
 	import {
 		ExchangeRunnerPanel,
 		type ExchangeProtocolId
@@ -19,14 +18,9 @@
 	} from '$lib/components/interop/runnable-checklist/index.js';
 	import {
 		combinationFor,
-		combinedRequirements,
 		roleBySlug,
-		runChecklistFingerprint,
-		statusFromExchange,
-		testRunRecord,
 		type ChecklistRunState,
 		type RunnerWorkflowId,
-		type RunStateDerivation,
 		type StepRunState,
 		workflowBySlug
 	} from '$lib/interop/index.js';
@@ -96,34 +90,16 @@
 	);
 	let runnerError = $state<RunnerError | undefined>(undefined);
 
-	// Combined requirement set — the fingerprint and the persisted step-level `statuses` map are
-	// both keyed against these ids. Tier B: every requirement in a step shares its step's status.
-	const requirements = $derived(combinedRequirements('wallet', 'credential-acceptance', profile));
-	const checklistFingerprint = $derived(runChecklistFingerprint(requirements));
-	// Presentation-ready per-requirement statuses (keyed by requirement id). The left column renders
-	// these live, and each recorded run persists this exact map (built from the final `perStep`).
+	// Presentation-ready per-requirement statuses (keyed by requirement id). Rendered live
+	// only — this page no longer persists anything (see the run-store note below).
 	const statuses = $derived(statusesFromStepStates(combo.checklist.steps, perStep, detailFor));
 
 	let pollHandle: { stop: () => void } | undefined;
 
-	// Run-history recording: record exactly once when a run reaches a terminal
-	// state (complete → passed, error/timeout → failed). Reset per run.
-	let recorded = false;
-
-	function recordWalletRun(derived: RunStateDerivation) {
-		if (recorded) return;
-		recorded = true;
-		recordRun(
-			testRunRecord({
-				role: 'wallet',
-				workflow: 'credential-acceptance',
-				profile,
-				status: statusFromExchange(derived),
-				checklistFingerprint,
-				statuses: statusesFromStepStates(combo.checklist.steps, derived.perStep, detailFor)
-			})
-		);
-	}
+	// This page records nothing. The scenario run store replaced the combination-keyed
+	// one, and this page is not a scenario yet — it still drives a real exchange and
+	// still shows live per-step status, it just does not persist. It is deleted once
+	// its combination migrates.
 
 	/** Step 1 in flight, the rest pending — the shape a run starts in. */
 	function seedPerStep(): StepRunState[] {
@@ -137,7 +113,6 @@
 		runState = 'idle';
 		perStep = Array.from({ length: stepCount }, () => 'pending');
 		runnerError = undefined;
-		recorded = false;
 		pollHandle?.stop();
 		pollHandle = undefined;
 	}
@@ -170,7 +145,6 @@
 		runState = 'error';
 		runnerError = error;
 		perStep = Array.from({ length: stepCount }, () => 'skipped');
-		recordWalletRun({ run: 'error', perStep });
 	}
 
 	function startPolling(id: string) {
@@ -181,9 +155,6 @@
 				onUpdate: (response: ExchangePollResponse) => {
 					runState = response.derived.run;
 					perStep = response.derived.perStep;
-					if (response.derived.run === 'complete' || response.derived.run === 'error') {
-						recordWalletRun(response.derived);
-					}
 				},
 				onError: (e: ExchangePollError) => {
 					// Belt-and-suspenders: the poller already stops itself on a fatal
@@ -232,7 +203,6 @@
 
 	async function initiate() {
 		runnerError = undefined;
-		recorded = false;
 		try {
 			const data = await createExchange();
 			if (!data) return;

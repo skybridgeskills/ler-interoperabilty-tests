@@ -7,7 +7,6 @@
 		type ExchangePollError,
 		type ExchangePollResponse
 	} from '$lib/client/exchange-runner/index.js';
-	import { recordRun } from '$lib/client/run-history/index.js';
 	import {
 		ExchangeRunnerPanel,
 		type ExchangeProtocolId
@@ -25,9 +24,6 @@
 		combinationFor,
 		combinedRequirements,
 		roleBySlug,
-		runChecklistFingerprint,
-		statusFromWalletReport,
-		testRunRecord,
 		workflowBySlug,
 		type ChecklistRunState,
 		type RunnerWorkflowId,
@@ -111,11 +107,11 @@
 	let report = $state<IssuerRunnerReport | undefined>(undefined);
 	let outcomes = $state<Record<string, CheckOutcome>>({});
 
-	// Combined requirement set — the fingerprint and the persisted per-requirement `statuses` map are
-	// both keyed against these ids. Tier A: once settled, each requirement carries its own scored
-	// outcome; pre-settle the rows share their step's live run state.
+	// The combined requirement set (base + applicable additives), keyed by id — what the
+	// per-requirement rows render against. This page no longer persists anything: the
+	// scenario run store replaced the combination-keyed one, and this page is not a
+	// scenario yet. It still runs; it just does not record.
 	const requirements = $derived(combinedRequirements('wallet', 'credential-presentation', profile));
-	const checklistFingerprint = $derived(runChecklistFingerprint(requirements));
 	// Presentation-ready per-requirement statuses (keyed by requirement id). After the exchange
 	// settles these come from the scored per-requirement outcomes; while in flight they mirror the
 	// step-level progress so the left column lights up live.
@@ -205,16 +201,6 @@
 					};
 
 			recorded = true;
-			recordRun(
-				testRunRecord({
-					role: 'wallet',
-					workflow: 'credential-presentation',
-					profile,
-					status: statusFromWalletReport({ verified, exchangeState: result.state }),
-					checklistFingerprint,
-					statuses: statusesFromOutcomes(requirements, byId)
-				})
-			);
 		} catch (e) {
 			setError(
 				e instanceof PresentScoreError

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { recordRun } from '$lib/client/run-history/index.js';
 	import { MobileWalletDrawer } from '$lib/components/interop/mobile-wallet-drawer/index.js';
 	import { statusesFromVerifierOutcomes } from '$lib/components/interop/requirement-status-row/index.js';
 	import {
@@ -15,9 +14,6 @@
 		combinationFor,
 		combinedRequirements,
 		roleBySlug,
-		runChecklistFingerprint,
-		statusFromVerifierReport,
-		testRunRecord,
 		workflowBySlug,
 		type ChecklistRunState
 	} from '$lib/interop/index.js';
@@ -64,14 +60,15 @@
 	const role = roleBySlug('verifier')!;
 	const workflow = workflowBySlug('credential-request-and-verification')!;
 	const combo = combinationFor('verifier', 'credential-request-and-verification', 'vcalm')!;
-	// Combined requirement set — the fingerprint and the persisted `statuses` map are both
-	// keyed against these ids.
+	// The combined requirement set (base + applicable additives), keyed by id — what the
+	// per-requirement rows render against. This page no longer persists anything: the
+	// scenario run store replaced the combination-keyed one, and this page is not a
+	// scenario yet. It still runs; it just does not record.
 	const requirements = combinedRequirements(
 		'verifier',
 		'credential-request-and-verification',
 		'vcalm'
 	);
-	const checklistFingerprint = runChecklistFingerprint(requirements);
 
 	let stage = $state<Stage>('idle');
 	let plan = $state<VerifierRunPlan | undefined>(undefined);
@@ -272,16 +269,6 @@
 			narration = [...narration, revealedActivity()];
 			report = scored;
 			stage = 'done';
-			recordRun(
-				testRunRecord({
-					role: 'verifier',
-					workflow: 'credential-request-and-verification',
-					profile: 'vcalm',
-					status: statusFromVerifierReport({ verified: scored.verified }),
-					checklistFingerprint,
-					statuses
-				})
-			);
 		} catch (e) {
 			fail({ message: e instanceof Error ? e.message : String(e) });
 		}

@@ -1,5 +1,5 @@
+import type { RequirementStatus } from '$lib/interop/checklist-status.js';
 import type { StepRunState } from '$lib/interop/index.js';
-import type { RequirementStatus } from '$lib/interop/run-history/requirement-status.js';
 import type { VerifierCheckOutcome } from '$lib/interop/verifier-run/index.js';
 import type { CheckOutcome } from '$lib/server/domain/issuer-runner/check-outcome.js';
 

@@ -1,10 +1,10 @@
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { z } from 'zod';
 
+import { cannotServeMessage } from '$lib/interop/scenarios/index.js';
 import { appContext } from '$lib/server/app-context.js';
 import { TransactionServiceError } from '$lib/server/domain/exchange-runner/index.js';
 import {
-	cannotServeMessage,
 	recipeById,
 	requestById,
 	resolveIssuingContext,

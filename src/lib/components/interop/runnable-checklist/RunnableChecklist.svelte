@@ -9,6 +9,7 @@
 	} from '$lib/components/interop/requirement-status-row/index.js';
 	import { RoleBadge } from '$lib/components/interop/role-badge/index.js';
 	import { RunStatusIndicator } from '$lib/components/interop/run-status-indicator/index.js';
+	import type { RequirementStatus } from '$lib/interop/checklist-status.js';
 	import {
 		profileHref,
 		type Profile,
@@ -17,7 +18,6 @@
 		type Workflow,
 		type WorkflowChecklist as WorkflowChecklistData
 	} from '$lib/interop/index.js';
-	import type { RequirementStatus } from '$lib/interop/run-history/requirement-status.js';
 
 	let {
 		checklist,

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { statusFromWalletReport, testRunRecord } from '$lib/interop/run-history/index.js';
 import { ExchangeChecker } from '$lib/server/domain/wallet-runner/index.js';
 
 import { FakeWalletClient } from './fake-wallet-client.js';
@@ -49,27 +48,5 @@ describe('FakeWalletClient', () => {
 			report: { verified: false, groups: [] }
 		}).acceptCredential({ profile: 'vcalm', exchange });
 		expect(result.report.verified).toBe(false);
-	});
-});
-
-describe('wallet run record', () => {
-	it('derives passed/failed/incomplete from exchange state + verified', () => {
-		expect(statusFromWalletReport({ verified: true, exchangeState: 'complete' })).toBe('passed');
-		expect(statusFromWalletReport({ verified: false, exchangeState: 'complete' })).toBe('failed');
-		expect(statusFromWalletReport({ verified: true, exchangeState: 'pending' })).toBe('incomplete');
-		expect(statusFromWalletReport({ verified: true, exchangeState: 'invalid' })).toBe('failed');
-	});
-
-	it('builds a valid wallet-report run record', () => {
-		const record = testRunRecord({
-			role: 'wallet',
-			workflow: 'credential-acceptance',
-			profile: 'vcalm',
-			status: statusFromWalletReport({ verified: true, exchangeState: 'complete' }),
-			checklistFingerprint: '',
-			statuses: {}
-		});
-		expect(record.status).toBe('passed');
-		expect(record).toMatchObject({ role: 'wallet', workflow: 'credential-acceptance' });
 	});
 });
