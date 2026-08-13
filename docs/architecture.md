@@ -73,6 +73,50 @@ that returns the list. Seven rules:
 6. A `choose` answer's `correct` is one of its own option values.
 7. Shuffled steps form a single contiguous run.
 
+### The run engine
+
+`src/lib/interop/scenario-run/` turns a definition plus operator input into a
+completed run. **Headless and pure** — no Svelte, no `localStorage`, no server
+imports, and time and randomness are injected rather than read ambiently, so it
+is deterministic under test. A page drives it; it drives nothing.
+
+| File                     | What it holds                                                   |
+| ------------------------ | --------------------------------------------------------------- |
+| `evidence.ts`            | `StepEvidence` / `RunEvidence` and the accessors a check reads  |
+| `automatic-checks.ts`    | the `AutomaticCheck` type and the id-keyed registry (`checks/`) |
+| `run-state.ts`           | `ScenarioRunState`, the step lifecycle, `startRun`              |
+| `shuffle.ts`             | seeded permutation of contiguous shuffled runs                  |
+| `score-answer.ts`        | attested answer, and automatic check, → `RequirementOutcome`    |
+| `requirement-outcome.ts` | the persisted outcome shape                                     |
+| `roll-up.ts`             | outcomes → `passed \| failed \| incomplete`                     |
+
+Four behaviours are load-bearing, and each has a test asserting it:
+
+- **Automatic requirements resolve the moment a step settles, before any
+  attested question is scored.** They are the wire truth, and showing "delivery
+  completed ✓" while asking "so was it stored?" is the best teaching moment the
+  suite has.
+- **`cant-tell` fails.** "My wallet gave me nothing to judge by" is precisely the
+  legibility failure under test; bucketing it as incomplete would park the
+  commonest real failure mode in limbo and punish the honest answer. So
+  `incomplete` means only "not answered yet".
+- **A failing `SHOULD` is recorded and shown but does not block**; only a failing
+  `MUST` fails the scenario. The unanswered check runs first — a run in progress
+  is not yet a verdict.
+- **A retry is simply `startRun` again**: fresh exchange, fresh fixture, fresh
+  shuffle seed, every requirement answered anew. There is no answer editing and
+  no answer-locking machinery, because re-answering after a reveal tests nothing.
+
+`RunEvidence` is keyed by step id rather than holding only the current step's,
+so a check **can** read a prior step. Nothing shipped crosses steps yet;
+round-trip will, and the shape admits it without a rewrite.
+
+A check that cannot be resolved (the catalog names an unregistered `checkId`)
+**fails** rather than throwing — authored data should surface an authoring error,
+not collapse a live run. A step that errored outright leaves its automatic
+requirements **unresolved rather than failed**: we did not observe them, and
+recording a failure we did not measure is the dishonesty the whole design avoids.
+
 ## Provider dependency injection
 
 The provider system in `src/lib/server/util/provider/` is a lightweight

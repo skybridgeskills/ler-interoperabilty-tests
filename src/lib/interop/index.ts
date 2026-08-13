@@ -9,6 +9,7 @@ export * from './run-routes.js';
 export * from './runner-state.js';
 export * from './wallet-activity.js';
 export * from './scenarios/index.js';
+export * from './scenario-run/index.js';
 export * from './run-history/index.js';
 export * from './verifier-run/index.js';
 export * from './selection/index.js';
