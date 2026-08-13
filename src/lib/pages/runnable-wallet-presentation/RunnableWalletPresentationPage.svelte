@@ -161,7 +161,9 @@
 		const res = await fetch('/api/exchange-runner/create', {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ intent: 'verification' })
+			// The create endpoint takes a scenario action. This page predates
+			// scenarios, so it names the request the suite's verify defaults became.
+			body: JSON.stringify({ kind: 'request-presentation', request: 'ob3-any' })
 		});
 		if (!res.ok) {
 			const body = (await res.json().catch(() => ({}))) as RunnerError;

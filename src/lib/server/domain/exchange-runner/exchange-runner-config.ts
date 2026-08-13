@@ -12,7 +12,18 @@ export const ExchangeRunnerConfig = ZodFactory(
 		transactionServiceUrl: z.string().url(),
 		tenantName: z.string(),
 		tenantToken: z.string(),
-		exchangeHost: z.string().url()
+		exchangeHost: z.string().url(),
+		/**
+		 * What this deployment's tenant **advertises**, not what a caller
+		 * requests. Cryptosuite and DID method are deployment configuration on
+		 * the signing service (`TENANT_CRYPTOSUITE_<T>`, and `did:web` when
+		 * `TENANT_DID_URL_<T>` is set, otherwise `did:key`), so a scenario can
+		 * only vary them by choosing a different tenant — and this suite holds
+		 * one. Recorded here so `resolveIssuingContext` can answer whether a
+		 * pinned scenario is servable without guessing.
+		 */
+		cryptosuite: z.string().default('eddsa-rdfc-2022'),
+		didMethod: z.string().default('key')
 	})
 );
 export type ExchangeRunnerConfig = ReturnType<typeof ExchangeRunnerConfig>;
@@ -39,6 +50,14 @@ export function parseExchangeRunnerConfig(env: Record<string, unknown>): Exchang
 			(typeof env.TRANSACTION_SERVICE_TENANT_TOKEN === 'string' &&
 				env.TRANSACTION_SERVICE_TENANT_TOKEN) ||
 			'',
-		exchangeHost
+		exchangeHost,
+		cryptosuite:
+			(typeof env.TRANSACTION_SERVICE_TENANT_CRYPTOSUITE === 'string' &&
+				env.TRANSACTION_SERVICE_TENANT_CRYPTOSUITE) ||
+			'eddsa-rdfc-2022',
+		didMethod:
+			(typeof env.TRANSACTION_SERVICE_TENANT_DID_METHOD === 'string' &&
+				env.TRANSACTION_SERVICE_TENANT_DID_METHOD) ||
+			'key'
 	});
 }

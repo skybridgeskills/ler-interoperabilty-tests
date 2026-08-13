@@ -3,6 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ExchangeRunnerConfig } from './exchange-runner-config.js';
 import { RealTransactionServiceClient } from './transaction-service-client.js';
 
+/** Stand-in for a recipe-built document; these tests care about plumbing, not content. */
+const testCredential = { id: 'urn:uuid:test-credential', type: ['VerifiableCredential'] };
+
 const baseConfig = ExchangeRunnerConfig({
 	enabled: true,
 	transactionServiceUrl: 'http://lits.test:4004',
@@ -33,7 +36,10 @@ describe('RealTransactionServiceClient', () => {
 		const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okProtocols());
 
 		const client = RealTransactionServiceClient(baseConfig);
-		const result = await client.createIssuanceExchange({ retrievalId: 'r-1' });
+		const result = await client.createIssuanceExchange({
+			retrievalId: 'r-1',
+			credential: testCredential
+		});
 
 		expect(result.exchangeId).toBe('abc-123');
 		expect(result.workflowId).toBe('claim');
@@ -100,7 +106,9 @@ describe('RealTransactionServiceClient', () => {
 			async () => new Response('nope', { status: 401 })
 		);
 		const client = RealTransactionServiceClient(baseConfig);
-		await expect(client.createIssuanceExchange({ retrievalId: 'x' })).rejects.toMatchObject({
+		await expect(
+			client.createIssuanceExchange({ retrievalId: 'x', credential: testCredential })
+		).rejects.toMatchObject({
 			status: 401,
 			name: 'TransactionServiceError'
 		});
@@ -127,7 +135,10 @@ describe('RealTransactionServiceClient', () => {
 			})
 		);
 		const client = RealTransactionServiceClient(baseConfig);
-		const result = await client.createIssuanceExchange({ retrievalId: 'r-1' });
+		const result = await client.createIssuanceExchange({
+			retrievalId: 'r-1',
+			credential: testCredential
+		});
 		expect(result.protocols.OID4VCI).toBe(
 			'openid-credential-offer://?credential_offer_uri=http%3A%2F%2Flits.test%3A4004%2Fworkflows%2Fclaim%2Fexchanges%2Fabc-123%2Fopenid%2Fcredential-offer'
 		);
@@ -136,7 +147,10 @@ describe('RealTransactionServiceClient', () => {
 	it('leaves `OID4VCI` undefined when the service omits it (legacy container)', async () => {
 		vi.spyOn(globalThis, 'fetch').mockResolvedValue(okProtocols());
 		const client = RealTransactionServiceClient(baseConfig);
-		const result = await client.createIssuanceExchange({ retrievalId: 'r-1' });
+		const result = await client.createIssuanceExchange({
+			retrievalId: 'r-1',
+			credential: testCredential
+		});
 		expect(result.protocols.OID4VCI).toBeUndefined();
 	});
 

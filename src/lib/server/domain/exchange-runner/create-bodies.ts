@@ -1,5 +1,4 @@
 import type { ExchangeRunnerConfig } from './exchange-runner-config.js';
-import { ob3CredentialTemplate } from './ob3-credential-template.js';
 import type {
 	CreateIssuanceExchangeRequest,
 	CreateVerificationExchangeRequest
@@ -8,19 +7,38 @@ import type {
 /**
  * Build the request body for `POST /workflows/claim/exchanges`. Mirrors the
  * transaction service's `exchangeCreateSchemaClaim`: `tenantName`/`exchangeHost`
- * come from config, `retrievalId` from the caller, and `vc` is the bundled
- * unsigned OB3 template the signing service completes at issue time.
+ * come from config, and `retrievalId` plus the credential document come from the
+ * caller.
+ *
+ * The workflow's credential template is `{{{vc}}}` — a Handlebars
+ * **triple-stache** — so the string sent here *is* the credential, unescaped.
+ * The services overwrite only `credentialSubject.id`, `credentialStatus`,
+ * `issuer.id` and `proof`; everything else the caller authors survives.
+ *
+ * Two optional variables ride along:
+ *
+ * - **`tamper`** corrupts the credential *after* signing and before delivery,
+ *   which is the only way to produce a proof and payload that genuinely
+ *   disagree. `proof` flips one character mid-`proofValue`; `claim` alters a
+ *   signature-covered value and leaves the proof intact.
+ * - **`exchangeIdPrefix`** is the caller's correlation tag. Note that it is a
+ *   **sibling of `variables`, not a member of it** — it rides into the minted
+ *   `exchangeId` and therefore appears on the wire, in the exchange journal and
+ *   in every evidence filename, which is how a run is found again later. The
+ *   exchange itself is evicted at `EXCHANGE_TTL`; the journal is not.
  */
 export function issuanceExchangeBody(
 	config: ExchangeRunnerConfig,
 	req: CreateIssuanceExchangeRequest
 ) {
 	return {
+		...(req.exchangeIdPrefix ? { exchangeIdPrefix: req.exchangeIdPrefix } : {}),
 		variables: {
 			tenantName: config.tenantName,
 			exchangeHost: config.exchangeHost,
 			retrievalId: req.retrievalId,
-			vc: JSON.stringify(ob3CredentialTemplate(req.retrievalId))
+			vc: JSON.stringify(req.credential),
+			...(req.tamper ? { tamper: req.tamper } : {})
 		}
 	};
 }

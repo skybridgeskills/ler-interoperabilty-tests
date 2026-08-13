@@ -43,7 +43,8 @@ describe('GET /api/exchange-runner/[exchangeId]/protocols', { timeout: 20_000 },
 	it('returns { exchangeId, protocols, workflowId } for a claim exchange it did not mint', async () => {
 		await withCtx(async () => {
 			const { exchangeId } = await transactionServiceClient().createIssuanceExchange({
-				retrievalId: 'r-1'
+				retrievalId: 'r-1',
+				credential: { id: 'urn:uuid:test-credential' }
 			});
 
 			const { status, payload } = await callGet(exchangeId, 'claim');
@@ -78,7 +79,8 @@ describe('GET /api/exchange-runner/[exchangeId]/protocols', { timeout: 20_000 },
 	it('defaults an absent or unrecognised ?workflow to claim', async () => {
 		await withCtx(async () => {
 			const { exchangeId } = await transactionServiceClient().createIssuanceExchange({
-				retrievalId: 'r-2'
+				retrievalId: 'r-2',
+				credential: { id: 'urn:uuid:test-credential' }
 			});
 
 			expect((await callGet(exchangeId)).payload.workflowId).toBe('claim');

@@ -96,6 +96,19 @@ export type ExchangeRecord = ReturnType<typeof ExchangeRecord>;
 /** Inputs the suite passes when initiating an issuance (`claim`) exchange. */
 export type CreateIssuanceExchangeRequest = {
 	retrievalId: string;
+	/**
+	 * The unsigned credential document to issue, already built from a recipe.
+	 * Sent as the `vc` variable, which the workflow interpolates with a
+	 * triple-stache — so this document *is* the credential.
+	 */
+	credential: Record<string, unknown>;
+	/** Corrupt the credential after signing, before delivery. */
+	tamper?: 'proof' | 'claim';
+	/**
+	 * Correlation tag that rides into the minted `exchangeId` and the exchange
+	 * journal. A sibling of `variables` on the wire, not one of them.
+	 */
+	exchangeIdPrefix?: string;
 };
 
 /** Inputs the suite passes when initiating a verification (`verify`) exchange. */

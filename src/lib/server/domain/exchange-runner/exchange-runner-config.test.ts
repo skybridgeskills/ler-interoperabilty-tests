@@ -32,7 +32,9 @@ describe('parseExchangeRunnerConfig', () => {
 			transactionServiceUrl: 'http://lits.test:9999',
 			tenantName: 'demo',
 			tenantToken: 'sekret',
-			exchangeHost: 'https://example.ngrok-free.app'
+			exchangeHost: 'https://example.ngrok-free.app',
+			cryptosuite: 'eddsa-rdfc-2022',
+			didMethod: 'key'
 		});
 	});
 

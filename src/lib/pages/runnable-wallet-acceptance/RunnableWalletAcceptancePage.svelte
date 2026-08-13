@@ -148,7 +148,13 @@
 	 * sets the error affordance and returns `undefined`.
 	 */
 	async function createExchange(): Promise<CreateExchangeBody | undefined> {
-		const res = await fetch('/api/exchange-runner/create', { method: 'POST' });
+		// The create endpoint takes a scenario action. This page predates scenarios,
+		// so it names the recipe its hardcoded template became.
+		const res = await fetch('/api/exchange-runner/create', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ kind: 'issue', credential: 'minimal-ob3' })
+		});
 		if (!res.ok) {
 			const body = (await res.json().catch(() => ({}))) as RunnerError;
 			setError({

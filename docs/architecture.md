@@ -156,10 +156,58 @@ The four runnable wallet routes
 exchange against the DCC transaction service. There are two ways in, and the
 page's read path is identical afterwards.
 
-**Mint** (the default). The page `POST`s `/api/exchange-runner/create`, takes
-the one protocol link its profile speaks (`iu`, `OID4VCI`, or `OID4VP`), renders
-the QR, and polls `GET /api/exchange-runner/[exchangeId]?stepCount&workflow`
-every 2s until the exchange settles.
+**Mint** (the default). The page `POST`s **a scenario action** to
+`/api/exchange-runner/create`, takes the one protocol link its profile speaks
+(`iu`, `OID4VCI`, or `OID4VP`), renders the QR, and polls
+`GET /api/exchange-runner/[exchangeId]?stepCount&workflow` every 2s until the
+exchange settles.
+
+The body is `{ kind: 'issue', credential, tamper?, intent?, exchangeIdPrefix? }`
+or `{ kind: 'request-presentation', request }`. (`deliver-direct`, the third
+`ScenarioAction` kind, mints no exchange and never reaches here.) There is no
+default action: an unrecognised body is a 400, as is an id no registry knows or
+an intent this deployment cannot serve.
+
+### What a scenario may vary, and where it comes from
+
+`src/lib/server/domain/scenario-runner/` holds the id-keyed registries the
+catalog reaches into. Scenarios stay client-safe data; the documents and
+tenancy live here.
+
+- **`credential-recipes.ts`** (+ `recipes/`) — `RecipeId` → an unsigned OB3
+  document. The claim workflow's template is `{{{vc}}}`, a Handlebars
+  **triple-stache**, so the document a recipe builds _is_ the credential. The
+  services overwrite only `credentialSubject.id`, `credentialStatus`,
+  `issuer.id` and `proof`; everything else — dates, achievement content,
+  `image`, `alignment`, arbitrary extra fields — is the recipe's. Expiry and
+  not-yet-valid therefore cost nothing. A recipe **must not hardcode the
+  credential `id`**: the status service's allocate is idempotency-guarded per
+  credential id, so the route mints a fresh one per exchange.
+- **`presentation-requests.ts`** (+ `requests/`) — `RequestId` → the
+  `vprCredentialType` / `vprContext` / `vprClaims` / `trustedIssuers` a verify
+  exchange is minted with.
+- **`resolve-issuing-context.ts`** — the seam between a scenario's
+  `IssuingIntent` and what the deployment can actually serve. **Absent intent
+  means elective** (the transaction service already ranks issuer instances by
+  the wallet's advertised suites); present means pinned. An unservable pin
+  returns a typed `CannotServe`, which the route surfaces as a 400 and the UI
+  renders as a disabled scenario — **still counted in the completion
+  denominator**, so the badge is blocked rather than quietly made easier.
+
+Two variables are worth calling out on the wire. **`tamper`** (`'proof'` or
+`'claim'`) corrupts the credential _after_ signing and before delivery, which is
+the only way to get a proof and payload that genuinely disagree.
+**`exchangeIdPrefix`** is a **sibling of `variables`, not a member of it** — it
+rides into the minted `exchangeId` and so appears in the exchange journal, which
+outlives the exchange itself (`EXCHANGE_TTL`).
+
+Cryptosuite and DID method are **deployment configuration**, not request
+variables: they ride the tenant (`TENANT_CRYPTOSUITE_<T>` on the signing
+service, and `did:web` when `TENANT_DID_URL_<T>` is set). This suite holds one
+tenant, so `resolveIssuingContext` answers from
+`TRANSACTION_SERVICE_TENANT_CRYPTOSUITE` / `_DID_METHOD`. When a
+`(cryptosuite, didMethod) → tenant` map or a transaction-service API takes over,
+**only that function changes — no scenario is touched.**
 
 **Attach** (`?exchangeId=…&workflow=claim|verify`). The exchange was minted
 _outside_ the suite — by an interop-probe CLI, or another harness — and the page

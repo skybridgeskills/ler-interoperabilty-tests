@@ -81,11 +81,19 @@ export function FakeTransactionServiceClient({
 		req: CreateIssuanceExchangeRequest
 	): Promise<CreateExchangeResult> {
 		const exchangeId = newUuid();
+		// Record what the caller asked to mint, exactly as the real service stores
+		// it in `variables`, so tests can assert on the credential document and the
+		// tamper mode rather than only on the resulting protocols.
 		store.set(exchangeId, {
 			exchangeId,
 			workflowId: 'claim',
 			state: 'pending',
-			variables: { retrievalId: req.retrievalId }
+			variables: {
+				retrievalId: req.retrievalId,
+				vc: JSON.stringify(req.credential),
+				...(req.tamper ? { tamper: req.tamper } : {}),
+				...(req.exchangeIdPrefix ? { exchangeIdPrefix: req.exchangeIdPrefix } : {})
+			}
 		});
 		return {
 			exchangeId,
