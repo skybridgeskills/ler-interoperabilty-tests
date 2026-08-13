@@ -89,6 +89,13 @@ sitting. `compose.dev.yml` pins `dcc-transaction-service` **by digest**, and the
 pinned image predates the interop-harness work: it has no `exchangeIdPrefix` on
 mint, no `tamper` seam, no exchange journal, and no PEX selector.
 
+**This is a publishing lag, not a missing feature.** All of it exists in
+`dcc-transaction-service` on `feat/interop-harness-phase-a`; no image has been
+built from that branch yet. Once it merges and a release is published, bump the
+digest and compose regains the lot — see
+[Bumping the dcc-transaction-service image](#bumping-the-dcc-transaction-service-image).
+Until then, run the branch build on the host.
+
 The caller-authored `vc` payload **does** work against the pinned image — a
 credential recipe's document arrives intact, so expiry, rich content and
 not-yet-valid scenarios all run on compose. What does not work is anything that
@@ -97,8 +104,8 @@ pinned image is accepted with a 200 and then **silently dropped**, so the wallet
 receives a perfectly valid credential and a discrimination scenario quietly
 measures nothing. Verified 2026-08-13 against
 `sha256:bdc718e0…`; `variables.tamper` is absent from the stored exchange while
-`vc` is present. Run those scenarios against the host harness build, or bump the
-pin (see [Bumping the dcc-transaction-service image](#bumping-the-dcc-transaction-service-image)).
+`vc` is present. Run those scenarios against the host branch build until the
+digest is bumped.
 
 Attach mode (`/wallet/credential-{acceptance,presentation}/{vcalm,oid4}?exchangeId=…&workflow=…`)
 adopts an exchange minted **outside** the suite. Point it at the pinned
