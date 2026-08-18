@@ -1,11 +1,5 @@
-<script lang="ts">
-	import { RunnableWalletAcceptancePage } from '$lib/pages/runnable-wallet-acceptance/index.js';
-
-	let { data } = $props();
-</script>
-
-<RunnableWalletAcceptancePage
-	profile="oid4"
-	attachExchangeId={data.attachExchangeId}
-	attachWorkflow={data.attachWorkflow}
-/>
+<!--
+	Never rendered: `+page.ts`'s load always redirects to
+	`/scenarios/oid4-wallet-acceptance`. A page route still needs a component to
+	compile, so this is an inert stub.
+-->

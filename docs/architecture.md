@@ -163,6 +163,31 @@ so Storybook drives the same component.
   by the step card, so the leak cannot be reintroduced by a component reading the
   whole step.
 
+### The proof-of-concept catalog
+
+Two scenarios prove the architecture on `credential-acceptance × oid4`, and they
+are the worked example of authoring one as data — no code, no bespoke page:
+
+- **`oid4-wallet-acceptance`** — the migrated happy path. One `issue` step
+  (`minimal-ob3`, elective), two automatic MUSTs (the exchange completed, the
+  holder proved a DID), one attested MUST the wire cannot see (the credential
+  landed in the list), and a SHOULD characterising what the wallet drew.
+  `/wallet/credential-acceptance/oid4` is a query-preserving `308` redirect to
+  it, so attach links keep working; the vcalm sibling keeps its old page until
+  M12.
+- **`oid4-wallet-refusal-discrimination`** — three `shuffle: true` passes (valid
+  control, `ob3-expired`, `minimal-ob3` + `tamper: 'proof'`) that permute
+  together. Every pass carries an **identical** requirement shape — a weak
+  automatic check (the offer was fetched), an attested MUST ("what did your
+  wallet do?"), and an attested legibility SHOULD — so the passes are
+  indistinguishable before answering; only the concealed right answer differs
+  (accept the control, refuse the other two). This is **one measurement, not
+  three**: one scenario, one result.
+
+The tampered pass depends on a transaction service that honours `tamper`; a build
+that silently drops it delivers a valid credential and the discrimination
+measures nothing. See [`docker/README.md`](../docker/README.md).
+
 ## Provider dependency injection
 
 The provider system in `src/lib/server/util/provider/` is a lightweight

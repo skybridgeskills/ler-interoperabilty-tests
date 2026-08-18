@@ -98,6 +98,7 @@ src/
     ├── +page.svelte              # renders LandingPage
     ├── health/+server.ts         # GET /health → { status, version }
     ├── version/+server.ts        # GET /version → { name, version, … }
+    ├── scenarios/[slug]/         # the generic scenario runner (no bespoke pages)
     ├── wallet/…                  # role landing + runnable wallet checklists
     ├── verifier/…                # role landing + runnable verifier checklists
     └── issuer/…                  # role landing + runnable issuer checklists
@@ -125,6 +126,16 @@ with `?exchangeId=…&workflow=claim|verify`. During a probe sitting,
 `TRANSACTION_SERVICE_URL` must point at the **host** transaction service
 rather than the digest-pinned compose image — see
 [`docker/README.md`](docker/README.md#attach-mode-and-probe-sittings).
+
+A **scenario** is the suite's runnable unit — a small measurement authored as
+data and run at the one generic route `/scenarios/[slug]`, with no bespoke page.
+Two prove the architecture on `credential-acceptance × oid4`:
+`oid4-wallet-acceptance` (the migrated happy path) and
+`oid4-wallet-refusal-discrimination` (three shuffled passes — valid, expired,
+tampered — that ask the operator to tell a good credential from a bad one).
+`/wallet/credential-acceptance/oid4` now **redirects** to the first, preserving
+any `?exchangeId=…&workflow=claim` so attach mode keeps working. The vcalm
+sibling still runs the old page.
 
 ## Contributing
 
