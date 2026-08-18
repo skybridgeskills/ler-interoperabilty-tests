@@ -23,7 +23,14 @@ export const ExchangeRunnerConfig = ZodFactory(
 		 * pinned scenario is servable without guessing.
 		 */
 		cryptosuite: z.string().default('eddsa-rdfc-2022'),
-		didMethod: z.string().default('key')
+		didMethod: z.string().default('key'),
+		/**
+		 * The public origin the badge `achievement.id`/`criteria.id` resolve to.
+		 * This is **this app's own** origin (where `/badges/[slug]` is served), NOT
+		 * the transaction service (`exchangeHost` is wrong for badge ids). Defaults
+		 * to the SvelteKit dev origin.
+		 */
+		badgeRootUrl: z.string().url().default('http://localhost:5173')
 	})
 );
 export type ExchangeRunnerConfig = ReturnType<typeof ExchangeRunnerConfig>;
@@ -58,6 +65,8 @@ export function parseExchangeRunnerConfig(env: Record<string, unknown>): Exchang
 		didMethod:
 			(typeof env.TRANSACTION_SERVICE_TENANT_DID_METHOD === 'string' &&
 				env.TRANSACTION_SERVICE_TENANT_DID_METHOD) ||
-			'key'
+			'key',
+		badgeRootUrl:
+			(typeof env.BADGE_ROOT_URL === 'string' && env.BADGE_ROOT_URL) || 'http://localhost:5173'
 	});
 }

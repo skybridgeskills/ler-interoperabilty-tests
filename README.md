@@ -137,6 +137,16 @@ tampered — that ask the operator to tell a good credential from a bad one).
 any `?exchangeId=…&workflow=claim` so attach mode keeps working. The vcalm
 sibling still runs the old page.
 
+A **badge** is what a full completion set earns: a self-attested Open Badges 3.0
+recognition credential you claim into your own wallet when a `(profile, role)`
+required set is complete, from `/badges/[slug]`. It is **not** third-party
+certification, and it is **not** un-earnable — the live meter can drop as the
+catalog grows, but a claimed badge is a historical fact and stays claimed. The
+same page serves a stranger who follows the credential's `criteria.id`. Today
+one badge is registered, `oid4-wallet`. See
+[`docs/architecture.md`](docs/architecture.md) § Badges and
+[`docs/adr/2026-08-18-badge-award-model.md`](docs/adr/2026-08-18-badge-award-model.md).
+
 ## Contributing
 
 - [`docs/style/README.md`](docs/style/README.md) — code conventions

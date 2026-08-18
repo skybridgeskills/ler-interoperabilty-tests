@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 
+	import { allBadgeClaims } from '$lib/client/badges/index.js';
 	import { allScenarioRuns } from '$lib/client/scenario-runs/index.js';
 	import { selectionStore } from '$lib/client/selection/index.js';
 	import { AdditiveProfileSelector } from '$lib/components/interop/additive-profile-selector/index.js';
@@ -15,7 +16,10 @@
 		allCombinations,
 		allProfiles,
 		allRoles,
+		badgeHrefFor,
+		type BadgeClaimSnapshot,
 		checklistHref,
+		claimedInfoFor,
 		combinationHasScenario,
 		completionGroups,
 		isCombinationSelected,
@@ -36,11 +40,13 @@
 	// SSR and hydrated on mount, exactly like the selection; the meters render
 	// zeroed server-side and fill in once the store is read.
 	let runs = $state<Record<string, ScenarioRunRecord>>({});
+	let claims = $state<BadgeClaimSnapshot[]>([]);
 
 	onMount(() => {
-		// Both read localStorage — browser only.
+		// All read localStorage — browser only.
 		selectionStore.hydrate();
 		runs = allScenarioRuns();
+		claims = allBadgeClaims();
 	});
 
 	const selection = $derived(selectionStore.selection);
@@ -169,6 +175,8 @@
 					roleName={group.roleName}
 					result={group.result}
 					{runs}
+					claimHref={badgeHrefFor(group.profileSlug, group.roleSlug)}
+					claim={claimedInfoFor(group.profileSlug, group.roleSlug, claims)}
 				/>
 			{/each}
 		</div>
@@ -200,6 +208,8 @@
 						roleName={group.roleName}
 						result={group.result}
 						{runs}
+						claimHref={badgeHrefFor(group.profileSlug, group.roleSlug)}
+						claim={claimedInfoFor(group.profileSlug, group.roleSlug, claims)}
 					/>
 				{/each}
 			</div>

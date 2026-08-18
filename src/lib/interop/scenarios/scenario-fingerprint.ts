@@ -86,8 +86,13 @@ function stableStringify(value: unknown): string {
 /**
  * djb2 string hash → zero-padded 8-hex-digit string. Non-cryptographic: used
  * only for equality-based drift detection, never for security.
+ *
+ * Exported so the badge fingerprint (`interop/badges/badge-fingerprint.ts`) can
+ * compose per-scenario fingerprints through the **same** hash rather than
+ * reimplementing it — the badge `?v=` and the scenario drift check must stay one
+ * mechanism.
  */
-function djb2Hex(input: string): string {
+export function djb2Hex(input: string): string {
 	let hash = 5381;
 	for (let i = 0; i < input.length; i++) {
 		// hash * 33 + charCode, kept in unsigned 32-bit space.

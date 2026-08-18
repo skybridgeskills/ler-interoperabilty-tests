@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { type ClaimedInfo, formatDay } from '$lib/interop/badges/index.js';
 	import {
 		type CompletionResult,
 		isClaimable,
@@ -28,15 +29,18 @@
 		roleName,
 		result,
 		runs,
-		claimHref
+		claimHref,
+		claim
 	}: {
 		profileName: string;
 		roleName: string;
 		result: CompletionResult;
 		/** Latest run per scenario slug, for each row's status and last-run hint. */
 		runs: Record<string, ScenarioRunRecord>;
-		/** M8's badge route. Undefined until it exists — the control stays disabled. */
+		/** The registered badge's `/badges/[slug]` route. Undefined → the control stays disabled. */
 		claimHref?: string;
+		/** Present once this group's badge has been claimed — drives the claimed line. */
+		claim?: ClaimedInfo;
 	} = $props();
 
 	const claimable = $derived(isClaimable(result));
@@ -106,6 +110,14 @@
 				{#if claimable}
 					<span class="text-label-md text-muted-foreground">Claiming coming soon</span>
 				{/if}
+			{/if}
+			{#if claim}
+				<span class="text-label-md text-muted-foreground">
+					Claimed {formatDay(claim.claimedAt)} against {claim.requirementCount}
+					{claim.requirementCount === 1 ? 'requirement' : 'requirements'}{claim.newSince > 0
+						? ` · ${claim.newSince} new since`
+						: ''}
+				</span>
 			{/if}
 		</div>
 	</header>

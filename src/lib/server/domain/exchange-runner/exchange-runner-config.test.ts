@@ -34,8 +34,16 @@ describe('parseExchangeRunnerConfig', () => {
 			tenantToken: 'sekret',
 			exchangeHost: 'https://example.ngrok-free.app',
 			cryptosuite: 'eddsa-rdfc-2022',
-			didMethod: 'key'
+			didMethod: 'key',
+			badgeRootUrl: 'http://localhost:5173'
 		});
+	});
+
+	it('reads BADGE_ROOT_URL as the badge id root, defaulting to the dev origin', () => {
+		expect(parseExchangeRunnerConfig({}).badgeRootUrl).toBe('http://localhost:5173');
+		expect(
+			parseExchangeRunnerConfig({ BADGE_ROOT_URL: 'https://ler-tests.example' }).badgeRootUrl
+		).toBe('https://ler-tests.example');
 	});
 
 	it('defaults exchangeHost to the transaction-service URL when DEFAULT_EXCHANGE_HOST is missing', () => {

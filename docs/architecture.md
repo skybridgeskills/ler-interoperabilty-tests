@@ -212,8 +212,10 @@ Every number the group shows comes from M4's `evaluateCompletion` in
   counts in the denominator** — the badge is blocked, not made easier.
 - **The meter fills exactly when the badge is claimable.** The meter's fill and
   the `[Claim badge]` control's enablement both come from the single
-  `isClaimable()` predicate, so they cannot disagree. (The claim control is
-  disabled with honest copy until M8 builds `/badges/[slug]`.)
+  `isClaimable()` predicate, so they cannot disagree. Where a badge is registered
+  for the group's `(profile, role)` (M8), the control links to `/badges/[slug]`;
+  where none is, it stays disabled. Once claimed, the group also shows a
+  _"Claimed 3 Aug against N requirements · k new since"_ line (see **§ Badges**).
 
 Run records are browser-only (`localStorage`), so both surfaces hydrate them in
 `onMount` and render a zeroed meter during SSR. The homepage additionally carries
@@ -432,6 +434,15 @@ The app keeps two pieces of state in `localStorage`, isolated under
   `ScenarioRunRecord` per scenario, key `lits.scenario-runs.v1`. The pure model
   lives in `interop/scenario-run/`; only the store touches `localStorage`. It
   `safeParse`s every entry and drops malformed ones — never throws to the UI.
+- **Badge claims** (`client/badges/badge-claim-store.ts`) — an array of
+  `BadgeClaimSnapshot`, key `lits.badges.v1`. The pure model lives in
+  `interop/badges/`. Its drift rule is the **inverse** of the run store's: a
+  snapshot **never drops**. A run record is a claim about the _current_
+  definition and reverts to "not run" on drift; a claim snapshot is a
+  _historical fact_ — the badge was claimed — and must survive the catalog moving
+  on, or _"k new since"_ could not be said. Writes are idempotent on
+  `(badgeSlug, claimedAt)`. Both stores feed M9's `{ results, badges }` export
+  bundle verbatim — `results` from the run store, `badges` from this one.
 
 The record is a flat map keyed by scenario slug, **not** an array per bucket:
 
@@ -490,6 +501,69 @@ Five rules, each with a test:
 5. **Only a `pass` outcome is met.** A failing SHOULD is therefore unmet here
    while still not failing its scenario; both numbers come from the same
    outcome map and answer different questions.
+
+## Badges
+
+A **badge** turns a full `(profile, role)` required set into a claimable Open
+Badges 3.0 recognition credential. The full rationale is
+[`docs/adr/2026-08-18-badge-award-model.md`](adr/2026-08-18-badge-award-model.md);
+the shape of it:
+
+- **The domain is pure and client-safe** (`interop/badges/`): a `BadgeDefinition`
+  keyed `(base profile, optional additive, role)` — the same identity the meter
+  counts over — plus the fingerprint, the two narrative generators, the
+  `BadgeClaimSnapshot`, and the `newSince` diff. Only `oid4-wallet` is
+  registered; the two-tier `(base, additive)` mechanism is built but
+  `oid4-wallet-complete` is deferred until an optional/additive scenario exists.
+- **The credential is a plain OB3** built server-side in
+  `server/domain/badges/badge-recipe.ts` — a module apart from the test recipes,
+  importing nothing from `scenario-runner/recipes/` and imported by nothing
+  there. It mirrors `minimal-ob3`'s OB3-required fields (a top-level `description`
+  and `Achievement.description`) — a badge missing them is refused by conformant
+  OID4 wallets. No `evidence`, validity window, status list, revocation, or image.
+  The `issuer` is an _object_ carrying a `did:key:placeholder` id the signing
+  service **overwrites** from the tenant seed (it replaces the value rather than
+  injecting one, so the placeholder must exist); the recipe never names the real
+  issuer, so the app stays issuer-agnostic.
+- **The version rides on `criteria.id`, not `achievement.id`.**
+  `achievement.id = <BADGE_ROOT_URL>/badges/<slug>` is stable;
+  `criteria.id = …?v=<fingerprint>`. The fingerprint composes the per-scenario
+  `scenarioFingerprint`s through the same djb2 hash — the badge `?v=` and the
+  scenario drift check are one mechanism. A stale `?v=` link renders the current
+  criteria under a plain "older version" note; no historical definitions are
+  stored.
+- **Claiming reuses the M2 mint seam but is not a scenario.** A dedicated
+  `POST /api/badges/[slug]/claim` builds the per-award doc and calls
+  `resolveIssuingContext` + `createIssuanceExchange`; the create route and the
+  test-recipe registry are untouched. The client driver (`pages/badge/`) drives
+  it with `pollExchange(..., { stepCount: 1, workflow: 'claim' })`, records **no**
+  `ScenarioRunRecord`, and on delivery persists a snapshot. A failed claim is a
+  retry, not a test finding — the receiving wallet is not the system under test.
+- **`/badges/[slug]` serves three jobs from one route.** Jobs 1–2 — the
+  stranger's criteria page and the `?v=` mismatch warning — are server-rendered
+  from the definition alone (SSR-correct, no `localStorage`). Job 3 — the claim
+  affordance and the claimed state — is a client overlay gated on the single
+  `isClaimable()` predicate; a stranger never sees it.
+- **A claimed badge never un-earns.** The `lits.badges.v1` snapshot (see
+  **§ Client-side persistence**) drives _"Claimed 3 Aug against N requirements ·
+  k new since"_ on both the badge page and the completion group. "k new since" is
+  a **membership** diff — requirements added to the set since the claim — not a
+  fingerprint compare, so a requirement that changed shape but kept its id is not
+  counted.
+
+**`did:web` is deployment configuration.** M8 validates on the dev `did:key`
+tenant; the root-domain `did:web` issuer is a tracked ops task (set
+`TENANT_DID_URL_<TENANT>` on the signing service), and `BADGE_ROOT_URL` names the
+public origin the badge ids resolve to. This repo serves no DID document. Until
+`did:web` is hosted, badges issue from the tenant's `did:key`, which is correct
+for dev. See `.env.example`.
+
+This is also why the **authoring convention** matters: a newly-registered
+scenario should join a profile as `optional` and be promoted to `required` only
+at a deliberate catalog moment (documented in `interop/scenarios/all-scenarios.ts`).
+A routine addition silently raising a badge's bar would make an earlier claim
+read as incomplete; the convention keeps a claimed badge honest as the catalog
+grows.
 
 ## Test harness
 

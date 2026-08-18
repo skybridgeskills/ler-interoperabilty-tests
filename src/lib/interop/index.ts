@@ -10,6 +10,7 @@ export * from './wallet-activity.js';
 export * from './scenarios/index.js';
 export * from './scenario-run/index.js';
 export * from './completion/index.js';
+export * from './badges/index.js';
 // Presentation vocabulary for the surviving checklist pages. Goes with them at M13.
 export * from './checklist-status.js';
 export * from './combined-requirements.js';

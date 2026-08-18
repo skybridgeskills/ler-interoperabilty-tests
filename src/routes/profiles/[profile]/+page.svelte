@@ -1,13 +1,17 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
+	import { allBadgeClaims } from '$lib/client/badges/index.js';
 	import { allScenarioRuns } from '$lib/client/scenario-runs/index.js';
 	import { selectionStore } from '$lib/client/selection/index.js';
 	import { CompletionGroup } from '$lib/components/interop/completion-group/index.js';
 	import { ProfileSummary } from '$lib/components/interop/profile-summary/index.js';
 	import { RoleBadge } from '$lib/components/interop/role-badge/index.js';
 	import {
+		badgeHrefFor,
+		type BadgeClaimSnapshot,
 		checklistHref,
+		claimedInfoFor,
 		completionGroupsForProfile,
 		type Profile,
 		profileBySlug,
@@ -23,10 +27,12 @@
 	// prerenders a zeroed meter and fills it in on mount. Selection only orders
 	// the groups (selected roles first), so its absence during SSR is harmless.
 	let runs = $state<Record<string, ScenarioRunRecord>>({});
+	let claims = $state<BadgeClaimSnapshot[]>([]);
 
 	onMount(() => {
 		selectionStore.hydrate();
 		runs = allScenarioRuns();
+		claims = allBadgeClaims();
 	});
 
 	// Completion groups scoped to THIS profile — one per role that has scenarios.
@@ -128,6 +134,8 @@
 						roleName={group.roleName}
 						result={group.result}
 						{runs}
+						claimHref={badgeHrefFor(group.profileSlug, group.roleSlug)}
+						claim={claimedInfoFor(group.profileSlug, group.roleSlug, claims)}
 					/>
 				{/each}
 			</div>
@@ -161,6 +169,8 @@
 						roleName={group.roleName}
 						result={group.result}
 						{runs}
+						claimHref={badgeHrefFor(group.profileSlug, group.roleSlug)}
+						claim={claimedInfoFor(group.profileSlug, group.roleSlug, claims)}
 					/>
 				{/each}
 			</div>
