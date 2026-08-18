@@ -188,6 +188,41 @@ The tampered pass depends on a transaction service that honours `tamper`; a buil
 that silently drops it delivers a valid credential and the discrimination
 measures nothing. See [`docker/README.md`](../docker/README.md).
 
+### The completion group
+
+A **completion group** is how a `(profile, role)` completion set is read: a
+heading with a meter and its scenario rows, with **workflow as a sub-heading
+inside** the group — never the top-level grouping, so "how close am I to the
+OID4 Wallet badge?" is answerable at a glance rather than spread across three
+headings. It renders in two places: the homepage (replacing the flat workflow
+list) and each profile detail page (one group per role, scoped to that
+profile; an additive profile renders its own sub-meter the same way).
+
+Every number the group shows comes from M4's `evaluateCompletion` in
+`src/lib/interop/completion/` — the widget **computes nothing**:
+
+- **The unit is the requirement, not the scenario.** A row reads
+  `4/5 requirements met`, so the meter visibly adds up from its own rows; a
+  scenario with a failing SHOULD is not flattened to a bare ✗.
+- **A `oneOf` group renders as one obligation** — "any one of" siblings that
+  each stay runnable but stop gating once one passes.
+- **`optional` memberships render in their own sub-meter**, never folded into
+  the base.
+- **A blocked scenario renders disabled with its `CannotServe` reason and still
+  counts in the denominator** — the badge is blocked, not made easier.
+- **The meter fills exactly when the badge is claimable.** The meter's fill and
+  the `[Claim badge]` control's enablement both come from the single
+  `isClaimable()` predicate, so they cannot disagree. (The claim control is
+  disabled with honest copy until M8 builds `/badges/[slug]`.)
+
+Run records are browser-only (`localStorage`), so both surfaces hydrate them in
+`onMount` and render a zeroed meter during SSR. The homepage additionally carries
+a **"Not yet migrated"** section — the `(role, workflow, profile)` combinations
+that have no scenario yet, rendered with the now-statusless `ChecklistRow`. It
+counts toward no meter, shrinks as M10–M12 migrate pages, and is deleted in M13.
+There is deliberately **no separate `/scenarios` index**: the homepage is the
+catalog.
+
 ## Provider dependency injection
 
 The provider system in `src/lib/server/util/provider/` is a lightweight

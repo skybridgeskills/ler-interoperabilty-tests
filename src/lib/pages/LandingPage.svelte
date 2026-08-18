@@ -2,9 +2,11 @@
 	import { onMount } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 
+	import { allScenarioRuns } from '$lib/client/scenario-runs/index.js';
 	import { selectionStore } from '$lib/client/selection/index.js';
 	import { AdditiveProfileSelector } from '$lib/components/interop/additive-profile-selector/index.js';
 	import { ChecklistRow } from '$lib/components/interop/checklist-row/index.js';
+	import { CompletionGroup } from '$lib/components/interop/completion-group/index.js';
 	import { ProfileSelector } from '$lib/components/interop/profile-selector/index.js';
 	import { RoleSelector } from '$lib/components/interop/role-selector/index.js';
 	import {
@@ -14,6 +16,8 @@
 		allProfiles,
 		allRoles,
 		checklistHref,
+		combinationHasScenario,
+		completionGroups,
 		isCombinationSelected,
 		profileBySlug,
 		roleBySlug,
@@ -21,23 +25,51 @@
 		workflowBySlug,
 		type ChecklistCombination
 	} from '$lib/interop/index.js';
+	import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
 
 	import { resolve } from '$app/paths';
 
 	// Static set of rows — pure, SSR-safe.
 	const combos = allCombinations();
 
+	// Persisted scenario runs — localStorage, so browser-only. Seeded empty for
+	// SSR and hydrated on mount, exactly like the selection; the meters render
+	// zeroed server-side and fill in once the store is read.
+	let runs = $state<Record<string, ScenarioRunRecord>>({});
+
 	onMount(() => {
-		// Reads localStorage — browser only.
+		// Both read localStorage — browser only.
 		selectionStore.hydrate();
+		runs = allScenarioRuns();
 	});
 
 	const selection = $derived(selectionStore.selection);
 	const sortedCombos = $derived(sortCombinations(combos, selection));
-	const selectedCombos = $derived(sortedCombos.filter((c) => isCombinationSelected(c, selection)));
-	const otherCombos = $derived(sortedCombos.filter((c) => !isCombinationSelected(c, selection)));
-	const hasSelection = $derived(selectedCombos.length > 0);
 	const selectedAdditives = $derived(new SvelteSet(selectionStore.additiveProfiles));
+
+	// Plain string sets for the selected/other split: a group's profileSlug is
+	// typed `ProfileSlug | AdditiveProfileSlug` (the widget is shared with the
+	// additive profile page), and the homepage only ever holds base profiles, so
+	// a string-keyed `.has` compares cleanly without a cast.
+	const selectedProfileSlugs = $derived(new Set<string>(selection.profiles));
+	const selectedRoleSlugs = $derived(new Set<string>(selection.roles));
+
+	// Completion groups — one per (profile, role) that has scenarios. A group is
+	// "yours" when both its profile and its role are selected. Blocked-ness is not
+	// wired here: every current scenario is elective, so nothing is blocked; the
+	// first pinned scenario (M10–M12) adds a server load to resolve it.
+	const groups = $derived(completionGroups({ runs }));
+	const isGroupSelected = (g: (typeof groups)[number]) =>
+		selectedProfileSlugs.has(g.profileSlug) && selectedRoleSlugs.has(g.roleSlug);
+	const selectedGroups = $derived(groups.filter(isGroupSelected));
+	const otherGroups = $derived(groups.filter((g) => !isGroupSelected(g)));
+	const hasGroupSelection = $derived(selectedGroups.length > 0);
+
+	// The parallel surface: combinations with no scenario yet, rendered with the
+	// now-statusless ChecklistRow. They count toward no meter. This section shrinks
+	// as M10–M12 migrate pages and is DELETED in M13 — do not mistake it for
+	// permanent architecture.
+	const unmigratedCombos = $derived(sortedCombos.filter((c) => !combinationHasScenario(c)));
 
 	/** Stable keyed-each identity for a combination row. */
 	function comboKey(combo: ChecklistCombination): string {
@@ -53,12 +85,13 @@
 </script>
 
 <section class="space-y-4">
-	<h1 class="text-display-lg">LER Interoperability Test Suite</h1>
+	<!-- `text-display-lg` alone overflows at 375px; scale it up from `text-headline-md`. -->
+	<h1 class="text-headline-md sm:text-display-lg">LER Interoperability Test Suite</h1>
 	<p class="max-w-prose text-body-md text-muted-foreground">
 		Your console for building and evaluating interoperable Learning &amp; Employment Record systems.
-		Pick the roles and profiles you care about, and the workflow checklists below reorganize into
-		your working set — each one drillable into the exact ordered steps your profile requires, with
-		the result of your most recent test run.
+		Pick the roles and profiles you care about, and the completion groups below reorganize into your
+		working set — each one a badge's worth of scenarios for one role, with a meter that fills as you
+		run them.
 	</p>
 </section>
 
@@ -114,38 +147,35 @@
 	{/if}
 {/snippet}
 
-<section class="mt-16 space-y-6">
+<section class="mt-16 space-y-8">
 	<header class="space-y-2">
-		<h2 class="text-headline-md">Workflows</h2>
+		<h2 class="text-headline-md">Your scenarios</h2>
 		<p class="max-w-prose text-body-md text-muted-foreground">
-			Each row opens the full checklist — the exact ordered steps your profile requires — and shows
-			your latest run result.
+			Each group tracks one profile's badge for one role — a meter that counts
+			<em>requirements</em>, so it adds up from its own rows and fills exactly when the badge
+			becomes claimable. Open a scenario to run it.
 		</p>
-		<p class="text-body-sm max-w-prose text-muted-foreground">
+		<p class="max-w-prose text-body-md text-muted-foreground">
 			Assessment results are private to the organization or user completing the test and are not
 			visible to other vendors or external users unless intentionally shared.
 		</p>
 	</header>
 
-	{#if hasSelection}
-		<div class="space-y-3">
-			<header class="space-y-1">
-				<h3 class="text-title-lg text-foreground">Selected workflow checklists</h3>
-				<p class="max-w-prose text-body-md text-muted-foreground">
-					These checklists match the roles and profiles you selected above. Open each checklist to
-					review requirements and run the corresponding test.
-				</p>
-			</header>
-			<div class="space-y-2">
-				{#each selectedCombos as combo (comboKey(combo))}
-					{@render checklistRow(combo)}
-				{/each}
-			</div>
+	{#if hasGroupSelection}
+		<div class="space-y-4">
+			{#each selectedGroups as group (group.profileSlug + ':' + group.roleSlug)}
+				<CompletionGroup
+					profileName={group.profileName}
+					roleName={group.roleName}
+					result={group.result}
+					{runs}
+				/>
+			{/each}
 		</div>
 	{/if}
 
-	{#if otherCombos.length > 0}
-		<details class="group space-y-3" open={!hasSelection}>
+	{#if otherGroups.length > 0}
+		<details class="group space-y-4" open={!hasGroupSelection}>
 			<summary class="cursor-pointer list-none space-y-1">
 				<span class="flex items-center gap-2">
 					<span
@@ -154,17 +184,54 @@
 					>
 						›
 					</span>
-					<span class="text-title-lg text-foreground"
-						>{hasSelection ? 'Other available checklists' : 'Available checklists'}</span
-					>
+					<span class="text-title-lg text-foreground">
+						{hasGroupSelection ? 'Other scenario sets' : 'All scenario sets'}
+					</span>
 				</span>
 				<p class="max-w-prose pl-6 text-body-md text-muted-foreground">
-					These checklists are not part of your current selection. Expand this section to view
-					additional workflows, or change your role/profile selections above.
+					Completion sets outside your current selection. Change your role and profile selections
+					above to bring one into your working set.
+				</p>
+			</summary>
+			<div class="mt-4 space-y-4">
+				{#each otherGroups as group (group.profileSlug + ':' + group.roleSlug)}
+					<CompletionGroup
+						profileName={group.profileName}
+						roleName={group.roleName}
+						result={group.result}
+						{runs}
+					/>
+				{/each}
+			</div>
+		</details>
+	{/if}
+
+	{#if unmigratedCombos.length > 0}
+		<!--
+			The "Not yet migrated" section — the honest handling of the parallel
+			surface. These (role, workflow, profile) combinations have no scenario
+			yet; they use the now-statusless ChecklistRow and count toward NO meter.
+			This section shrinks as M10–M12 land and is DELETED in M13. It is not
+			permanent architecture.
+		-->
+		<details class="group space-y-3">
+			<summary class="cursor-pointer list-none space-y-1">
+				<span class="flex items-center gap-2">
+					<span
+						aria-hidden="true"
+						class="text-muted-foreground transition-transform group-open:rotate-90"
+					>
+						›
+					</span>
+					<span class="text-title-lg text-foreground">Not yet migrated</span>
+				</span>
+				<p class="max-w-prose pl-6 text-body-md text-muted-foreground">
+					These checklists are still being converted into scenarios. They do not count toward any
+					meter yet — open one to review its requirements and run its test.
 				</p>
 			</summary>
 			<div class="mt-3 space-y-2">
-				{#each otherCombos as combo (comboKey(combo))}
+				{#each unmigratedCombos as combo (comboKey(combo))}
 					{@render checklistRow(combo)}
 				{/each}
 			</div>

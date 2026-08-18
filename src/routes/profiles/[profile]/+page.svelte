@@ -1,19 +1,48 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+
+	import { allScenarioRuns } from '$lib/client/scenario-runs/index.js';
+	import { selectionStore } from '$lib/client/selection/index.js';
+	import { CompletionGroup } from '$lib/components/interop/completion-group/index.js';
 	import { ProfileSummary } from '$lib/components/interop/profile-summary/index.js';
 	import { RoleBadge } from '$lib/components/interop/role-badge/index.js';
 	import {
 		checklistHref,
+		completionGroupsForProfile,
 		type Profile,
 		profileBySlug,
 		profileHref,
-		profileWorkflows,
 		roleBySlug,
 		workflowBySlug
 	} from '$lib/interop/index.js';
+	import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
 
 	let { data } = $props();
 
-	const baseRows = $derived(data.kind === 'base' ? profileWorkflows(data.profile) : []);
+	// Runs and selection are localStorage-backed, so browser-only: the page
+	// prerenders a zeroed meter and fills it in on mount. Selection only orders
+	// the groups (selected roles first), so its absence during SSR is harmless.
+	let runs = $state<Record<string, ScenarioRunRecord>>({});
+
+	onMount(() => {
+		selectionStore.hydrate();
+		runs = allScenarioRuns();
+	});
+
+	// Completion groups scoped to THIS profile — one per role that has scenarios.
+	// For an additive profile the same call resolves its memberships, giving the
+	// additive's own sub-meter promoted to a page. Selected roles sort first.
+	const scenarioGroups = $derived.by(() => {
+		const groups = completionGroupsForProfile({
+			profileSlug: data.profile.slug,
+			profileName: data.profile.name,
+			runs
+		});
+		const selectedRoles = new Set<string>(selectionStore.roles);
+		return [...groups].sort(
+			(a, b) => Number(selectedRoles.has(b.roleSlug)) - Number(selectedRoles.has(a.roleSlug))
+		);
+	});
 
 	const additiveRows = $derived.by(() => {
 		if (data.kind !== 'additive') return [];
@@ -90,28 +119,25 @@
 	<ProfileSummary profile={data.profile} />
 
 	<section class="mt-12 max-w-2xl space-y-4">
-		<h2 class="text-headline-md">Workflows</h2>
-		<ul class="space-y-2">
-			{#each baseRows as row (row.workflow.slug + row.role.slug)}
-				<li>
-					<a
-						class="group flex items-start justify-between gap-4 rounded-md border border-border p-4 transition hover:border-primary"
-						href={checklistHref(row.role.slug, row.workflow.slug, data.profile.slug)}
-					>
-						<div class="space-y-1">
-							<div class="flex flex-wrap items-center gap-2">
-								<span class="text-body-md font-medium text-foreground">{row.workflow.name}</span>
-								<RoleBadge role={row.role} />
-							</div>
-							<p class="text-label-md text-muted-foreground">{row.workflow.blurb}</p>
-						</div>
-						<span class="shrink-0 self-center text-label-md text-primary group-hover:underline">
-							Open →
-						</span>
-					</a>
-				</li>
-			{/each}
-		</ul>
+		<h2 class="text-headline-md">Scenarios</h2>
+		{#if scenarioGroups.length > 0}
+			<div class="space-y-4">
+				{#each scenarioGroups as group (group.roleSlug)}
+					<CompletionGroup
+						profileName={group.profileName}
+						roleName={group.roleName}
+						result={group.result}
+						{runs}
+					/>
+				{/each}
+			</div>
+		{:else}
+			<p class="text-body-md text-muted-foreground">
+				No scenarios are registered for this profile yet — its workflows are still being converted.
+				They appear in the homepage's <span class="font-medium">Not yet migrated</span> section until
+				then.
+			</p>
+		{/if}
 	</section>
 
 	{#if data.profile.notes && data.profile.notes.length}
@@ -125,6 +151,27 @@
 		</section>
 	{/if}
 {:else}
+	<section class="mt-12 max-w-2xl space-y-4">
+		<h2 class="text-headline-md">Scenarios</h2>
+		{#if scenarioGroups.length > 0}
+			<div class="space-y-4">
+				{#each scenarioGroups as group (group.roleSlug)}
+					<CompletionGroup
+						profileName={group.profileName}
+						roleName={group.roleName}
+						result={group.result}
+						{runs}
+					/>
+				{/each}
+			</div>
+		{:else}
+			<p class="text-body-md text-muted-foreground">
+				No scenarios name this additive profile yet. When they do, this is where its own requirement
+				meter appears; until then its coverage rides on the base-profile checklists below.
+			</p>
+		{/if}
+	</section>
+
 	<section class="mt-12 max-w-2xl space-y-4">
 		<h2 class="text-headline-md">Applies to</h2>
 		<ul class="space-y-2">
