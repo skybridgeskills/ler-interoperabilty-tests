@@ -34,6 +34,12 @@
 	const rawJson = $derived(
 		status.raw === undefined ? undefined : JSON.stringify(status.raw, null, 2)
 	);
+	// Only render the Details disclosure when it will actually contain something: the message when
+	// it is NOT already shown inline (fail/warn suppress it inside), or a raw JSON body. A FAIL row
+	// with an inline message and no raw would otherwise render an empty disclosure.
+	const hasDetails = $derived(
+		(status.message !== undefined && !showInlineError) || rawJson !== undefined
+	);
 </script>
 
 <div class="flex items-start gap-3">
@@ -72,8 +78,8 @@
 			<p class={`text-label-md ${toneClasses.label}`}>{status.message}</p>
 		{/if}
 
-		{#if status.message !== undefined || rawJson}
-			<details class="text-label-md">
+		{#if hasDetails}
+			<details class="text-label-md print:hidden">
 				<summary class="cursor-pointer text-muted-foreground hover:text-foreground">Details</summary
 				>
 				{#if status.message !== undefined && !showInlineError}
