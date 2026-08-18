@@ -25,6 +25,8 @@ Tailwind utilities (`bg-background`, `text-foreground`, etc.).
 | `--muted-foreground`   | `hsl(232 10% 35%)`        |
 | `--accent`             | `hsl(261 60% 55%)`        |
 | `--warning`            | `hsl(35 75% 40%)`         |
+| `--warning-soft`       | `hsl(35 75% 92%)`         |
+| `--warning-border`     | `hsl(35 58% 62%)`         |
 | `--destructive`        | `hsl(350 70% 45%)`        |
 | `--live`               | `hsl(20 92% 48%)`         |
 | `--live-soft`          | `hsl(20 90% 92%)`         |
@@ -54,6 +56,8 @@ Tailwind utilities (`bg-background`, `text-foreground`, etc.).
 | `--muted-foreground`   | `hsl(229 28% 70%)` |
 | `--accent`             | `hsl(261 84% 78%)` |
 | `--warning`            | `hsl(35 65% 64%)`  |
+| `--warning-soft`       | `hsl(35 35% 20%)`  |
+| `--warning-border`     | `hsl(35 48% 45%)`  |
 | `--destructive`        | `hsl(350 89% 71%)` |
 | `--live`               | `hsl(22 95% 64%)`  |
 | `--live-soft`          | `hsl(20 50% 18%)`  |
@@ -125,6 +129,29 @@ combination on the homepage rows and in `RunResultBadge`:
 | `result-fail` (red)     | A failed run. Aliases `destructive`.                                                                        |
 | `result-incomplete`     | Abandoned / timed-out / never-finished run. Neutral (`muted`).                                              |
 | `progress` (warm flame) | In-flight runtime. Aliases the `live` family; reserve it strictly for _progress_, not for finished results. |
+
+#### The three outcome tones
+
+A scenario asks the operator to judge what their wallet did, and there are
+three honest answers to that — not two. Each has its own tone, and the third
+one is the point:
+
+| Outcome       | Tone          | Why                                                                                                                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| pass          | `result-pass` | Finished success.                                                                                                                        |
+| fail          | `result-fail` | A wrong answer, or a failed automatic check.                                                                                             |
+| couldn't tell | `warning`     | It fails, and it is counted as a failure — but it is the _honest_ answer, and must be distinguishable at a glance from getting it wrong. |
+
+**Both halves of that last row are deliberate.** `can't tell` counts against
+the operator, because a wallet that leaves you unable to tell what happened
+has failed you. And it is amber rather than red, because "I couldn't tell" is
+a finding worth recording, not a mistake — rendering it identically to a wrong
+answer made the copy and the colour argue with each other in the M5 design
+review. Do not "fix" it to red for consistency, and do not soften it to a pass.
+
+`can't tell` uses the `warning` family: `bg-warning-soft`, `border-warning-border`,
+`text-warning`. `--warning-soft` and `--warning-border` exist for exactly this,
+and are reused by the completion group.
 
 Each of `success`, `result-pass`, `result-fail`, `result-incomplete`, and
 `progress` has `-soft` (surface) and `-border` companions for chip styling;

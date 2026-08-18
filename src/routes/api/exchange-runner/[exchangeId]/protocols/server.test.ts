@@ -38,8 +38,11 @@ async function callGet(
 
 // `buildAppContext` dynamically imports the whole test context (wallet crypto
 // included), which is slow enough to trip the 5s default when the three Vitest
-// projects run in parallel. Same allowance as the sibling runner route tests.
-describe('GET /api/exchange-runner/[exchangeId]/protocols', { timeout: 20_000 }, () => {
+// projects run in parallel. Raised from 20s at M5: `turbo validate` runs a Vite
+// build alongside two Playwright-driven projects, and the scenario page added
+// enough browser tests that this file — 1.4s on its own — was being starved past
+// 20s. The assertions are unchanged; only the allowance moved.
+describe('GET /api/exchange-runner/[exchangeId]/protocols', { timeout: 45_000 }, () => {
 	it('returns { exchangeId, protocols, workflowId } for a claim exchange it did not mint', async () => {
 		await withCtx(async () => {
 			const { exchangeId } = await transactionServiceClient().createIssuanceExchange({

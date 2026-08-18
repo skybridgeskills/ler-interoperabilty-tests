@@ -147,6 +147,21 @@ export const Scenario = ZodFactory(
 		workflow: WorkflowSlug.schema,
 		/** Exactly one names a base profile; any number may name additives. */
 		memberships: z.array(Membership.schema).min(1),
+		/**
+		 * Neutral noun for a shuffled step, rendered positionally as
+		 * `${shuffleLabel} ${n}` in RUN order — "Credential 1", "Credential 2".
+		 *
+		 * A shuffled step's authored `title` is an answer key: "Offer an expired
+		 * credential" tells the operator exactly what they are being asked to
+		 * judge. The page therefore never renders `title` for a shuffled step,
+		 * and this is what it renders instead. The verifier flow already does
+		 * this by assigning `PassDefinition.label = "Credential 1"` at
+		 * generation time; this gives scenario authors the same vocabulary.
+		 *
+		 * Presentation only, and therefore OUTSIDE the fingerprint — renaming
+		 * the label must not cost anyone their results.
+		 */
+		shuffleLabel: z.string().min(1).optional(),
 		steps: z.array(ScenarioStep.schema).min(1)
 	})
 );

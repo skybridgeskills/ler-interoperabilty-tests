@@ -97,6 +97,11 @@ describe('scenarioFingerprint', () => {
 			expect(scenarioFingerprint(withStep(base, 0, step))).toBe(expected);
 		});
 
+		it('ignores shuffleLabel — a presentation field, so renaming it costs nobody', () => {
+			expect(scenarioFingerprint(Scenario({ ...base, shuffleLabel: 'Credential' }))).toBe(expected);
+			expect(scenarioFingerprint(Scenario({ ...base, shuffleLabel: 'Pass' }))).toBe(expected);
+		});
+
 		it('ignores a step id, since nothing persisted keys on one', () => {
 			const step = { ...base.steps[0], id: 'step-1' };
 			expect(scenarioFingerprint(withStep(base, 0, step))).toBe(expected);

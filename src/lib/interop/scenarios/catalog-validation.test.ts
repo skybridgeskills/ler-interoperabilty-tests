@@ -243,6 +243,33 @@ describe('validateCatalog', () => {
 		});
 	});
 
+	describe('rule 8 — a scenario with shuffled steps declares a shuffleLabel', () => {
+		const shuffled = (id: string) =>
+			step({ id, shuffle: true, requirements: [requirement({ id })] });
+
+		it('rejects shuffled steps with no shuffleLabel — the title is an answer key', () => {
+			const catalog = [scenario({ steps: [shuffled('a'), shuffled('b')] })];
+			expect(codes(catalog)).toContain('missing-shuffle-label');
+		});
+
+		it('accepts shuffled steps once a shuffleLabel is declared', () => {
+			const catalog = [
+				scenario({ steps: [shuffled('a'), shuffled('b')], shuffleLabel: 'Credential' })
+			];
+			expect(codes(catalog)).not.toContain('missing-shuffle-label');
+		});
+
+		it('accepts a scenario with no shuffled steps and no shuffleLabel', () => {
+			expect(codes([scenario()])).not.toContain('missing-shuffle-label');
+		});
+
+		it('accepts an unused shuffleLabel — harmless, and not worth a rule', () => {
+			expect(codes([scenario({ shuffleLabel: 'Credential' })])).not.toContain(
+				'missing-shuffle-label'
+			);
+		});
+	});
+
 	it('reports every violation, not just the first', () => {
 		const broken = scenario({
 			memberships: [{ profile: 'data-integrity-cryptosuites', level: 'required' }],

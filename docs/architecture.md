@@ -36,7 +36,7 @@ in it imports from `src/lib/server/`:
 | `membership.ts`           | `Membership`, `MembershipLevel`, `OneOfGroup`                                                               |
 | `scenario-fingerprint.ts` | `scenarioFingerprint()` — drift detection                                                                   |
 | `catalog-validation.ts`   | `validateCatalog()` / `assertValidCatalog()`                                                                |
-| `accessors.ts`            | `scenarioBySlug`, `scenariosFor`, `membershipsOfProfile`                                                    |
+| `accessors.ts`            | `scenarioBySlug`, `scenariosFor`, `membershipsOfProfile` (`scenarioHref` is in `checklist-href.ts`)         |
 | `all-scenarios.ts`        | the registry, validated at module evaluation                                                                |
 
 Four properties are load-bearing:
@@ -53,7 +53,7 @@ Four properties are load-bearing:
 - **Drift is derived, never declared.** There is no `version` field;
   `scenarioFingerprint()` hashes scoring-relevant content (requirement ids,
   levels, statements, answer kinds, `choose` options and right answers, step
-  actions) and excludes cosmetic fields (`name`, `blurb`, step `id`/`title`/
+  actions) and excludes cosmetic fields (`name`, `blurb`, `shuffleLabel`, step `id`/`title`/
   `summary`), so copy-editing never costs anyone their results.
 
 ### Catalog validation
@@ -61,7 +61,7 @@ Four properties are load-bearing:
 `all-scenarios.ts` calls `assertValidCatalog()` at module evaluation and
 **throws**, naming every violation at once — an invalid catalog is a build-time
 authoring bug, not a runtime condition. `validateCatalog()` is the pure form
-that returns the list. Seven rules:
+that returns the list. Eight rules:
 
 1. Scenario slugs are unique.
 2. Step ids are unique within a scenario.
@@ -72,6 +72,11 @@ that returns the list. Seven rules:
    must not depend on which alternative the operator ran.
 6. A `choose` answer's `correct` is one of its own option values.
 7. Shuffled steps form a single contiguous run.
+8. **A scenario with any shuffled step declares `shuffleLabel`.** A shuffled
+   step's authored `title` is an answer key ("Offer an expired credential"), so
+   the page never renders it — `shuffleLabel` is the neutral positional noun it
+   renders instead. Without it, the page would have to fall back to the title,
+   which is the leak the field exists to prevent.
 
 ### The run engine
 
@@ -116,6 +121,47 @@ A check that cannot be resolved (the catalog names an unregistered `checkId`)
 not collapse a live run. A step that errored outright leaves its automatic
 requirements **unresolved rather than failed**: we did not observe them, and
 recording a failure we did not measure is the dishonesty the whole design avoids.
+
+### The scenario page
+
+`/scenarios/[slug]` is the **one generic route** — `ScenarioPage.svelte` renders
+any catalog scenario, and **there are no bespoke scenario pages, ever**. The
+route (`src/routes/scenarios/[slug]/`) resolves the scenario, parses attach
+params and 404s an unknown slug in `+page.ts`; a `+page.server.ts` resolves
+blocked-ness up front so a scenario this deployment cannot serve renders disabled
+before the operator tries. `ScenarioPage.svelte` is a template over
+`createScenarioRunController` (`scenario-run-controller.svelte.ts`), which owns
+the run's `$state` and drives the engine — the component decides nothing about
+scoring. URL reading stays at the route boundary; the page component takes props,
+so Storybook drives the same component.
+
+- **Step-as-spine.** Each step is a collapsing card
+  (`components/interop/scenario-step/`) with its action rendered inside it —
+  superseding the two-column `RunnableChecklist` layout for scenarios. A live
+  step is expanded; a settled step collapses to a one-line summary and stays
+  reopenable, which keeps a multi-step run short on a phone.
+- **The reveal rule.** A step's setup is always visible and its requirement
+  statements are always visible; only the **expected answer is concealed**, per
+  requirement, until that requirement is answered — then revealed in the
+  verdict-strip treatment. Automatic requirements resolve when the step settles,
+  **before** its attested questions are answerable, so the operator sees what the
+  wire said before being asked what they saw.
+- **`can't tell` is always offered** on every attested requirement, is appended
+  by the component (never authored, never omittable), fails, and renders in the
+  warning family — amber, so it is visibly a failure yet distinguishable from a
+  wrong answer.
+- **A run records only when every requirement is answered.** Finish is disabled
+  with a count until then, never hidden. A step that errors therefore makes a run
+  **unrecordable** — its automatic requirements stay unresolved — and the page
+  offers only "Start over". Navigating away records nothing.
+- **Attach mode** adopts an externally-minted exchange into step 1, and **only
+  for a single-action-step scenario**: in a shuffled scenario step 1 is random,
+  so adopting into it is both meaningless and a leak of which pass the operator
+  is on.
+- **`shuffleLabel` + position** is the only label a shuffled step ever shows; its
+  authored title is an answer key. The label is resolved by the controller, never
+  by the step card, so the leak cannot be reintroduced by a component reading the
+  whole step.
 
 ## Provider dependency injection
 

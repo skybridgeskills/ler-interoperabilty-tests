@@ -9,7 +9,8 @@ export type CatalogViolationCode =
 	| 'base-membership-count'
 	| 'one-of-requirement-mismatch'
 	| 'choose-correct-not-an-option'
-	| 'discontiguous-shuffle';
+	| 'discontiguous-shuffle'
+	| 'missing-shuffle-label';
 
 /** One authoring error found in the catalog. */
 export type CatalogViolation = {
@@ -36,6 +37,7 @@ export function validateCatalog(scenarios: Scenario[]): CatalogViolation[] {
 		...scenarios.flatMap(exactlyOneBaseMembership),
 		...scenarios.flatMap(chooseCorrectIsAnOption),
 		...scenarios.flatMap(contiguousShuffle),
+		...scenarios.flatMap(shuffledScenarioDeclaresLabel),
 		...oneOfGroupsAgree(scenarios)
 	];
 }
@@ -149,6 +151,31 @@ function contiguousShuffle(scenario: Scenario): CatalogViolation[] {
 			code: 'discontiguous-shuffle',
 			subject: scenario.slug,
 			message: `${runs} separate runs of shuffled steps; shuffled steps must be contiguous`
+		}
+	];
+}
+
+/**
+ * Rule 8 — a scenario with any shuffled step declares `shuffleLabel`.
+ *
+ * A shuffled step's authored `title` is an answer key. Without a neutral label
+ * the page has nothing else to render and would have to fall back to `title`,
+ * which is the exact leak `shuffleLabel` exists to prevent — so this is caught
+ * at authoring time rather than left to the page to handle gracefully.
+ *
+ * The converse — `shuffleLabel` declared with no shuffled step — is **not** a
+ * violation. It is unused presentation copy, harmless, and a scenario that
+ * gains a shuffled step later should not have to add the field in the same
+ * edit.
+ */
+function shuffledScenarioDeclaresLabel(scenario: Scenario): CatalogViolation[] {
+	const shuffled = scenario.steps.filter((s) => s.shuffle === true);
+	if (shuffled.length === 0 || scenario.shuffleLabel) return [];
+	return [
+		{
+			code: 'missing-shuffle-label',
+			subject: scenario.slug,
+			message: `${shuffled.length} shuffled step(s) but no shuffleLabel; a shuffled step's title is an answer key and cannot be rendered`
 		}
 	];
 }

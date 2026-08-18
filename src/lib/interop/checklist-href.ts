@@ -36,6 +36,18 @@ export function additiveProfileHref(profile: AdditiveProfileSlug): string {
 	return resolve('/profiles/[profile]', { profile });
 }
 
+/**
+ * Build the URL for a scenario's runner page.
+ *
+ * Lives here rather than in `scenarios/accessors.ts` because it is a *routing*
+ * concern, and this file already owns every route-building helper in the app.
+ * Putting it beside the catalog accessors would split routing knowledge across
+ * two modules and make `interop/scenarios/` depend on `$app/paths`.
+ */
+export function scenarioHref(slug: string): string {
+	return resolve('/scenarios/[slug]', { slug });
+}
+
 /** Build the URL for a role landing page. */
 export function roleHref(role: RoleSlug): string {
 	switch (role) {
