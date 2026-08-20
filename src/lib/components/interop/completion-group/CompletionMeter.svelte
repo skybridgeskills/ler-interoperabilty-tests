@@ -12,7 +12,20 @@
 	 * success. Partial fills warm (`progress`/`live`) — in-flight. Empty shows the
 	 * track only.
 	 */
-	let { met, total }: { met: number; total: number } = $props();
+	let {
+		met,
+		total,
+		showPercent = false
+	}: {
+		met: number;
+		total: number;
+		/**
+		 * Dense readout for the two-tier header: `met/total · pct%` instead of
+		 * `met/total requirements`. The tier's own label already says "Core" /
+		 * "Complete", so the word "requirements" is redundant there.
+		 */
+		showPercent?: boolean;
+	} = $props();
 
 	const pct = $derived(total > 0 ? Math.min(100, Math.max(0, (met / total) * 100)) : 0);
 	const full = $derived(total > 0 && met === total);
@@ -33,6 +46,10 @@
 		{/if}
 	</div>
 	<span class="shrink-0 text-label-md whitespace-nowrap text-muted-foreground">
-		{met}/{total} requirements
+		{#if showPercent}
+			{met}/{total} · {Math.round(pct)}%
+		{:else}
+			{met}/{total} requirements
+		{/if}
 	</span>
 </div>

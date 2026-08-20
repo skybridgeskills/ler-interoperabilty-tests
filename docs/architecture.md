@@ -190,13 +190,21 @@ measures nothing. See [`docker/README.md`](../docker/README.md).
 
 ### The completion group
 
-A **completion group** is how a `(profile, role)` completion set is read: a
-heading with a meter and its scenario rows, with **workflow as a sub-heading
-inside** the group — never the top-level grouping, so "how close am I to the
-OID4 Wallet badge?" is answerable at a glance rather than spread across three
-headings. It renders in two places: the homepage (replacing the flat workflow
-list) and each profile detail page (one group per role, scoped to that
-profile; an additive profile renders its own sub-meter the same way).
+A **completion group** is how a `(profile, role)` **bundle** is read: a heading
+with a meter and its scenario rows, with **workflow as a sub-heading inside** the
+group — never the top-level grouping, so "how close am I to the OID4 Wallet
+badge?" is answerable at a glance rather than spread across three headings. It
+renders in two places: the homepage (replacing the flat workflow list) and each
+profile detail page (one group per role, scoped to that profile).
+
+A base profile-role is a **two-tier bundle** (M14): **Core** (the base profile's
+`required` + `oneOf` scenarios → the base badge, e.g. _OID4 Wallet_) and
+**Complete** (the _same_ base profile's `optional` scenarios → the _"— Complete"_
+badge, for an implementer who covers the profile-role fully). Both meters and both
+claim affordances sit in the header, colour-cued (Core = primary, Complete =
+accent) into two body sections. A group with no expanded set — an **additive**
+profile (a single-tier axis of its own), or a base profile before any `optional`
+scenario exists — renders single-tier, exactly as before.
 
 Every number the group shows comes from M4's `evaluateCompletion` in
 `src/lib/interop/completion/` — the widget **computes nothing**:
@@ -206,16 +214,18 @@ Every number the group shows comes from M4's `evaluateCompletion` in
   scenario with a failing SHOULD is not flattened to a bare ✗.
 - **A `oneOf` group renders as one obligation** — "any one of" siblings that
   each stay runnable but stop gating once one passes.
-- **`optional` memberships render in their own sub-meter**, never folded into
-  the base.
+- **`optional` memberships render in the Complete sub-meter**, never folded into
+  the Core meter — including them would mean Core could never fill.
 - **A blocked scenario renders disabled with its `CannotServe` reason and still
   counts in the denominator** — the badge is blocked, not made easier.
-- **The meter fills exactly when the badge is claimable.** The meter's fill and
-  the `[Claim badge]` control's enablement both come from the single
-  `isClaimable()` predicate, so they cannot disagree. Where a badge is registered
-  for the group's `(profile, role)` (M8), the control links to `/badges/[slug]`;
-  where none is, it stays disabled. Once claimed, the group also shows a
-  _"Claimed 3 Aug against N requirements · k new since"_ line (see **§ Badges**).
+- **Each tier's meter fills exactly when _its_ badge is claimable.** Core comes
+  from `isClaimable(result)` (the `required` meter), Complete from
+  `isExpandedClaimable(result)` (the `optional` sub-meter); a tier's meter fill and
+  its `[Claim …]` control both read that one predicate, so a header cannot lie.
+  Each control links to its own `/badges/[slug]` (base via `badgeFor`, Complete via
+  `completeBadgeFor`) or stays disabled where no badge is registered. Once claimed,
+  each tier shows its own _"Claimed 3 Aug against N requirements · k new since"_
+  line (see **§ Badges**).
 
 Run records are browser-only (`localStorage`), so both surfaces hydrate them in
 `onMount` and render a zeroed meter during SSR. The homepage additionally carries
@@ -504,17 +514,22 @@ Five rules, each with a test:
 
 ## Badges
 
-A **badge** turns a full `(profile, role)` required set into a claimable Open
+A **badge** turns one tier of a `(profile, role)` bundle into a claimable Open
 Badges 3.0 recognition credential. The full rationale is
-[`docs/adr/2026-08-18-badge-award-model.md`](adr/2026-08-18-badge-award-model.md);
-the shape of it:
+[`docs/adr/2026-08-18-badge-award-model.md`](adr/2026-08-18-badge-award-model.md)
+(with the M14 tier-keying amendment); the shape of it:
 
 - **The domain is pure and client-safe** (`interop/badges/`): a `BadgeDefinition`
-  keyed `(base profile, optional additive, role)` — the same identity the meter
-  counts over — plus the fingerprint, the two narrative generators, the
-  `BadgeClaimSnapshot`, and the `newSince` diff. Only `oid4-wallet` is
-  registered; the two-tier `(base, additive)` mechanism is built but
-  `oid4-wallet-complete` is deferred until an optional/additive scenario exists.
+  whose `tier` decides _which sub-set_ of a `(profile, role)` it scores — `base`
+  the `required` + `oneOf` floor, `complete` the same base profile's `optional`
+  set, `additive` an additive profile's whole (single-tier) set. `scenariosBehindBadge`
+  is the one seam that applies this filter; the fingerprint, the `BadgeClaimSnapshot`,
+  the `newSince` diff, and the criteria page all read through it, so a base badge and
+  a complete badge for one `(profile, role)` are two different sets. `badgeKey` keys
+  base/complete to the base profile and additive to the additive profile — the base
+  badge never changes meaning when the Complete set grows. Both tiers of the
+  `oid4/wallet` bundle are registered (`oid4-wallet`, `oid4-wallet-complete`);
+  additive badges stay unregistered (dormant) until additive scenarios exist.
 - **The credential is a plain OB3** built server-side in
   `server/domain/badges/badge-recipe.ts` — a module apart from the test recipes,
   importing nothing from `scenario-runner/recipes/` and imported by nothing

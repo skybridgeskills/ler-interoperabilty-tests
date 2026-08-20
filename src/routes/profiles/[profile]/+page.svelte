@@ -9,9 +9,13 @@
 	import { RoleBadge } from '$lib/components/interop/role-badge/index.js';
 	import {
 		badgeHrefFor,
+		badgeNameFor,
 		type BadgeClaimSnapshot,
 		checklistHref,
 		claimedInfoFor,
+		completeBadgeHrefFor,
+		completeBadgeNameFor,
+		completeClaimedInfoFor,
 		completionGroupsForProfile,
 		type Profile,
 		profileBySlug,
@@ -79,6 +83,26 @@
 	);
 </script>
 
+<!--
+	One two-tier bundle card. For an additive profile (or a base profile with no
+	optional set) the group has no expanded tier, so the Complete accessors return
+	undefined and the card renders single-tier.
+-->
+{#snippet groupCard(group: (typeof scenarioGroups)[number])}
+	<CompletionGroup
+		profileName={group.profileName}
+		roleName={group.roleName}
+		result={group.result}
+		{runs}
+		claimHref={badgeHrefFor(group.profileSlug, group.roleSlug)}
+		claim={claimedInfoFor(group.profileSlug, group.roleSlug, claims)}
+		baseBadgeName={badgeNameFor(group.profileSlug, group.roleSlug)}
+		expandedClaimHref={completeBadgeHrefFor(group.profileSlug, group.roleSlug)}
+		expandedClaim={completeClaimedInfoFor(group.profileSlug, group.roleSlug, claims)}
+		completeBadgeName={completeBadgeNameFor(group.profileSlug, group.roleSlug)}
+	/>
+{/snippet}
+
 <section class="space-y-4">
 	<div class="flex flex-wrap items-center gap-3">
 		{#if data.kind === 'additive'}
@@ -129,14 +153,7 @@
 		{#if scenarioGroups.length > 0}
 			<div class="space-y-4">
 				{#each scenarioGroups as group (group.roleSlug)}
-					<CompletionGroup
-						profileName={group.profileName}
-						roleName={group.roleName}
-						result={group.result}
-						{runs}
-						claimHref={badgeHrefFor(group.profileSlug, group.roleSlug)}
-						claim={claimedInfoFor(group.profileSlug, group.roleSlug, claims)}
-					/>
+					{@render groupCard(group)}
 				{/each}
 			</div>
 		{:else}
@@ -164,14 +181,7 @@
 		{#if scenarioGroups.length > 0}
 			<div class="space-y-4">
 				{#each scenarioGroups as group (group.roleSlug)}
-					<CompletionGroup
-						profileName={group.profileName}
-						roleName={group.roleName}
-						result={group.result}
-						{runs}
-						claimHref={badgeHrefFor(group.profileSlug, group.roleSlug)}
-						claim={claimedInfoFor(group.profileSlug, group.roleSlug, claims)}
-					/>
+					{@render groupCard(group)}
 				{/each}
 			</div>
 		{:else}

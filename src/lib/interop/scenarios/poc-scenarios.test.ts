@@ -9,10 +9,11 @@ import { allScenarios, scenarioBySlug, validateCatalog } from './index.js';
  * indistinguishable before answering.
  */
 describe('PoC scenario catalog', () => {
-	it('registers both scenarios and validates clean', () => {
+	it('registers the catalog scenarios and validates clean', () => {
 		expect(allScenarios.map((s) => s.slug)).toEqual([
 			'oid4-wallet-acceptance',
-			'oid4-wallet-refusal-discrimination'
+			'oid4-wallet-refusal-discrimination',
+			'oid4-wallet-faithful-rendering'
 		]);
 		expect(validateCatalog(allScenarios)).toEqual([]);
 	});

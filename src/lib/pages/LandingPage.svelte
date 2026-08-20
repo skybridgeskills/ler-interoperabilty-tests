@@ -17,9 +17,13 @@
 		allProfiles,
 		allRoles,
 		badgeHrefFor,
+		badgeNameFor,
 		type BadgeClaimSnapshot,
 		checklistHref,
 		claimedInfoFor,
+		completeBadgeHrefFor,
+		completeBadgeNameFor,
+		completeClaimedInfoFor,
 		combinationHasScenario,
 		completionGroups,
 		isCombinationSelected,
@@ -167,17 +171,25 @@
 		</p>
 	</header>
 
+	{#snippet groupCard(group: (typeof groups)[number])}
+		<CompletionGroup
+			profileName={group.profileName}
+			roleName={group.roleName}
+			result={group.result}
+			{runs}
+			claimHref={badgeHrefFor(group.profileSlug, group.roleSlug)}
+			claim={claimedInfoFor(group.profileSlug, group.roleSlug, claims)}
+			baseBadgeName={badgeNameFor(group.profileSlug, group.roleSlug)}
+			expandedClaimHref={completeBadgeHrefFor(group.profileSlug, group.roleSlug)}
+			expandedClaim={completeClaimedInfoFor(group.profileSlug, group.roleSlug, claims)}
+			completeBadgeName={completeBadgeNameFor(group.profileSlug, group.roleSlug)}
+		/>
+	{/snippet}
+
 	{#if hasGroupSelection}
 		<div class="space-y-4">
 			{#each selectedGroups as group (group.profileSlug + ':' + group.roleSlug)}
-				<CompletionGroup
-					profileName={group.profileName}
-					roleName={group.roleName}
-					result={group.result}
-					{runs}
-					claimHref={badgeHrefFor(group.profileSlug, group.roleSlug)}
-					claim={claimedInfoFor(group.profileSlug, group.roleSlug, claims)}
-				/>
+				{@render groupCard(group)}
 			{/each}
 		</div>
 	{/if}
@@ -203,14 +215,7 @@
 			</summary>
 			<div class="mt-4 space-y-4">
 				{#each otherGroups as group (group.profileSlug + ':' + group.roleSlug)}
-					<CompletionGroup
-						profileName={group.profileName}
-						roleName={group.roleName}
-						result={group.result}
-						{runs}
-						claimHref={badgeHrefFor(group.profileSlug, group.roleSlug)}
-						claim={claimedInfoFor(group.profileSlug, group.roleSlug, claims)}
-					/>
+					{@render groupCard(group)}
 				{/each}
 			</div>
 		</details>

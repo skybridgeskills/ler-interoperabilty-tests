@@ -12,7 +12,9 @@
 		optionalResult,
 		optionalRuns,
 		partialResult,
-		partialRuns
+		partialRuns,
+		twoTierFullResult,
+		twoTierFullRuns
 	} from './fixtures.js';
 
 	const { Story } = defineMeta({
@@ -92,26 +94,52 @@
 	</div>
 </Story>
 
-<Story name="Optional sub-section" asChild>
-	<div class="max-w-2xl bg-background p-6">
+<!-- Two-tier bundle: core full, Complete tier in flight. Both claims live in the header. -->
+<Story name="Two-tier (core full · complete partial)" asChild>
+	<div class="max-w-3xl bg-background p-6">
 		<CompletionGroup
 			profileName="OID4 Profile"
 			roleName="Wallet"
 			result={optionalResult}
 			runs={optionalRuns}
+			baseBadgeName="OID4 Wallet"
+			completeBadgeName="OID4 Wallet — Complete"
+			claimHref="/badges/oid4-wallet"
+			expandedClaimHref="/badges/oid4-wallet-complete"
 		/>
 	</div>
 </Story>
 
-<!-- Partial + optional in light + dark side by side. -->
+<!-- Both tiers full — both badges claimable, base already claimed. -->
+<Story name="Two-tier — both claimable" asChild>
+	<div class="max-w-3xl bg-background p-6">
+		<CompletionGroup
+			profileName="OID4 Profile"
+			roleName="Wallet"
+			result={twoTierFullResult}
+			runs={twoTierFullRuns}
+			baseBadgeName="OID4 Wallet"
+			completeBadgeName="OID4 Wallet — Complete"
+			claimHref="/badges/oid4-wallet"
+			expandedClaimHref="/badges/oid4-wallet-complete"
+			claim={{ claimedAt: '2026-08-12T09:00:00.000Z', requirementCount: 4, newSince: 0 }}
+		/>
+	</div>
+</Story>
+
+<!-- Two-tier bundle in light + dark side by side. -->
 <Story name="Light + dark" asChild>
 	<div class="grid gap-4 xl:grid-cols-2">
 		<div class="bg-background p-6">
 			<CompletionGroup
 				profileName="OID4 Profile"
 				roleName="Wallet"
-				result={partialResult}
-				runs={partialRuns}
+				result={optionalResult}
+				runs={optionalRuns}
+				baseBadgeName="OID4 Wallet"
+				completeBadgeName="OID4 Wallet — Complete"
+				claimHref="/badges/oid4-wallet"
+				expandedClaimHref="/badges/oid4-wallet-complete"
 			/>
 		</div>
 		<div class="dark">
@@ -119,8 +147,13 @@
 				<CompletionGroup
 					profileName="OID4 Profile"
 					roleName="Wallet"
-					result={optionalResult}
-					runs={optionalRuns}
+					result={twoTierFullResult}
+					runs={twoTierFullRuns}
+					baseBadgeName="OID4 Wallet"
+					completeBadgeName="OID4 Wallet — Complete"
+					claimHref="/badges/oid4-wallet"
+					expandedClaimHref="/badges/oid4-wallet-complete"
+					claim={{ claimedAt: '2026-08-12T09:00:00.000Z', requirementCount: 4, newSince: 0 }}
 				/>
 			</div>
 		</div>

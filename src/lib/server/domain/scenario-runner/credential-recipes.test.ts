@@ -21,6 +21,7 @@ describe('credential recipes', () => {
 	it('lists its ids for error messages', () => {
 		expect(allRecipeIds()).toContain('minimal-ob3');
 		expect(allRecipeIds()).toContain('ob3-expired');
+		expect(allRecipeIds()).toContain('rich-ob3');
 	});
 
 	it('stamps the caller’s credential id rather than hardcoding one', () => {
@@ -77,6 +78,35 @@ describe('ob3-expired', () => {
 
 		expect(Date.parse(String(built.validUntil))).toBeLessThan(Date.parse('2025-01-01T00:00:00Z'));
 		expect(Date.parse(String(built.validFrom))).toBeLessThan(Date.parse(String(built.validUntil)));
+	});
+});
+
+describe('rich-ob3', () => {
+	const built = () => recipeById('rich-ob3')!.build({ credentialId: 'urn:uuid:x' });
+
+	it('keeps the minimal recipe’s OB3-required fields the services depend on', () => {
+		const doc = built();
+		// The M8 lesson: the services OVERWRITE issuer.id, so a placeholder must be
+		// present; OB3 requires Achievement.description and a top-level description.
+		expect((doc.issuer as { id: string }).id).toBe('did:key:placeholder');
+		expect(doc.description).toBeTruthy();
+		const achievement = (doc.credentialSubject as { achievement: { description: string } })
+			.achievement;
+		expect(achievement.description).toBeTruthy();
+		expect(doc.type).toEqual(['VerifiableCredential', 'OpenBadgeCredential']);
+	});
+
+	it('carries an inline image on both the credential and the achievement', () => {
+		const doc = built();
+		expect((doc.image as { id: string }).id).toMatch(/^data:image\/svg\+xml;base64,/);
+		const achievement = doc.credentialSubject as { achievement: { image: { id: string } } };
+		expect(achievement.achievement.image.id).toMatch(/^data:image\/svg\+xml;base64,/);
+	});
+
+	it('is distinguishable from the minimal control', () => {
+		expect(built().name).not.toBe(
+			recipeById('minimal-ob3')!.build({ credentialId: 'urn:uuid:x' }).name
+		);
 	});
 });
 

@@ -22,6 +22,20 @@ export function isClaimable(result: CompletionResult): boolean {
 }
 
 /**
+ * Whether the **expanded ("Complete") tier's** badge can be claimed — the same
+ * rule as {@link isClaimable}, applied to the `optional` sub-meter.
+ *
+ * The Complete badge is a *second, distinct* badge, claimed against the base
+ * profile's `optional` set (M14). Its meter fill and its claim affordance both
+ * read from here, so the two tiers each obey "the meter fills exactly when the
+ * badge becomes claimable" independently. An empty optional set is never
+ * claimable, exactly as an empty base set is not.
+ */
+export function isExpandedClaimable(result: CompletionResult): boolean {
+	return result.optional.total > 0 && result.optional.met === result.optional.total;
+}
+
+/**
  * Obligations the deployment cannot serve — what a blocked badge should explain.
  * Empty when nothing is blocked, which is the common case.
  */

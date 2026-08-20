@@ -1,5 +1,6 @@
 import { assertValidCatalog } from './catalog-validation.js';
 import { oid4WalletAcceptance } from './oid4-wallet-acceptance.js';
+import { oid4WalletFaithfulRendering } from './oid4-wallet-faithful-rendering.js';
 import { oid4WalletRefusalDiscrimination } from './oid4-wallet-refusal-discrimination.js';
 import type { Scenario } from './scenario-schema.js';
 
@@ -18,7 +19,11 @@ import type { Scenario } from './scenario-schema.js';
  * convention, not something the validator can enforce — no rule can tell a
  * routine addition from a deliberate raising of the bar.
  */
-export const allScenarios: Scenario[] = [oid4WalletAcceptance, oid4WalletRefusalDiscrimination];
+export const allScenarios: Scenario[] = [
+	oid4WalletAcceptance,
+	oid4WalletRefusalDiscrimination,
+	oid4WalletFaithfulRendering
+];
 
 // Fail loudly at import rather than rendering a meter whose denominator is
 // quietly wrong. An invalid catalog is an authoring bug, caught at build time.

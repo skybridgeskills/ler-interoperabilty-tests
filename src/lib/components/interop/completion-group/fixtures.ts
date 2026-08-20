@@ -112,7 +112,7 @@ export const blockedRuns: Record<string, ScenarioRunRecord> = {
 	[acceptance.slug]: runRecord(acceptance.slug, 'passed')
 };
 
-/** A full base meter beside a partly-run optional sub-section. */
+/** A full core tier beside a partly-run expanded (Complete) tier. */
 export const optionalResult = resultOf(
 	[scenarioProgress(acceptance, 4, 4)],
 	[scenarioProgress(refusal, 2, 9)]
@@ -120,4 +120,14 @@ export const optionalResult = resultOf(
 export const optionalRuns: Record<string, ScenarioRunRecord> = {
 	[acceptance.slug]: runRecord(acceptance.slug, 'passed'),
 	[refusal.slug]: runRecord(refusal.slug, 'failed')
+};
+
+/** Both tiers full — both the base and the Complete badge are claimable. */
+export const twoTierFullResult = resultOf(
+	[scenarioProgress(acceptance, 4, 4)],
+	[scenarioProgress(refusal, 9, 9)]
+);
+export const twoTierFullRuns: Record<string, ScenarioRunRecord> = {
+	[acceptance.slug]: runRecord(acceptance.slug, 'passed'),
+	[refusal.slug]: runRecord(refusal.slug, 'passed')
 };

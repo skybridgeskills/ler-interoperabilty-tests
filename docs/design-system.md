@@ -153,6 +153,17 @@ review. Do not "fix" it to red for consistency, and do not soften it to a pass.
 `text-warning`. `--warning-soft` and `--warning-border` exist for exactly this,
 and are reused by the completion group.
 
+#### Two-tier bundle cue
+
+The completion group's **two-tier bundle** (M14) distinguishes its tiers with the
+**existing** `primary` (Core) and `accent` (Complete) tokens — a coloured dot and
+label in each header row, echoed by a matching left rule on each body section. No
+new token: the Complete tier borrows `--accent` (the same violet the palette
+already defines), so Core reads as the everyday bar and Complete as the stretch
+one without inventing a colour. The header meters use `CompletionMeter`'s dense
+`showPercent` readout (`met/total · pct%`) because each tier's own label already
+says "Core" / "Complete", making the word "requirements" redundant there.
+
 Each of `success`, `result-pass`, `result-fail`, `result-incomplete`, and
 `progress` has `-soft` (surface) and `-border` companions for chip styling;
 `success`/`result-pass` and `progress` also expose `-foreground` for solid

@@ -154,3 +154,37 @@ retry, not a diagnosis.
   not something the validator can enforce (no rule tells a routine addition from
   a deliberate raising of the bar), and it is what keeps a claimed badge honest
   as the catalog grows.
+
+## Amendment — 2026-08-19 (M14): a tier keys _which sub-set_ it scores
+
+The M8 decision above sketched two tiers as "two badges … keyed
+`(base profile, optional additive, role)`", with a `complete` badge scoring **the
+additive's set**. M14 (two-tier frontpage bundles) found that coupling wrong and
+replaces it. This amends — does not supersede — the model above; the claim path,
+the snapshot store, the `criteria.id` versioning, and "claiming is not a scenario"
+all stand.
+
+- **A badge's `tier` decides which sub-set within a `(profile, role)` it scores**,
+  applied in the single seam `scenariosBehindBadge`:
+  - `base` → the base profile's `required` (and `oneOf`) scenarios — the Core tier.
+  - `complete` → the **same base profile's** `optional` set — the Expanded tier.
+    It keys to the **base** profile and drops the `additive` field entirely; the
+    additive is no longer the meaning of "complete".
+  - `additive` → the whole set of an **additive** profile-role, a separate
+    single-tier axis (one meter, one badge, no core/expanded split).
+- **`badgeKey` no longer means "additive ?? base".** `base` and `complete` both
+  key to the base profile and differ only by tier; `additive` keys to the additive
+  profile. So the base badge never changes meaning when the optional (Complete) set
+  grows — same key, different tier, different sub-set. This property now holds
+  **structurally** (the tier filter scopes each badge), not by a pinned fingerprint:
+  the suite is pre-production with no committed requirement history yet, so no
+  fingerprint-locking regression test guards it.
+- **The registry lookup is tier-aware.** `badgeFor(profile, role)` returns the
+  primary (Core / single-tier) badge — the `base` or `additive` badge, never a
+  `complete` one; `completeBadgeFor(profile, role)` returns the Expanded badge when
+  registered.
+- **Additive badges are single-tier and register dormant** (empty set,
+  unclaimable) until additive scenarios exist — exactly as the base badge was
+  after M8. The M8 note "the `(base, additive, role)` keying exists with no second
+  badge to exercise it" is retired: `oid4-wallet-complete` is registered (M14 P2),
+  and the keying is now `(profile, role)` + tier.

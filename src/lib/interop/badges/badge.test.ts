@@ -63,15 +63,53 @@ const { scenariosFor } = await import('$lib/interop/scenarios/accessors.js');
 const {
 	allBadgeSlugs,
 	awardNarrative,
+	BadgeDefinition,
 	badgeBySlug,
 	badgeFingerprint,
 	badgeFor,
 	claimSnapshot,
+	completeBadgeFor,
 	criteriaNarrative,
 	newSince,
 	requirementIdsBehindBadge,
 	scenariosBehindBadge
 } = await import('./index.js');
+
+/**
+ * A minimal catalog scenario for the tier tests — `membershipsOfProfile` /
+ * `scenariosBehindBadge` read only `role`, `memberships`, and requirement ids.
+ */
+function mkScenario(
+	slug: string,
+	profile: string,
+	level: unknown,
+	reqId: string
+): Record<string, unknown> {
+	return {
+		slug,
+		name: 'x',
+		blurb: 'x',
+		role: 'wallet',
+		workflow: 'credential-acceptance',
+		memberships: [{ profile, level }],
+		steps: [
+			{
+				id: 'offer',
+				title: 'x',
+				summary: 'x',
+				action: { kind: 'issue', credential: 'minimal-ob3' },
+				requirements: [
+					{
+						id: reqId,
+						statement: 'x',
+						level: 'MUST',
+						check: { kind: 'attested', answer: { kind: 'affirm' } }
+					}
+				]
+			}
+		]
+	};
+}
 
 const baseList = catalog.list;
 afterEach(() => {
@@ -92,11 +130,12 @@ describe('badge registry', () => {
 
 	it('looks a badge up by slug, and returns undefined for an unknown one', () => {
 		expect(badgeBySlug('oid4-wallet')?.name).toBe('OID4 Wallet');
-		expect(badgeBySlug('oid4-wallet-complete')).toBeUndefined();
+		expect(badgeBySlug('oid4-wallet-complete')?.name).toBe('OID4 Wallet — Complete');
+		expect(badgeBySlug('no-such-badge')).toBeUndefined();
 	});
 
-	it('registers only the base badge — the second tier is intentionally absent', () => {
-		expect(allBadgeSlugs()).toEqual(['oid4-wallet']);
+	it('registers both tiers of the oid4/wallet bundle', () => {
+		expect(allBadgeSlugs()).toEqual(['oid4-wallet', 'oid4-wallet-complete']);
 	});
 });
 
@@ -105,6 +144,72 @@ describe('scenariosBehindBadge', () => {
 		expect(scenariosBehindBadge(badge()).map((s) => s.slug)).toEqual(
 			scenariosFor('oid4', 'wallet').map((s) => s.slug)
 		);
+	});
+});
+
+describe('badge tiers', () => {
+	// The remodel (M14): a badge scores the sub-set its tier names within a
+	// (profile, role) — base the required floor, complete the same base profile's
+	// optional set, additive the whole additive set.
+	const complete = () =>
+		BadgeDefinition({
+			slug: 'oid4-wallet-complete',
+			tier: 'complete',
+			baseProfile: 'oid4',
+			role: 'wallet',
+			name: 'OID4 Wallet — Complete',
+			description: 'x',
+			criteriaSummary: 'x'
+		});
+
+	it('base scores the required (+oneOf) floor, never the optional set', () => {
+		catalog.list = [
+			...baseList,
+			mkScenario('oid4-wallet-faithful-rendering', 'oid4', 'optional', 'zzz-rendered')
+		];
+		expect(scenariosBehindBadge(badge()).map((s) => s.slug)).toEqual([
+			'oid4-wallet-acceptance',
+			'oid4-wallet-refusal-discrimination'
+		]);
+	});
+
+	it('complete scores the same base profile’s optional set only', () => {
+		catalog.list = [
+			...baseList,
+			mkScenario('oid4-wallet-faithful-rendering', 'oid4', 'optional', 'zzz-rendered')
+		];
+		expect(scenariosBehindBadge(complete()).map((s) => s.slug)).toEqual([
+			'oid4-wallet-faithful-rendering'
+		]);
+		expect(requirementIdsBehindBadge(complete())).toEqual(['zzz-rendered']);
+	});
+
+	it('base and complete key to the same base profile-role', () => {
+		// The registry holds both tiers; badgeFor returns the primary (base), never
+		// the complete one, and completeBadgeFor returns the expanded tier.
+		expect(badgeFor('oid4', 'wallet')?.slug).toBe('oid4-wallet');
+		expect(completeBadgeFor('oid4', 'wallet')?.slug).toBe('oid4-wallet-complete');
+	});
+
+	it('additive scores the whole additive set, single tier', () => {
+		catalog.list = [
+			...baseList,
+			mkScenario('oid4-wallet-di', 'data-integrity-cryptosuites', 'required', 'di-1'),
+			mkScenario('oid4-wallet-di-opt', 'data-integrity-cryptosuites', 'optional', 'di-2')
+		];
+		const additive = BadgeDefinition({
+			slug: 'di-cryptosuites-wallet',
+			tier: 'additive',
+			additiveProfile: 'data-integrity-cryptosuites',
+			role: 'wallet',
+			name: 'x',
+			description: 'x',
+			criteriaSummary: 'x'
+		});
+		expect(scenariosBehindBadge(additive).map((s) => s.slug)).toEqual([
+			'oid4-wallet-di',
+			'oid4-wallet-di-opt'
+		]);
 	});
 });
 

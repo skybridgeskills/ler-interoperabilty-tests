@@ -20,7 +20,8 @@
 	import {
 		type CompletionResult,
 		evaluateCompletion,
-		isClaimable
+		isClaimable,
+		isExpandedClaimable
 	} from '$lib/interop/completion/index.js';
 	import type { CannotServe } from '$lib/interop/scenarios/index.js';
 
@@ -90,7 +91,15 @@
 	);
 	const error = $derived(driverError ?? claimErrorForStory);
 
-	const claimable = $derived(result ? isClaimable(result) : false);
+	// A `complete` badge is claimed against the optional sub-meter; base/additive
+	// against the base meter. The tier picks which meter drives claimability and
+	// which numbers ride in the award narrative.
+	const isComplete = $derived(badge.tier === 'complete');
+	const claimable = $derived(
+		result ? (isComplete ? isExpandedClaimable(result) : isClaimable(result)) : false
+	);
+	const tierMet = $derived(result ? (isComplete ? result.optional.met : result.met) : 0);
+	const tierTotal = $derived(result ? (isComplete ? result.optional.total : result.total) : 0);
 	const scenarioCount = $derived(scenariosBehindBadge(badge).length);
 	const newInfo = $derived(prior ? newSince(prior, requirementIdsBehindBadge(badge)) : undefined);
 
@@ -117,8 +126,8 @@
 		handle = startBadgeClaim(
 			badge.slug,
 			{
-				requirementsMet: result.met,
-				requirementsTotal: result.total,
+				requirementsMet: tierMet,
+				requirementsTotal: tierTotal,
 				scenarioCount,
 				claimedAt
 			},
@@ -202,7 +211,7 @@
 		<div class="flex flex-col gap-1">
 			<Button type="button" class="w-fit" onclick={startClaim}>Claim badge</Button>
 			<span class="text-label-md text-muted-foreground">
-				Your required set is complete — claim this badge into your wallet.
+				Your {isComplete ? 'expanded' : 'required'} set is complete — claim this badge into your wallet.
 			</span>
 		</div>
 	{/if}
