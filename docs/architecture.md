@@ -483,6 +483,42 @@ runnable, their `statuses` used a deleted requirement vocabulary, and their
 [`docs/adr/2026-08-13-scenario-run-record-and-completion.md`](adr/2026-08-13-scenario-run-record-and-completion.md)
 (supersedes [`2026-07-11-run-history-v2-flat-record.md`](adr/2026-07-11-run-history-v2-flat-record.md)).
 
+### The export / import bundle
+
+Durability without a server: results survive a cleared browser, move between
+machines, and — later — become the seam an agent drives this suite through.
+
+The bundle is **the two stores verbatim in a thin envelope**, downloaded as
+pretty-printed JSON:
+
+```
+{ format: 'lits.scenario-results', version: 1, exportedAt,
+  results: { [scenarioSlug]: ScenarioRunRecord },   // the run store's map
+  badges: [ BadgeClaimSnapshot ] }                   // the badge store's array
+```
+
+`results` is exactly the run store's map and `badges` exactly the badge store's
+array — **no transformation either way**. Keeping it byte-identical is what
+keeps the deferred agent surface open; a bundle that reshaped a store would have
+to be re-derived every time that store changed. No scenario definitions ride
+along — the `fingerprint` in each record is the link back to the live catalog.
+
+`ResultBundle`, `buildBundle`, `applyBundle`, and `parseBundle` are **pure** and
+live in `interop/scenario-run/bundle.ts`. The one browser-API part —
+`Blob`/`URL` download and file read — is `client/scenario-runs/bundle-io.ts`,
+which reads and writes the two stores through their own APIs (it never touches
+`localStorage` directly).
+
+**Import is per-scenario replacement, incoming copy wins.** Scenarios absent from
+the bundle are untouched; predictability beats cleverness and it needs no
+conflict UI. Incoming records pass through the **same drift rule a read applies**
+(`liveRunRecords`, shared with the run store — one code path, not two), so a
+drifted, unknown-slug, or malformed record simply drops. **Badges merge
+additively** and deduplicate on `(badgeSlug, claimedAt)`: a claim is a historical
+fact, so importing never erases one the local store already holds. A wrong
+`format` or `version` is reported as a clear error rather than silently doing
+nothing.
+
 ### Completion and the meter
 
 `src/lib/interop/completion/` turns stored runs into the numbers the meter

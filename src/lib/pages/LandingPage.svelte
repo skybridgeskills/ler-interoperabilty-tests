@@ -3,12 +3,17 @@
 	import { SvelteSet } from 'svelte/reactivity';
 
 	import { allBadgeClaims } from '$lib/client/badges/index.js';
-	import { allScenarioRuns } from '$lib/client/scenario-runs/index.js';
+	import {
+		allScenarioRuns,
+		exportResults,
+		importResults
+	} from '$lib/client/scenario-runs/index.js';
 	import { selectionStore } from '$lib/client/selection/index.js';
 	import { AdditiveProfileSelector } from '$lib/components/interop/additive-profile-selector/index.js';
 	import { ChecklistRow } from '$lib/components/interop/checklist-row/index.js';
 	import { CompletionGroup } from '$lib/components/interop/completion-group/index.js';
 	import { ProfileSelector } from '$lib/components/interop/profile-selector/index.js';
+	import { ResultsTransfer } from '$lib/components/interop/results-transfer/index.js';
 	import { RoleSelector } from '$lib/components/interop/role-selector/index.js';
 	import {
 		additiveChecklistsForCombination,
@@ -46,11 +51,16 @@
 	let runs = $state<Record<string, ScenarioRunRecord>>({});
 	let claims = $state<BadgeClaimSnapshot[]>([]);
 
+	/** Re-read the persisted stores — on mount, and again after an import. */
+	function reloadResults() {
+		runs = allScenarioRuns();
+		claims = allBadgeClaims();
+	}
+
 	onMount(() => {
 		// All read localStorage — browser only.
 		selectionStore.hydrate();
-		runs = allScenarioRuns();
-		claims = allBadgeClaims();
+		reloadResults();
 	});
 
 	const selection = $derived(selectionStore.selection);
@@ -220,6 +230,8 @@
 			</div>
 		</details>
 	{/if}
+
+	<ResultsTransfer onExport={exportResults} onImport={importResults} onImported={reloadResults} />
 
 	{#if unmigratedCombos.length > 0}
 		<!--

@@ -2,6 +2,8 @@ export * from './evidence.js';
 export * from './automatic-checks.js';
 export * from './requirement-outcome.js';
 export * from './run-record.js';
+export * from './live-records.js';
+export * from './bundle.js';
 export * from './score-answer.js';
 export * from './roll-up.js';
 export * from './shuffle.js';

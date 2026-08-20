@@ -63,6 +63,18 @@ export function recordBadgeClaim(snapshot: BadgeClaimSnapshot): void {
 	localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
 }
 
+/**
+ * Overwrite every persisted claim **verbatim** — the import seam (M9).
+ *
+ * `applyBundle` has already merged the incoming snapshots additively and
+ * deduplicated by `(badgeSlug, claimedAt)`; this writes that result whole. It
+ * keeps the store the sole writer of localStorage even for a bulk replace.
+ */
+export function replaceBadgeClaims(snapshots: BadgeClaimSnapshot[]): void {
+	if (typeof localStorage === 'undefined') return;
+	localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshots));
+}
+
 /** Test seam: remove all persisted claims. */
 export function clearBadgeClaims(): void {
 	if (typeof localStorage === 'undefined') return;

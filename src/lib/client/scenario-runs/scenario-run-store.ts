@@ -1,5 +1,8 @@
-import { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
-import { scenarioBySlug, scenarioFingerprint } from '$lib/interop/scenarios/index.js';
+import {
+	liveRunRecords,
+	type RunRecordMap,
+	ScenarioRunRecord
+} from '$lib/interop/scenario-run/index.js';
 
 /**
  * A new namespace, not a `.v3` of run history — the unit changed from a
@@ -18,7 +21,7 @@ const STORAGE_KEY = 'lits.scenario-runs.v1';
 const LEGACY_KEYS = ['lits.run-history.v2', 'lits.run-history.v1'];
 
 /** A flat map, not an array per bucket — one result per scenario is all the UI wants. */
-type RunMap = Record<string, ScenarioRunRecord>;
+type RunMap = RunRecordMap;
 
 /**
  * Persist a finished run, incrementing `attempts`.
@@ -44,6 +47,18 @@ export function scenarioRunFor(slug: string): ScenarioRunRecord | undefined {
 /** Every stored result, keyed by scenario slug. Drifted and unknown records are already gone. */
 export function allScenarioRuns(): RunMap {
 	return readMap();
+}
+
+/**
+ * Overwrite the entire run map **verbatim** — the import seam (M9).
+ *
+ * Unlike {@link recordScenarioRun}, this does not touch `attempts`: an imported
+ * record's count is a fact carried in from the other machine, not a new run to
+ * increment. Writing the map byte-for-byte is what keeps the bundle a faithful
+ * copy of the store.
+ */
+export function replaceScenarioRuns(map: RunMap): void {
+	writeMap(map);
 }
 
 /** Test seam: remove all persisted results. */
@@ -80,20 +95,10 @@ function readMap(): RunMap {
 	} catch {
 		return {};
 	}
-	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
-
-	const result: RunMap = {};
-	for (const [slug, value] of Object.entries(parsed as Record<string, unknown>)) {
-		const check = ScenarioRunRecord.schema.safeParse(value);
-		if (!check.success) continue;
-
-		const scenario = scenarioBySlug(slug);
-		if (!scenario) continue;
-		if (scenarioFingerprint(scenario) !== check.data.fingerprint) continue;
-
-		result[slug] = check.data;
-	}
-	return result;
+	// One drift rule, shared with M9's import. `liveRunRecords` guards a
+	// non-object payload, drops malformed entries, and drops anything whose
+	// fingerprint or slug no longer matches the live catalog.
+	return liveRunRecords(parsed);
 }
 
 function writeMap(map: RunMap): void {

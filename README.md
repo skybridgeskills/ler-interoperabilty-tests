@@ -147,6 +147,20 @@ one badge is registered, `oid4-wallet`. See
 [`docs/architecture.md`](docs/architecture.md) § Badges and
 [`docs/adr/2026-08-18-badge-award-model.md`](docs/adr/2026-08-18-badge-award-model.md).
 
+## Moving results between machines
+
+Scenario results and badge claims live in this browser's `localStorage`, so they
+don't follow you to another machine on their own. The homepage's **Export /
+import results** control (under your scenario sets) bridges the gap: **Export**
+downloads a pretty-printed JSON bundle of both stores; **Import** reads one back.
+
+Import is **per-scenario replacement, incoming copy wins** — each scenario in the
+file overwrites its local result, scenarios not in the file are left alone, and
+badge claims merge additively (a claim is never erased). Results scored against a
+scenario the catalog has since changed simply drop, exactly as they would on a
+normal read. The bundle carries no scenario definitions; this app is always the
+source of truth.
+
 ## Contributing
 
 - [`docs/style/README.md`](docs/style/README.md) — code conventions
