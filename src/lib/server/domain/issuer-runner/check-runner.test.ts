@@ -53,11 +53,10 @@ const DI_KEY_TYPE_ID =
 	'data-integrity-cryptosuites.issuer.direct-credential-issuance.producer.key-type-matches';
 
 describe('CheckRunner.run', () => {
-	it('reports verified=true and all MUSTs passing for a clean fixture (additive on)', () => {
+	it('reports verified=true and all MUSTs passing for a clean fixture', () => {
 		const report = runner.run({
 			credential: rawScoreFixture,
 			verifierResult: { verified: true, log: [{ id: 'valid_signature', valid: true }] },
-			includeAdditive: true,
 			checklists: [
 				{ groupRef: baseGroupRef, checklist: baseChecklist },
 				{ groupRef: additiveGroupRef, checklist: additiveChecklist }
@@ -78,7 +77,6 @@ describe('CheckRunner.run', () => {
 		const report = runner.run({
 			credential: broken,
 			verifierResult: { verified: true },
-			includeAdditive: false,
 			checklists: [{ groupRef: baseGroupRef, checklist: baseChecklist }]
 		});
 		expect(report.verified).toBe(false);
@@ -97,7 +95,6 @@ describe('CheckRunner.run', () => {
 		const report = runner.run({
 			credential: broken,
 			verifierResult: { verified: true },
-			includeAdditive: true,
 			checklists: [
 				{ groupRef: baseGroupRef, checklist: baseChecklist },
 				{ groupRef: additiveGroupRef, checklist: additiveChecklist }
@@ -114,7 +111,6 @@ describe('CheckRunner.run', () => {
 		const report = runner.run({
 			credential: rawScoreFixture,
 			verifierResult: { verified: true },
-			includeAdditive: false,
 			checklists: [{ groupRef: baseGroupRef, checklist: baseChecklist }]
 		});
 		expect(report.groups).toHaveLength(1);
@@ -141,7 +137,6 @@ describe('CheckRunner.run', () => {
 		const report = runner.run({
 			credential: rawScoreFixture,
 			verifierResult: { verified: true },
-			includeAdditive: false,
 			checklists: [{ groupRef: baseGroupRef, checklist: stubChecklist }]
 		});
 		expect(report.groups[0].outcomes[0].status).toBe('n/a');
@@ -155,7 +150,6 @@ describe('CheckRunner.run', () => {
 		const report = runner.run({
 			credential: rawScoreFixture,
 			verifierResult: { verified: true },
-			includeAdditive: true,
 			checklists: [
 				{ groupRef: baseGroupRef, checklist: baseChecklist },
 				{ groupRef: diGroupRef, checklist: diChecklist }
@@ -179,7 +173,6 @@ describe('CheckRunner.run', () => {
 		const report = runner.run({
 			credential: broken,
 			verifierResult: { verified: true },
-			includeAdditive: true,
 			checklists: [{ groupRef: diGroupRef, checklist: diChecklist }]
 		});
 		const outcome = report.groups[0].outcomes.find((o) => o.id === DI_CRYPTOSUITE_ID);

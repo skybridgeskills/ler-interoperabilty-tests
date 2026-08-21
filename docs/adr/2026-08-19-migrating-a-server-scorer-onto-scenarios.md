@@ -149,3 +149,60 @@ migrated, **`verifier-runner` is now fully dead code** — the standing VCALM +
 OID4 engines, their API routes, and the two legacy page components are swept
 together in M13. M10b, like M10a, deleted only the **route** (no redirect); it did
 not touch the shared engine.
+
+## Amendment (2026-08-21, M11 — the issuer family, third and last)
+
+The issuer family is migrated. It is the pattern's hardest case and it needed no
+new axis, which is the point of recording it here rather than in a second ADR.
+
+**Two engines, not one.** Discovery found the milestone's true surface was
+roughly twice its brief's file list: the paste page is scored by `issuer-runner`
+(`checkRegistry` → `CheckRunner`), while the two live pages are scored by a
+_different_ engine, `wallet-runner/issuer-flow-check.ts`, which is a **shared
+cluster** with the M12 wallet pages exactly as M10a found for the verifier. The
+shape of the answer was unchanged: absorb attestation, port the wire checks, put
+the reusable primitive in a leaf that imports neither engine.
+
+**Absorb attestation.** Seven of the direct page's thirteen rows were hardcoded
+`n/a`. Two — `delivery.downloadable-file` and `delivery.copy-paste-text` — are
+observations of the run the operator just performed, so they became **attested
+affirms and now gate**, where as `n/a` MUSTs they gated nothing. The other five
+are standing properties of the operator's platform (`auth.secure-login`,
+`auth.verify-identity`), a row needing a revocation probe the suite does not run,
+or restatements of the two survivors; they are **dropped**. That is the line this
+ADR draws, stated sharply: _attested re-homes an observation of the run just
+performed; a standing property, or a row needing a probe we do not run, is
+dropped._ The same line dropped `vcalm.*.participation-problemdetails` and
+`…didauth-problemdetails`.
+
+**Port the wire checks.** Six VCALM and eight OID4VCI checks are now pure
+functions over a client-safe `IssuerFlowSummary` produced by a new shared leaf,
+`server/domain/issuer-receive/` — the mirror image of `verifier-present/`, and
+likewise independent of both standing engines. The two live intakes add **no
+protocol code**: they wrap the existing `wallet-client/drivers/*-issuer-flow`
+drivers and project their observations.
+
+**The payload checks are transport-independent, and that is where the leverage
+was.** The received credential rides `StepEvidence.artifact`, not the wire
+summary, so one `credential-*` family (plus one `osa-*` family) serves the paste,
+VCALM and OID4VCI alike. **58 engine rows became 33 checks**, 11 of them shared.
+
+**`warn`/`n/a` resolved at authoring, as this ADR requires.** Four `warn`
+branches became fails (`subject-id-is-email` on a bare email, `di-vp-signing-algs`
+with no bundle alg, `didauth-requested` on a challenge without a
+`DIDAuthentication` query, `ctdl-alignment` off-allowlist or absent) and
+`valid-until` absent became a SHOULD fail on all three. The OSA `n/a`s split two
+ways, and the distinction is worth keeping: an **upstream-missing** passthrough
+resolves to **fail** (the upstream `.present` MUST has already failed, and a green
+row beside a red one misreads), while a rule with **nothing to apply to** — no
+`Percent` rows to bound, no rubric results to level-check — resolves to a
+**vacuous pass**, because nothing violates it.
+
+**One de-duplication.** `oid4.*.tls` and `oid4.*.tls-credential` dispatched to the
+same function over the same probed host; two ids for one fact is a duplicate, not
+coverage, so they are one check whose message names all three endpoints.
+
+**Both issuer engines are now dead code**, joining `verifier-runner` in M13's
+sweep — though `wallet-runner` still serves the three **wallet** pages until M12.
+M11 deleted only the three **routes** (no redirect), the same line M10a and M10b
+held.

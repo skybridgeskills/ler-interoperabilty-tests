@@ -51,9 +51,6 @@ export function IssuerRunner({ verifierClient }: { verifierClient: VerifierCoreC
 		return checkRunner.run({
 			credential: input.credential,
 			verifierResult,
-			// Legacy flag: true when ANY additive is selected. Open-skill checks
-			// gate on it; newer additive checks ignore it (group-level inclusion).
-			includeAdditive: input.additiveProfiles.length > 0,
 			checklists
 		});
 	}

@@ -195,8 +195,15 @@ export function combinationHasScenario(combination: ChecklistCombination): boole
  * scenario belongs to, in first-seen order — so a group renders workflow
  * sub-headings with their rows underneath, never workflow as the top grouping.
  *
- * A `oneOf` group takes the workflow of its first member; its members share a
- * role and workflow by construction.
+ * A `oneOf` group takes the workflow of its **first member**. Its members share
+ * a role, but as of M11 they no longer share a workflow "by construction": the
+ * cross-protocol issuer groups (`osa-issuer-payload`, `dic-issuer-eddsa`,
+ * `dic-issuer-ecdsa`) span `direct-credential-issuance` and
+ * `credential-issuance` on purpose, because the item they measure is about the
+ * payload or the signature and not about the protocol. Such a group therefore
+ * renders under one member's workflow heading, with every member listed inside
+ * it. That is cosmetic and deliberate — noted here rather than worked around,
+ * because grouping is the front page's territory.
  */
 export function obligationsByWorkflow(
 	obligations: ObligationProgress[]

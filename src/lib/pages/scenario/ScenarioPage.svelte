@@ -16,6 +16,7 @@
 
 	import { transportFor } from './exchange-step.js';
 	import PresentField from './PresentField.svelte';
+	import ReceiveField from './ReceiveField.svelte';
 	import { createScenarioRunController } from './scenario-run-controller.svelte.js';
 
 	/**
@@ -71,6 +72,31 @@
 	const activeStep = $derived(scenario.steps.find((s) => s.id === run.activeStepId));
 	const activeIndex = $derived(run.runSteps.findIndex((s) => s.id === run.activeStepId));
 	const deliverableLabel = $derived(activeStep ? run.labelFor(activeStep, activeIndex) : '');
+	/**
+	 * Per-transport copy for the receive field. One field, three pastes: the
+	 * credential itself, a fresh single-use VC-API interaction URL, or a
+	 * pre-authorized-code credential offer.
+	 */
+	const receiveCopy = $derived.by(() => {
+		const transport =
+			activeStep?.action?.kind === 'receive-from-issuer' ? activeStep.action.transport : 'direct';
+		if (transport === 'vcalm') {
+			return {
+				prompt: 'Paste a fresh interaction URL from your issuer',
+				placeholder: 'https://your-issuer.example/exchanges/…'
+			};
+		}
+		if (transport === 'oid4vci') {
+			return {
+				prompt: 'Paste an openid-credential-offer:// URL from your issuer',
+				placeholder: 'openid-credential-offer://?credential_offer_uri=…'
+			};
+		}
+		return {
+			prompt: 'Paste the credential your issuer produced',
+			placeholder: '{ "@context": […], "type": ["VerifiableCredential", "OpenBadgeCredential"], … }'
+		};
+	});
 	const panelData = $derived({
 		intent: (activeStep?.action?.kind === 'request-presentation' ? 'verification' : 'issuance') as
 			| 'issuance'
@@ -140,6 +166,27 @@
 					? 'openid4vp://… (or a request_uri URL or the request JSON)'
 					: 'https://your-verifier.example/interactions/…'}
 				onPresent={(request) => run.present(request)}
+			/>
+		{/if}
+	{:else if activeStep?.action?.kind === 'receive-from-issuer'}
+		<!--
+			The inverse of the present field: the operator's issuer produces the
+			credential and they hand the suite whatever leads to it. Once a credential
+			arrives the step settles, so the field gives way to a confirmation and the
+			questions (if any) take over.
+		-->
+		{#if run.engineStateOf(activeStep.id) === 'settled'}
+			<p class="text-body-md text-muted-foreground">
+				Received the credential from your issuer. Report what it offered below.
+			</p>
+		{:else}
+			<ReceiveField
+				busy={run.receiveBusy}
+				note={run.receiveNote}
+				retry={run.receiveRetry}
+				prompt={receiveCopy.prompt}
+				placeholder={receiveCopy.placeholder}
+				onReceive={(input) => run.receive(input)}
 			/>
 		{/if}
 	{:else if run.link}

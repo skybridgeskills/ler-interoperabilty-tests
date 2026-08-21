@@ -105,3 +105,30 @@ catalog cheap to fix. It is a catalog rule instead.
 - `ScenarioSlug`, `RecipeId` and `RequestId` are validated strings rather than `z.enum`s, unlike
   the existing slug types. An enum maintained in lockstep with a catalog meant to reach dozens of
   entries would be pure duplication; uniqueness is a catalog rule instead.
+
+## Amendment (2026-08-21, M11 — the action union grew a fourth kind)
+
+`ScenarioAction` gained `receive-from-issuer`, under the extension policy this
+ADR sets: a new kind is reviewed once and reusable forever, and is the designed
+alternative to a bespoke page.
+
+**What justified it.** All three issuer pages measure _the operator's issuer
+producing a credential_. That is the inverse of `issue` — where the suite mints
+for the operator's wallet — and no existing kind expressed it. The suite is the
+**recipient**, so there is no recipe: the credential comes from the operator, not
+from us. One kind with a `transport: 'direct' | 'vcalm' | 'oid4vci'` seam rather
+than three kinds, mirroring what `present-to-verifier` did for the verifier side.
+The operator's run-time input differs per transport (a credential JSON, a VC-API
+interaction URL, an `openid-credential-offer://` URL) but that is one paste field
+with different copy, not three actions.
+
+**What it deliberately does not carry.** No `intent`. `IssuingIntent` belongs to
+the actions where the _suite_ mints, and it resolves against the deployment's own
+transaction-service tenant. In an issuer scenario the suite mints nothing: the
+credential's cryptosuite is the operator's choice and is merely _observed_ in
+`proof.cryptosuite`. The one crypto choice the suite does make is its own holder
+key-proof suite, which `wallet-crypto` generates locally and can never be
+unservable — so it is a plain `keyProofSuite` field, not an intent, and needs no
+capability seam. The first genuinely pinned scenario is a **wallet** scenario
+(M12). The field is named and documented to keep a future reader from wiring it
+to `resolveIssuingContext`.

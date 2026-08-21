@@ -315,7 +315,7 @@
 					totals.met,
 					totals.total,
 					sliceRows(slice),
-					'add-on · not counted toward Complete'
+					'add-on'
 				)}
 			{/each}
 		</div>

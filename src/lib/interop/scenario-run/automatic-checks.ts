@@ -1,13 +1,46 @@
+import { credentialDiProofBundle } from './checks/credential-di-proof-bundle.js';
+import { credentialDiProofEcdsa } from './checks/credential-di-proof-ecdsa.js';
+import { credentialDiProofEddsa } from './checks/credential-di-proof-eddsa.js';
+import { credentialIssuerDidMethod } from './checks/credential-issuer-did-method.js';
+import { credentialIssuerDid } from './checks/credential-issuer-did.js';
+import { credentialOb3Type } from './checks/credential-ob3-type.js';
+import { credentialStatusList } from './checks/credential-status-list.js';
+import { credentialSubjectEmail } from './checks/credential-subject-email.js';
+import { credentialValidUntil } from './checks/credential-valid-until.js';
+import { credentialVcdm2 } from './checks/credential-vcdm2.js';
 import { exchangeReachedComplete } from './checks/exchange-reached-complete.js';
 import { holderDidBound } from './checks/holder-did-bound.js';
+import { issuerBindsHolderDid } from './checks/issuer-binds-holder-did.js';
 import { offerWasFetched } from './checks/offer-was-fetched.js';
+import { oid4IssuerCredentialEndpoint } from './checks/oid4-issuer-credential-endpoint.js';
+import { oid4IssuerDiVpAccepted } from './checks/oid4-issuer-di-vp-accepted.js';
+import { oid4IssuerDiVpProofType } from './checks/oid4-issuer-di-vp-proof-type.js';
+import { oid4IssuerDiVpSigningAlgs } from './checks/oid4-issuer-di-vp-signing-algs.js';
+import { oid4IssuerMetadataEndpoint } from './checks/oid4-issuer-metadata-endpoint.js';
+import { oid4IssuerNotJwtOnlyProof } from './checks/oid4-issuer-not-jwt-only-proof.js';
+import { oid4IssuerPreAuthorizedCode } from './checks/oid4-issuer-pre-authorized-code.js';
+import { oid4IssuerTls } from './checks/oid4-issuer-tls.js';
 import { oid4RequestDiVpFormat } from './checks/oid4-request-di-vp-format.js';
 import { oid4RequestEndpoint } from './checks/oid4-request-endpoint.js';
 import { oid4RequestMatchable } from './checks/oid4-request-matchable.js';
 import { oid4RequestTls } from './checks/oid4-request-tls.js';
 import { oid4ResponseEndpoint } from './checks/oid4-response-endpoint.js';
 import { oid4ResponseTls } from './checks/oid4-response-tls.js';
+import { osaAchievedLevelMatches } from './checks/osa-achieved-level-matches.js';
+import { osaCtdlAlignment } from './checks/osa-ctdl-alignment.js';
+import { osaNumericValueInRange } from './checks/osa-numeric-value-in-range.js';
+import { osaPercentValueRange } from './checks/osa-percent-value-range.js';
+import { osaRecognizedResultType } from './checks/osa-recognized-result-type.js';
+import { osaResultDescriptionPresent } from './checks/osa-result-description-present.js';
+import { osaResultLinksDescription } from './checks/osa-result-links-description.js';
+import { osaResultPresent } from './checks/osa-result-present.js';
+import { osaRubricLevelsPresent } from './checks/osa-rubric-levels-present.js';
 import { vcalmInteractionEndpoint } from './checks/vcalm-interaction-endpoint.js';
+import { vcalmIssuerDidauthRequested } from './checks/vcalm-issuer-didauth-requested.js';
+import { vcalmIssuerInteractionUrl } from './checks/vcalm-issuer-interaction-url.js';
+import { vcalmIssuerParticipationEndpoint } from './checks/vcalm-issuer-participation-endpoint.js';
+import { vcalmIssuerTls } from './checks/vcalm-issuer-tls.js';
+import { vcalmIssuerVcapiInProtocols } from './checks/vcalm-issuer-vcapi-in-protocols.js';
 import { vcalmRequestTls } from './checks/vcalm-request-tls.js';
 import { vcalmResponseEndpoint } from './checks/vcalm-response-endpoint.js';
 import { vcalmResponseTls } from './checks/vcalm-response-tls.js';
@@ -65,7 +98,63 @@ export const automaticChecks: Record<string, AutomaticCheck> = {
 	[oid4RequestDiVpFormat.id]: oid4RequestDiVpFormat,
 	[oid4RequestTls.id]: oid4RequestTls,
 	[oid4ResponseTls.id]: oid4ResponseTls,
-	[oid4ResponseEndpoint.id]: oid4ResponseEndpoint
+	[oid4ResponseEndpoint.id]: oid4ResponseEndpoint,
+	// The credential-payload family a `receive-from-issuer` step produces, ported
+	// from the two issuer engines. **Transport-independent by construction**: each
+	// reads the received credential from `StepEvidence.artifact`, never from the
+	// wire summary, which is why one family serves the paste page, VCALM and
+	// OID4VCI alike and why 58 engine rows collapse to 33 checks. Every `warn` and
+	// `n/a` branch the engines carried is resolved at authoring — see each check.
+	[credentialVcdm2.id]: credentialVcdm2,
+	[credentialOb3Type.id]: credentialOb3Type,
+	[credentialSubjectEmail.id]: credentialSubjectEmail,
+	[credentialDiProofEddsa.id]: credentialDiProofEddsa,
+	[credentialDiProofEcdsa.id]: credentialDiProofEcdsa,
+	[credentialDiProofBundle.id]: credentialDiProofBundle,
+	[credentialStatusList.id]: credentialStatusList,
+	[credentialIssuerDid.id]: credentialIssuerDid,
+	[credentialIssuerDidMethod.id]: credentialIssuerDidMethod,
+	[credentialValidUntil.id]: credentialValidUntil,
+	// The VCALM issuer wire, ported from `wallet-runner/checks/vcalm-issuer-flow.ts`
+	// as pure functions over the `receive-from-issuer` step's `issuerFlow` summary.
+	// `interaction-url` and `participation-endpoint` read one driver probe between
+	// them and both say so; `didauth-requested`'s `warn` branch resolves to a fail.
+	[vcalmIssuerInteractionUrl.id]: vcalmIssuerInteractionUrl,
+	[vcalmIssuerParticipationEndpoint.id]: vcalmIssuerParticipationEndpoint,
+	[vcalmIssuerTls.id]: vcalmIssuerTls,
+	[vcalmIssuerVcapiInProtocols.id]: vcalmIssuerVcapiInProtocols,
+	[vcalmIssuerDidauthRequested.id]: vcalmIssuerDidauthRequested,
+	// The OID4VCI issuer wire, ported from `wallet-runner/checks/oid4-issuer-flow.ts`.
+	// `tls` covers the metadata, token and credential endpoints in one row (the
+	// engine's `tls-credential` was the same probe under a second id);
+	// `di-vp-signing-algs`'s `warn` branch resolves to a fail.
+	[oid4IssuerMetadataEndpoint.id]: oid4IssuerMetadataEndpoint,
+	[oid4IssuerDiVpProofType.id]: oid4IssuerDiVpProofType,
+	[oid4IssuerDiVpSigningAlgs.id]: oid4IssuerDiVpSigningAlgs,
+	[oid4IssuerNotJwtOnlyProof.id]: oid4IssuerNotJwtOnlyProof,
+	[oid4IssuerTls.id]: oid4IssuerTls,
+	[oid4IssuerPreAuthorizedCode.id]: oid4IssuerPreAuthorizedCode,
+	[oid4IssuerCredentialEndpoint.id]: oid4IssuerCredentialEndpoint,
+	[oid4IssuerDiVpAccepted.id]: oid4IssuerDiVpAccepted,
+	// Shared by both live issuer transports — it reads two fields present on both
+	// summary variants, so it is registered once and named by both scenarios.
+	[issuerBindsHolderDid.id]: issuerBindsHolderDid,
+	// The Open Skill Alignment payload, ported from
+	// `issuer-runner/checks/open-skill-alignment-issuer.ts`. Transport-independent
+	// like the `credential-*` family, which is what lets one set serve all three
+	// `*-issuer-skills-data` scenarios in a single `oneOf` group. The engine's
+	// `includeAdditive` guard is gone: a scenario either names the additive or does
+	// not. A missing upstream `.present` resolves to a fail; a rule with nothing to
+	// apply to resolves to a vacuous pass — see each check for which and why.
+	[osaResultDescriptionPresent.id]: osaResultDescriptionPresent,
+	[osaRecognizedResultType.id]: osaRecognizedResultType,
+	[osaPercentValueRange.id]: osaPercentValueRange,
+	[osaRubricLevelsPresent.id]: osaRubricLevelsPresent,
+	[osaCtdlAlignment.id]: osaCtdlAlignment,
+	[osaResultPresent.id]: osaResultPresent,
+	[osaResultLinksDescription.id]: osaResultLinksDescription,
+	[osaNumericValueInRange.id]: osaNumericValueInRange,
+	[osaAchievedLevelMatches.id]: osaAchievedLevelMatches
 };
 
 /**

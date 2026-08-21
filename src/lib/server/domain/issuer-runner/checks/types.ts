@@ -5,18 +5,17 @@
  *   defensively narrow what they touch).
  * - `verifierResult` — the result returned by `verifier-core` (lite
  *   shape; full type lives in phase 04's verifier-core-client).
- * - `includeAdditive` — **legacy.** Predates per-additive selection.
- *   Set to `selected.length > 0` (i.e. `true` when ANY additive is
- *   selected) for back-compat with the open-skill-alignment checks,
- *   which still gate on it and return `'n/a'` when off. Newer additive
- *   checks (e.g. data-integrity-cryptosuites) ignore it: their group is
- *   only included when that specific additive is selected, so the guard
- *   is redundant for them.
+ *
+ * There was once an `includeAdditive` flag here, predating per-additive
+ * selection: it was `true` when *any* additive was selected, and the
+ * open-skill-alignment checks gated on it to return `'n/a'` when off. It is gone
+ * (M11) — an additive group is only included when that specific additive is
+ * selected, so the guard decided nothing, and under the scenario model a
+ * scenario either names the additive or does not.
  */
 export type CheckCtx = {
 	credential: unknown;
 	verifierResult: VerifierCoreResultLite;
-	includeAdditive: boolean;
 };
 
 /**

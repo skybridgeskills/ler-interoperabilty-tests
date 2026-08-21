@@ -116,6 +116,29 @@ export const ScenarioAction = ZodFactory(
 			credential: RecipeId.schema,
 			transport: z.enum(['vcalm', 'oid4vp']),
 			tamper: z.enum(['proof', 'claim']).optional()
+		}),
+		/**
+		 * Receive a credential from the operator's **own issuer**. The suite is the
+		 * recipient here — the inverse of `issue`, where the suite mints for the
+		 * operator's wallet. The operator's issuer produces the credential and the
+		 * operator supplies the run-time input on the step: a pasted credential
+		 * (`'direct'`), a VC-API interaction URL (`'vcalm'`), or an
+		 * `openid-credential-offer://` URL (`'oid4vci'`).
+		 *
+		 * `transport` is the seam the intakes slot into. `keyProofSuite` is the
+		 * cryptosuite the **suite's own** test wallet uses for its holder key proof —
+		 * the DIDAuthentication VP (VCALM) or the `di_vp` key proof (OID4VCI). It is
+		 * generated locally by `wallet-crypto` and is therefore always servable; it is
+		 * NOT an `IssuingIntent` and needs no capability resolution. Absent means the
+		 * default (`eddsa-rdfc-2022`); `'direct'` has no key proof and ignores it.
+		 *
+		 * No `credential` field: the credential comes **from** the operator, not from
+		 * a recipe.
+		 */
+		z.object({
+			kind: z.literal('receive-from-issuer'),
+			transport: z.enum(['direct', 'vcalm', 'oid4vci']),
+			keyProofSuite: z.enum(['eddsa-rdfc-2022', 'ecdsa-rdfc-2019']).optional()
 		})
 	])
 );

@@ -1,3 +1,4 @@
+import type { ReceiveFromIssuerResult } from '$lib/server/domain/issuer-receive/index.js';
 import type {
 	PresentToOid4Result,
 	PresentToVcalmResult
@@ -31,6 +32,21 @@ export type PresentFn = (args: {
 }) => Promise<PresentToVcalmResult | PresentToOid4Result>;
 
 /**
+ * Receive one credential from the operator's issuer, for a
+ * `receive-from-issuer` step. `input` is the operator's run-time paste — a
+ * credential JSON for `'direct'`, a VC-API interaction URL for `'vcalm'`, an
+ * `openid-credential-offer://` URL for `'oid4vci'`. `keyProofSuite` is the
+ * cryptosuite the suite's **own** test wallet signs its holder key proof with
+ * (`'direct'` has no key proof and ignores it); it is generated locally, so it
+ * is always servable and is not an `IssuingIntent`.
+ */
+export type ReceiveFn = (args: {
+	transport: 'direct' | 'vcalm' | 'oid4vci';
+	keyProofSuite: WalletCryptosuite;
+	input: string;
+}) => Promise<ReceiveFromIssuerResult>;
+
+/**
  * The scenario-runner's server surface — the scenario actions the transaction
  * service does not mint:
  *
@@ -39,6 +55,9 @@ export type PresentFn = (args: {
  * - **`present`** presents a credential to the operator's verifier for a
  *   `present-to-verifier` step (a live VC-API exchange the *operator* drives);
  *   the suite is the holder.
+ * - **`receive`** receives a credential from the operator's issuer for a
+ *   `receive-from-issuer` step — a paste, or a live exchange the *operator's
+ *   issuer* drives; the suite is the recipient.
  *
  * `issue` and `request-presentation` still flow through the exchange-runner and
  * the transaction service.
@@ -46,4 +65,5 @@ export type PresentFn = (args: {
 export type ScenarioRunner = {
 	deliverDirect: DeliverDirectFn;
 	present: PresentFn;
+	receive: ReceiveFn;
 };

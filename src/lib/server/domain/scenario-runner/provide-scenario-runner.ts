@@ -1,11 +1,23 @@
 import { tamperClaimValue, tamperProofValue } from '$lib/server/domain/credential-tamper/index.js';
 import {
+	receiveDirect,
+	receiveFromOid4Issuer,
+	receiveFromVcalmIssuer,
+	type ReceiveFromIssuerResult
+} from '$lib/server/domain/issuer-receive/index.js';
+import { RealVerifierCoreClient } from '$lib/server/domain/issuer-runner/verifier-core-client.js';
+import {
 	type PresentToOid4Result,
 	type PresentToVcalmResult,
 	presentToOid4Verifier,
 	presentToVcalmVerifier
 } from '$lib/server/domain/verifier-present/index.js';
-import { makeHttpExchangeFlowTransport, probeTls } from '$lib/server/domain/wallet-client/index.js';
+import {
+	makeHttpExchangeFlowTransport,
+	Oid4IssuerFlowDriver,
+	probeTls,
+	VcalmIssuerFlowDriver
+} from '$lib/server/domain/wallet-client/index.js';
 import { WalletCrypto } from '$lib/server/domain/wallet-crypto/index.js';
 
 import type { ScenarioRunner } from './scenario-runner.js';
@@ -36,9 +48,45 @@ export function provideRealScenarioRunner(): { scenarioRunner: ScenarioRunner } 
 							crypto,
 							transport: makeHttpExchangeFlowTransport(),
 							probe: probeTls
-						})
+						}),
+			// One branch per transport, each handed its dependency here rather than
+			// reaching for `appContext()` from inside a leaf — the same discipline
+			// `present` follows with its transport and TLS probe. The two live
+			// branches wrap the **existing** protocol drivers and add no protocol code
+			// of their own. `RealVerifierCoreClient` is reused at this boundary for
+			// the paste intake — it is a client, not a scoring engine, so depending on
+			// it costs the leaves none of their independence from the legacy runners.
+			receive: ({ transport, keyProofSuite, input }) => {
+				if (transport === 'vcalm') {
+					return receiveFromVcalmIssuer({
+						input,
+						keyProofSuite,
+						flow: VcalmIssuerFlowDriver({ crypto, transport: makeHttpExchangeFlowTransport() })
+					});
+				}
+				if (transport === 'oid4vci') {
+					return receiveFromOid4Issuer({
+						input,
+						keyProofSuite,
+						flow: Oid4IssuerFlowDriver({ crypto })
+					});
+				}
+				return receiveDirect({ input, verify: verifyWithVerifierCore });
+			}
 		}
 	};
+}
+
+/** Verify a received credential with `verifier-core`, flattening its log into plain reasons. */
+async function verifyWithVerifierCore(
+	credential: unknown
+): Promise<{ verified: boolean; errors?: string[] }> {
+	const result = await RealVerifierCoreClient().verifyCredential({ credential });
+	if (result.verified) return { verified: true };
+	const failed = (result.log ?? [])
+		.filter((step) => !step.valid)
+		.map((step) => step.error?.name ?? step.id);
+	return { verified: false, ...(failed.length ? { errors: failed } : {}) };
 }
 
 /**
@@ -52,7 +100,11 @@ export function provideRealScenarioRunner(): { scenarioRunner: ScenarioRunner } 
  * un-submitted delivery; OID4VP: `unresolved` fails the request, `jwt-only`
  * pins a JWT-only format, `inline` marks an inline request, `miss` an
  * un-submitted delivery — so route/controller tests can exercise those branches
- * without a network. The real signer's and present paths' honesty contracts are
+ * without a network. `receive` is the issuer-intake equivalent: a delivered,
+ * verified credential unless the input carries `miss` (nothing delivered) or
+ * `unverified` (delivered but rejected by the verifier). The `direct` transport
+ * additionally echoes a pasted credential back rather than the canned one, so a
+ * test can drive the payload checks with whatever shape it needs. The real signer's and present paths' honesty contracts are
  * proven separately (`sign-deliverable.test.ts`,
  * `present-to-{vcalm,oid4}-verifier.test.ts`).
  */
@@ -76,9 +128,164 @@ export function provideFakeScenarioRunner(): { scenarioRunner: ScenarioRunner } 
 				transport,
 				interactionUrl
 			}): Promise<PresentToVcalmResult | PresentToOid4Result> =>
-				transport === 'oid4vp' ? fakeOid4Present(interactionUrl) : fakeVcalmPresent(interactionUrl)
+				transport === 'oid4vp' ? fakeOid4Present(interactionUrl) : fakeVcalmPresent(interactionUrl),
+			receive: async ({ transport, input }): Promise<ReceiveFromIssuerResult> =>
+				fakeReceive(transport, input)
 		}
 	};
+}
+
+/** A well-formed OB3 credential the fake intake hands back, so payload checks have something to read. */
+function fakeReceivedCredential(): Record<string, unknown> {
+	return {
+		'@context': [
+			'https://www.w3.org/ns/credentials/v2',
+			'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'
+		],
+		id: 'urn:uuid:00000000-0000-4000-8000-000000000000',
+		type: ['VerifiableCredential', 'OpenBadgeCredential'],
+		issuer: { id: 'did:web:issuer.example', type: 'Profile', name: 'Fake Issuer' },
+		validFrom: '2026-01-01T00:00:00Z',
+		validUntil: '2027-01-01T00:00:00Z',
+		credentialSubject: {
+			id: 'did:key:zFakeHolder',
+			type: ['AchievementSubject'],
+			achievement: {
+				id: 'urn:uuid:00000000-0000-4000-8000-00000000000a',
+				type: ['Achievement'],
+				name: 'Fake Achievement',
+				criteria: { narrative: 'Did the thing.' },
+				description: 'A fake achievement.'
+			}
+		},
+		credentialStatus: {
+			id: 'https://issuer.example/status/1#7',
+			type: 'BitstringStatusListEntry',
+			statusPurpose: 'revocation',
+			statusListIndex: '7',
+			statusListCredential: 'https://issuer.example/status/1'
+		},
+		proof: {
+			type: 'DataIntegrityProof',
+			cryptosuite: 'eddsa-rdfc-2022',
+			proofPurpose: 'assertionMethod',
+			verificationMethod: 'did:web:issuer.example#key-1',
+			proofValue: `z${'A'.repeat(80)}2`
+		}
+	};
+}
+
+/**
+ * Deterministic fake issuer intake; sentinels in the operator's input drive the
+ * branches, exactly as `fakeVcalmPresent` / `fakeOid4Present` do for the present
+ * side.
+ *
+ * Shared across all three transports: `miss` delivers nothing, `unverified`
+ * delivers a credential the verifier rejected. Per transport —
+ *
+ * - **vcalm**: `no-vcapi` (the interaction advertised no exchange endpoint),
+ *   `no-didauth` (no DIDAuthentication challenge came back), `no-tls` (the
+ *   interaction host did not negotiate TLS 1.2).
+ * - **oid4vci**: `no-metadata` (issuer metadata named no credential endpoint),
+ *   `jwt-only` (only a JWT key-proof type is advertised), `no-bundle-alg`
+ *   (`di_vp` is offered but signs with nothing in the rdfc bundle),
+ *   `token-refused` (the pre-authorized code was not redeemed).
+ *
+ * Any sentinel that blocks the flow also stops delivery, so a fake run reads the
+ * way a real one does.
+ */
+function fakeReceive(
+	transport: 'direct' | 'vcalm' | 'oid4vci',
+	input: string
+): ReceiveFromIssuerResult {
+	const has = (sentinel: string) => input.includes(sentinel);
+	const blocked =
+		has('miss') ||
+		(transport === 'vcalm' && (has('no-vcapi') || has('no-didauth'))) ||
+		(transport === 'oid4vci' && (has('no-metadata') || has('token-refused')));
+	const delivered = !blocked;
+	const verified = delivered && !has('unverified');
+	const common = {
+		verified,
+		...(verified ? {} : { verifyErrors: ['The credential did not verify.'] })
+	};
+	const holder = delivered
+		? { holderDid: 'did:key:zFakeHolder', subjectId: 'did:key:zFakeHolder' }
+		: {};
+
+	if (transport === 'vcalm') {
+		const vcapiAdvertised = !has('no-vcapi');
+		const flow: ReceiveFromIssuerResult['flow'] = {
+			transport: 'vcalm',
+			...common,
+			interactionFetched: true,
+			participationOk: true,
+			vcapiAdvertised,
+			didAuthRequested: vcapiAdvertised && !has('no-didauth'),
+			interactionTls: has('no-tls')
+				? { atLeastTls12: false, error: 'The interaction endpoint negotiated TLSv1.1.' }
+				: { atLeastTls12: true, protocol: 'TLSv1.3' },
+			...holder
+		};
+		return receiveResult(flow, delivered, input);
+	}
+
+	if (transport === 'oid4vci') {
+		const metadataReachable = !has('no-metadata');
+		const diVpOffered = metadataReachable && !has('jwt-only');
+		const diVpSigningAlgs = diVpOffered
+			? has('no-bundle-alg')
+				? ['bbs-2023']
+				: ['eddsa-rdfc-2022']
+			: [];
+		const flow: ReceiveFromIssuerResult['flow'] = {
+			transport: 'oid4vci',
+			...common,
+			metadataReachable,
+			diVpOffered,
+			proofTypesOffered: metadataReachable ? (diVpOffered ? ['di_vp'] : ['jwt']) : [],
+			diVpSigningAlgs,
+			diVpSigningAlgInBundle: diVpSigningAlgs.includes('eddsa-rdfc-2022'),
+			preAuthCodeRedeemed: metadataReachable && !has('token-refused'),
+			credentialDelivered: delivered,
+			...(delivered ? { credentialStatus: 200 } : {}),
+			issuerTls: has('no-tls')
+				? { atLeastTls12: false, error: 'The credential issuer negotiated TLSv1.1.' }
+				: { atLeastTls12: true, protocol: 'TLSv1.3' },
+			...holder
+		};
+		return receiveResult(flow, delivered, input);
+	}
+
+	return receiveResult({ transport: 'direct', ...common }, delivered, input);
+}
+
+/** Assemble the fake's result: a credential when it delivered, a reason when it didn't. */
+function receiveResult(
+	flow: ReceiveFromIssuerResult['flow'],
+	delivered: boolean,
+	input: string
+): ReceiveFromIssuerResult {
+	return {
+		flow,
+		...(delivered ? { credential: pastedCredential(input) ?? fakeReceivedCredential() } : {}),
+		delivered,
+		...(delivered ? {} : { error: { message: 'The issuer delivered no credential.' } })
+	};
+}
+
+/** A JSON object pasted into the input, so a test can drive the payload checks with any shape. */
+function pastedCredential(input: string): Record<string, unknown> | undefined {
+	const text = input.trim();
+	if (!text.startsWith('{')) return undefined;
+	try {
+		const parsed: unknown = JSON.parse(text);
+		return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+			? (parsed as Record<string, unknown>)
+			: undefined;
+	} catch {
+		return undefined;
+	}
 }
 
 /** Deterministic fake VCALM present; sentinels `no-vcapi` / `miss` in the URL drive the branches. */

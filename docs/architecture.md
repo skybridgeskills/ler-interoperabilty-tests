@@ -18,22 +18,33 @@ codebase evolves.
   `scenarioRunner.deliverDirect`, which signs one recipe with an
   ephemeral did:key issuer for a file the operator hands over — and the
   `present-to-verifier` driver `scenarioRunner.present`, which presents a
-  signed recipe to the operator's verifier over a live exchange),
+  signed recipe to the operator's verifier over a live exchange, and the
+  `receive-from-issuer` driver `scenarioRunner.receive`, which takes delivery of
+  a credential the operator's _own_ issuer produced),
   `verifier-present` (the shared holder-side present primitives — one leaf per
   live transport, `present-to-vcalm-verifier` and `present-to-oid4-verifier`,
   each independent of both `scenario-runner` and `verifier-runner`; the OID4
   leaf inspects the pasted authorization request for the floor **and** submits
   the credential in one call, since OID4's floor does not ride on a fetch the
-  way VCALM's does), and `verifier-runner`
+  way VCALM's does), `issuer-receive` (its mirror image — the shared
+  **recipient**-side intake primitives, `receive-direct`,
+  `receive-from-vcalm-issuer` and `receive-from-oid4-issuer`. The two live leaves
+  add no protocol code: they wrap the existing `wallet-client/drivers/*-issuer-flow`
+  drivers and project their observations into a client-safe `IssuerFlowSummary`,
+  independent of `wallet-runner`), and `verifier-runner`
   (the OID4VP/VCALM verifier acceptance engine — acceptance-pass
   generator + scorer, request floors, and present-time delivery; see
   [`adr/2026-07-04-verifier-assessment-model.md`](adr/2026-07-04-verifier-assessment-model.md)).
   **All three verifier pages have now migrated to scenarios** — direct-delivery
   (`ob3-direct-verifier-acceptance`), VCALM
   (`vcalm-verifier-delivery` / `vcalm-verifier-acceptance`), and OID4VP
-  (`oid4-verifier-delivery` / `oid4-verifier-acceptance`, M10b). `verifier-runner`
-  is now **dead code** — the standing VCALM + OID4 engines, their API routes, and
-  the two legacy page components are swept together in M13
+  (`oid4-verifier-delivery` / `oid4-verifier-acceptance`, M10b). **All three
+  issuer pages have too** (M11) — direct-delivery
+  (`ob3-direct-issuer-delivery`), VCALM (`vcalm-issuer-issuance`) and OID4VCI
+  (`oid4-issuer-issuance`), plus nine additive scenarios. `verifier-runner`,
+  `issuer-runner` and `wallet-runner` are now all **dead code** — the standing
+  engines, their API routes, and the legacy page components are swept together in
+  M13; only the three **wallet** pages still run on `wallet-runner` (M12)
   ([`adr/2026-08-19-migrating-a-server-scorer-onto-scenarios.md`](adr/2026-08-19-migrating-a-server-scorer-onto-scenarios.md)).
 
 ## Scenarios
@@ -62,7 +73,7 @@ Four properties are load-bearing:
 - **`workflow` is taxonomy only.** It groups the catalog and never constrains
   what a step's action may do.
 - **`ScenarioAction` is a closed union** (`issue`, `request-presentation`,
-  `deliver-direct`, `present-to-verifier`). Extending it is the only escape
+  `deliver-direct`, `present-to-verifier`, `receive-from-issuer`). Extending it is the only escape
   hatch — a new kind is reviewed once and reusable forever, unlike a bespoke
   page. `issue` and `request-presentation` mint an exchange through the
   transaction service; `deliver-direct` mints none — the suite signs the recipe
@@ -72,10 +83,22 @@ Four properties are load-bearing:
   the operator's own verifier over a live exchange the operator drives (they
   paste the interaction URL / authorization request at run time),
   `transport: 'vcalm' | 'oid4vp'` — both live (see
-  [`adr/2026-08-20-present-to-verifier-action.md`](adr/2026-08-20-present-to-verifier-action.md)).
+  [`adr/2026-08-20-present-to-verifier-action.md`](adr/2026-08-20-present-to-verifier-action.md));
+  `receive-from-issuer` is the inverse of `issue` — the suite is the
+  **recipient**, taking delivery of a credential the operator's own issuer
+  produced, over `transport: 'direct' | 'vcalm' | 'oid4vci'` (a pasted
+  credential, a VC-API interaction URL, an `openid-credential-offer://` URL, all
+  supplied at run time). Its optional `keyProofSuite` is the cryptosuite the
+  **suite's own** test wallet signs its holder key proof with; it is generated
+  locally, is therefore always servable, and is **not** an `IssuingIntent` —
+  nothing in an issuer scenario pins the deployment's crypto axis, because the
+  suite mints nothing.
 - **The level belongs to the membership, not the scenario.** A scenario carries
-  `memberships[]`, each `required | optional | { oneOf }`, exactly one naming a
-  base profile. So a profile is a _derived_ set of memberships
+  `memberships[]`, each `required | optional | additive-only | { oneOf }`,
+  exactly one naming a base profile. `additive-only` is what an additive
+  scenario takes in its base profile: the base names it because that protocol is
+  what the scenario runs over, and claims **none** of it, so add-on work never
+  enters a base profile's Essential or Complete meter. So a profile is a _derived_ set of memberships
   (`membershipsOfProfile`), not a list stored on the profile.
 - **Drift is derived, never declared.** There is no `version` field;
   `scenarioFingerprint()` hashes scoring-relevant content (requirement ids,
@@ -142,6 +165,20 @@ Four behaviours are load-bearing, and each has a test asserting it:
 `RunEvidence` is keyed by step id rather than holding only the current step's,
 so a check **can** read a prior step. Nothing shipped crosses steps yet;
 round-trip will, and the shape admits it without a rewrite.
+
+**`StepEvidence` has one slot per fact, never two.** `artifact` is what actually
+moved — the credential issued, the presentation received, the credential the
+operator's issuer delivered — and `transport` is whether it moved at all. The
+live-transport summaries beside them carry only **wire facts**, each a
+client-safe union discriminated on `transport` with one accessor:
+`VerifierRequestSummary` (`verifierRequestForStep`) for what the operator's
+verifier asked for, and `IssuerFlowSummary` (`issuerFlowForStep`) for what their
+issuer's exchange did. That split is what makes the issuer payload checks
+transport-independent: the `credential-*` and `osa-*` families read `artifact`
+and never the summary, so one family of checks serves a paste, a VC-API exchange
+and an OID4VCI offer alike — which is why 58 engine rows collapsed to 33 checks
+in M11. A summary is **plain data**: it is serialised to the browser, so no
+access token, key or server object may enter one.
 
 A check that cannot be resolved (the catalog names an unregistered `checkId`)
 **fails** rather than throwing — authored data should surface an authoring error,

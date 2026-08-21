@@ -25,8 +25,7 @@ const fail = (message: string): CheckResult => ({ status: 'fail', message });
 export function credCtx(ctx: IssuerFlowCheckCtx): CheckCtx {
 	return {
 		credential: ctx.delivery?.credential,
-		verifierResult: { verified: !!ctx.verify?.verified },
-		includeAdditive: false
+		verifierResult: { verified: !!ctx.verify?.verified }
 	};
 }
 

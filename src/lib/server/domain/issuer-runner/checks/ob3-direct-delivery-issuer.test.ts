@@ -9,8 +9,7 @@ import type { CheckCtx } from './types.js';
 
 const baseCtx = (credential: unknown): CheckCtx => ({
 	credential,
-	verifierResult: { verified: true, log: [{ id: 'valid_signature', valid: true }] },
-	includeAdditive: false
+	verifierResult: { verified: true, log: [{ id: 'valid_signature', valid: true }] }
 });
 
 describe('ob3-direct-delivery issuer checks — happy-path fixtures', () => {

@@ -25,6 +25,7 @@ import {
 } from './exchange-step.js';
 import { nowIso } from './now-iso.js';
 import { startPresentStep } from './present-step.js';
+import { startReceiveStep } from './receive-step.js';
 
 /**
  * Drives one scenario run: the M3 engine, the exchange lifecycle, and when a
@@ -73,6 +74,14 @@ export function createScenarioRunController(
 	 * request came from a prior success anyway.
 	 */
 	let lastPresentRequest = $state<string | undefined>(undefined);
+	/** The active `receive-from-issuer` driver, kept so the paste field can call it. */
+	let receiveDriver: { receive: (input: string) => void; stop: () => void } | undefined;
+	/** Paste-field state for the active receive step: in-flight, an amber miss note, and a retry. */
+	let receiveBusy = $state(false);
+	let receiveNote = $state<string | undefined>(undefined);
+	let receiveRetry = $state(false);
+	/** The active receive step's transport, so the field can pick its copy. */
+	let receiveTransport = $state<'direct' | 'vcalm' | 'oid4vci' | undefined>(undefined);
 
 	const runSteps = $derived(current ? stepsInRunOrder(scenario, current) : scenario.steps);
 	const outcomes = $derived<Record<string, RequirementOutcome>>(
@@ -184,6 +193,28 @@ export function createScenarioRunController(
 			return;
 		}
 
+		// A receive-from-issuer step is the inverse: the operator's issuer produces
+		// the credential, and the step waits for whatever leads the suite to it — a
+		// pasted credential, an interaction URL, an offer URL. A delivery miss stays
+		// in-flight so fresh input can be tried; it settles once a credential arrives.
+		if (step.action.kind === 'receive-from-issuer') {
+			receiveBusy = false;
+			receiveNote = undefined;
+			receiveRetry = false;
+			receiveTransport = step.action.transport;
+			receiveDriver = startReceiveStep(step, {
+				onSettled: (evidence: StepEvidence) => settle(evidence),
+				onMiss: (note: string) => {
+					receiveBusy = false;
+					receiveRetry = true;
+					receiveNote = note;
+				},
+				onFailed: (error: RunnerError) => fail(step.id, error)
+			});
+			handle = receiveDriver;
+			return;
+		}
+
 		const callbacks = {
 			onLink: (l: StepLink) => (link = l),
 			onSettled: (evidence: StepEvidence) => settle(evidence),
@@ -202,6 +233,7 @@ export function createScenarioRunController(
 		handle?.stop();
 		handle = undefined;
 		presentDriver = undefined;
+		receiveDriver = undefined;
 		current = settleStep(scenario, state, evidence.stepId, evidence);
 		advanceIfAnswered();
 	}
@@ -233,6 +265,18 @@ export function createScenarioRunController(
 		presentNote = undefined;
 		if (presentTransport === 'oid4vp') lastPresentRequest = request;
 		presentDriver.present(request);
+	}
+
+	/**
+	 * Receive into the active `receive-from-issuer` step with the operator's
+	 * run-time input. Nothing is remembered across intakes — every engagement is
+	 * fresh, and a reused exchange or offer is single-use anyway.
+	 */
+	function receive(input: string) {
+		if (!receiveDriver || receiveBusy) return;
+		receiveBusy = true;
+		receiveNote = undefined;
+		receiveDriver.receive(input);
 	}
 
 	/** Move on only once the live step has nothing left to ask. */
@@ -318,6 +362,19 @@ export function createScenarioRunController(
 		get presentTransport() {
 			return presentTransport;
 		},
+		get receiveBusy() {
+			return receiveBusy;
+		},
+		get receiveNote() {
+			return receiveNote;
+		},
+		get receiveRetry() {
+			return receiveRetry;
+		},
+		/** The active receive step's transport, so the page can pick the field's copy. */
+		get receiveTransport() {
+			return receiveTransport;
+		},
 		engineStateOf,
 		answerableNow,
 		labelFor,
@@ -325,6 +382,7 @@ export function createScenarioRunController(
 		begin,
 		answer,
 		present,
+		receive,
 		finish,
 		destroy
 	};

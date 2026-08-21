@@ -18,7 +18,19 @@ describe('PoC scenario catalog', () => {
 			'vcalm-verifier-delivery',
 			'vcalm-verifier-acceptance',
 			'oid4-verifier-delivery',
-			'oid4-verifier-acceptance'
+			'oid4-verifier-acceptance',
+			'ob3-direct-issuer-delivery',
+			'vcalm-issuer-issuance',
+			'oid4-issuer-issuance',
+			'ob3-direct-issuer-skills-data',
+			'vcalm-issuer-skills-data',
+			'oid4-issuer-skills-data',
+			'ob3-direct-issuer-eddsa',
+			'vcalm-issuer-eddsa',
+			'oid4-issuer-eddsa',
+			'ob3-direct-issuer-ecdsa',
+			'vcalm-issuer-ecdsa',
+			'oid4-issuer-ecdsa'
 		]);
 		expect(validateCatalog(allScenarios)).toEqual([]);
 	});

@@ -115,9 +115,10 @@ function evaluateAdditiveGroups<Ctx>(
 	const selected = new Set(opts.additiveProfiles ?? []);
 	if (selected.size === 0 || !opts.toCredentialCtx) return [];
 
-	// Force the additive gate on (see CheckCtx.includeAdditive): the group is only built for a
-	// specifically-selected additive, so gating is redundant here but kept for the OSA checks.
-	const credCtx: CheckCtx = { ...opts.toCredentialCtx(ctx), includeAdditive: true };
+	// The group is only built for a specifically-selected additive, so nothing here
+	// needs a further gate. (There used to be an `includeAdditive` flag forced on
+	// at this line; it is gone — see `issuer-runner/checks/types.ts`.)
+	const credCtx: CheckCtx = opts.toCredentialCtx(ctx);
 	if (credCtx.credential === undefined) return []; // no credential yet → pending
 
 	const groups: Group[] = [];

@@ -93,3 +93,19 @@ Aggregation and reporting:
   additive is selected). Group-level inclusion keyed on the specific selected
   additive is precise; the flag is forced on only for back-compat with the OSA
   checks that still read it.
+
+## Amendment (2026-08-21, M11 — superseded for migrated pages)
+
+The mechanism this ADR describes — `runIssuerFlowChecks` reaching into the
+issuer-runner `checkRegistry` to execute additive groups inside an exchange flow —
+is **superseded for any page that has migrated to a scenario**. Under the scenario
+model an additive's work is expressed as memberships: a scenario names the
+additive directly, and there is no cross-engine call to arrange. See
+[2026-08-21 Additive requirements as memberships](./2026-08-21-additive-requirements-as-memberships.md).
+
+It still governs the **standing** engines, which serve the three wallet pages
+until M12 and are deleted in M13. One thing did go early: the legacy
+`CheckCtx.includeAdditive` flag, which this mechanism forced on, is **deleted**.
+It predated per-additive selection and decided nothing — a group was only ever
+built for a specifically-selected additive — so its only live effect was to make
+the open-skill-alignment checks return `n/a` when off.

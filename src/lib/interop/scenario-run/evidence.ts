@@ -94,6 +94,96 @@ export type VerifierPresentResult = {
 	error?: { message: string };
 };
 
+/** Facts common to every issuer intake, whatever the transport. Client-safe. */
+type IssuerFlowCommon = {
+	/** `verifier-core` verified the received credential. */
+	verified: boolean;
+	/** Why it did not verify, when it didn't. */
+	verifyErrors?: string[];
+};
+
+/**
+ * The facts a **direct** (paste) issuer intake observed. There is no wire, so
+ * the only observation beyond the credential itself is whether it verified.
+ */
+export type DirectIntakeSummary = IssuerFlowCommon & { transport: 'direct' };
+
+/**
+ * The facts a **VCALM** `receive-from-issuer` step observed on the wire: the
+ * operator's issuer drove a VC-API exchange, the suite engaged it as holder, and
+ * these are the conformance facts the vcalm issuer checks read. Client-safe.
+ */
+export type VcalmIssuerSummary = IssuerFlowCommon & {
+	transport: 'vcalm';
+	/** The pasted interaction URL resolved and advertised its protocols. */
+	interactionFetched: boolean;
+	/**
+	 * The participation (interaction) endpoint answered. Derived from the same
+	 * single driver probe as {@link VcalmIssuerSummary.interactionFetched} — two
+	 * checklist rows over one observation, and both checks say so.
+	 */
+	participationOk: boolean;
+	/** The advertised protocols included a `vcapi` exchange endpoint. */
+	vcapiAdvertised: boolean;
+	/** The issuer asked the suite to authenticate a DID. */
+	didAuthRequested: boolean;
+	/** A challenge came back but no explicit DIDAuthentication query was in the VPR. */
+	didAuthQueryMissing?: boolean;
+	/** TLS on the interaction host. */
+	interactionTls: TlsSummary;
+	/** The holder DID the suite authenticated with, when it got that far. */
+	holderDid?: string;
+	/** `credentialSubject.id` of the delivered credential, for the binding check. */
+	subjectId?: string;
+};
+
+/**
+ * The facts an **OID4VCI** `receive-from-issuer` step observed: the suite
+ * redeemed the operator's pre-authorized-code offer as a wallet would, and these
+ * are the metadata and endpoint facts the oid4 issuer checks read. Client-safe —
+ * note there is deliberately **no access token here**, only whether one was
+ * redeemed.
+ */
+export type Oid4IssuerSummary = IssuerFlowCommon & {
+	transport: 'oid4vci';
+	/** The issuer's credential-issuer metadata resolved and named a credential endpoint. */
+	metadataReachable: boolean;
+	/** The metadata advertised a `di_vp` key-proof type. */
+	diVpOffered: boolean;
+	/** Key-proof types the issuer metadata advertised, for the message. */
+	proofTypesOffered: string[];
+	/** Signing algorithms the metadata advertised for `di_vp` key proofs. */
+	diVpSigningAlgs: string[];
+	/** At least one advertised `di_vp` signing alg is in the rdfc bundle. */
+	diVpSigningAlgInBundle: boolean;
+	/** The pre-authorized code was exchanged for an access token. */
+	preAuthCodeRedeemed: boolean;
+	/** A credential came back from the credential endpoint. */
+	credentialDelivered: boolean;
+	/** The credential endpoint's HTTP status, when it answered. */
+	credentialStatus?: number;
+	/** TLS on the issuer host — metadata, token and credential endpoints share it. */
+	issuerTls: TlsSummary;
+	/** The holder DID the suite proved possession of, when it got that far. */
+	holderDid?: string;
+	/** `credentialSubject.id` of the delivered credential, for the binding check. */
+	subjectId?: string;
+};
+
+/**
+ * The wire facts a `receive-from-issuer` step observed — a **client-safe,
+ * transport-discriminated union**, exactly as {@link VerifierRequestSummary} is
+ * for `present-to-verifier`. One evidence slot, one accessor
+ * ({@link issuerFlowForStep}); each transport's checks narrow on `transport`
+ * before reading their fields.
+ *
+ * Deliberately **only** the wire facts: the received credential rides the
+ * existing `artifact` slot ("what actually moved") and delivery success/failure
+ * rides the existing `transport` slot, so there is no third place to look for
+ * either.
+ */
+export type IssuerFlowSummary = DirectIntakeSummary | VcalmIssuerSummary | Oid4IssuerSummary;
+
 /**
  * What one step produced, and the only thing an `automatic` check may read.
  *
@@ -116,6 +206,8 @@ export type StepEvidence = {
 	verifierRequest?: VerifierRequestSummary;
 	/** A `present-to-verifier` step's delivery result. The delivery check reads this. */
 	verifierPresent?: VerifierPresentResult;
+	/** A `receive-from-issuer` step's observed wire facts. The issuer checks read this. */
+	issuerFlow?: IssuerFlowSummary;
 };
 
 /**
@@ -178,4 +270,12 @@ export function verifierPresentForStep(
 	stepId: string
 ): VerifierPresentResult | undefined {
 	return evidence.steps[stepId]?.verifierPresent;
+}
+
+/** The wire facts a `receive-from-issuer` step observed, or `undefined`. */
+export function issuerFlowForStep(
+	evidence: RunEvidence,
+	stepId: string
+): IssuerFlowSummary | undefined {
+	return evidence.steps[stepId]?.issuerFlow;
 }

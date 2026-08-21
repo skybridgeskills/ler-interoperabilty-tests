@@ -8,13 +8,14 @@ import type { CheckFn, CheckResult } from './types.js';
  * checklist. Keys match the requirement ids in
  * `src/lib/interop/additive-profiles/open-skill-alignment/issuer-direct-credential-issuance.ts`.
  *
- * Every additive check first guards on `includeAdditive`. When the
- * runner toggle is off, the check returns `'n/a'` so the rows still
- * render but don't mislead.
+ * These checks once guarded on a legacy `includeAdditive` flag, returning `'n/a'`
+ * when the runner toggle was off. That flag is gone (M11): under the scenario
+ * model a scenario either names the additive or does not, and the migrated
+ * `osa-*` checks in `interop/scenario-run/checks/` carry this logic forward. This
+ * engine stays standing until M13.
  */
 export const openSkillAlignmentIssuerChecks: Record<string, CheckFn> = {
-	'open-skill-alignment.result-description.present': ({ credential, includeAdditive }) => {
-		if (!includeAdditive) return additiveOff();
+	'open-skill-alignment.result-description.present': ({ credential }) => {
 		const descriptions = descriptionsOf(credential);
 		if (!descriptions || descriptions.length === 0) {
 			return {
@@ -29,11 +30,7 @@ export const openSkillAlignmentIssuerChecks: Record<string, CheckFn> = {
 		};
 	},
 
-	'open-skill-alignment.result-description.recognized-result-type': ({
-		credential,
-		includeAdditive
-	}) => {
-		if (!includeAdditive) return additiveOff();
+	'open-skill-alignment.result-description.recognized-result-type': ({ credential }) => {
 		const descriptions = descriptionsOf(credential);
 		if (!descriptions || descriptions.length === 0) return passthroughMissing('resultDescription');
 		const recognized = new Set(['RawScore', 'Percent', 'RubricCriterionLevel']);
@@ -52,11 +49,7 @@ export const openSkillAlignmentIssuerChecks: Record<string, CheckFn> = {
 		};
 	},
 
-	'open-skill-alignment.result-description.percent-value-range': ({
-		credential,
-		includeAdditive
-	}) => {
-		if (!includeAdditive) return additiveOff();
+	'open-skill-alignment.result-description.percent-value-range': ({ credential }) => {
 		const descriptions = descriptionsOf(credential);
 		if (!descriptions || descriptions.length === 0) return passthroughMissing('resultDescription');
 		const percents = descriptions.filter((d) => d?.resultType === 'Percent');
@@ -76,11 +69,7 @@ export const openSkillAlignmentIssuerChecks: Record<string, CheckFn> = {
 		};
 	},
 
-	'open-skill-alignment.result-description.rubric-levels-present': ({
-		credential,
-		includeAdditive
-	}) => {
-		if (!includeAdditive) return additiveOff();
+	'open-skill-alignment.result-description.rubric-levels-present': ({ credential }) => {
 		const descriptions = descriptionsOf(credential);
 		if (!descriptions || descriptions.length === 0) return passthroughMissing('resultDescription');
 		const rubrics = descriptions.filter((d) => d?.resultType === 'RubricCriterionLevel');
@@ -102,8 +91,7 @@ export const openSkillAlignmentIssuerChecks: Record<string, CheckFn> = {
 		};
 	},
 
-	'open-skill-alignment.result-description.ctdl-alignment': ({ credential, includeAdditive }) => {
-		if (!includeAdditive) return additiveOff();
+	'open-skill-alignment.result-description.ctdl-alignment': ({ credential }) => {
 		const descriptions = descriptionsOf(credential);
 		if (!descriptions || descriptions.length === 0) return passthroughMissing('resultDescription');
 		const urls = descriptions
@@ -137,8 +125,7 @@ export const openSkillAlignmentIssuerChecks: Record<string, CheckFn> = {
 		};
 	},
 
-	'open-skill-alignment.result.present': ({ credential, includeAdditive }) => {
-		if (!includeAdditive) return additiveOff();
+	'open-skill-alignment.result.present': ({ credential }) => {
 		const results = resultsOf(credential);
 		if (!results || results.length === 0) {
 			return {
@@ -152,8 +139,7 @@ export const openSkillAlignmentIssuerChecks: Record<string, CheckFn> = {
 		};
 	},
 
-	'open-skill-alignment.result.links-description': ({ credential, includeAdditive }) => {
-		if (!includeAdditive) return additiveOff();
+	'open-skill-alignment.result.links-description': ({ credential }) => {
 		const results = resultsOf(credential);
 		const descriptions = descriptionsOf(credential);
 		if (!results || results.length === 0) return passthroughMissing('result');
@@ -171,8 +157,7 @@ export const openSkillAlignmentIssuerChecks: Record<string, CheckFn> = {
 		return { status: 'pass', message: 'Every result links to a declared resultDescription.' };
 	},
 
-	'open-skill-alignment.result.numeric-value-in-range': ({ credential, includeAdditive }) => {
-		if (!includeAdditive) return additiveOff();
+	'open-skill-alignment.result.numeric-value-in-range': ({ credential }) => {
 		const results = resultsOf(credential);
 		const descriptions = descriptionsOf(credential);
 		if (!results || results.length === 0) return passthroughMissing('result');
@@ -227,8 +212,7 @@ export const openSkillAlignmentIssuerChecks: Record<string, CheckFn> = {
 		};
 	},
 
-	'open-skill-alignment.result.achieved-level-matches': ({ credential, includeAdditive }) => {
-		if (!includeAdditive) return additiveOff();
+	'open-skill-alignment.result.achieved-level-matches': ({ credential }) => {
 		const results = resultsOf(credential);
 		const descriptions = descriptionsOf(credential);
 		if (!results || results.length === 0) return passthroughMissing('result');
@@ -278,8 +262,7 @@ export const openSkillAlignmentIssuerChecks: Record<string, CheckFn> = {
 		};
 	},
 
-	'open-skill-alignment.result.alignment-optional': ({ credential, includeAdditive }) => {
-		if (!includeAdditive) return additiveOff();
+	'open-skill-alignment.result.alignment-optional': ({ credential }) => {
 		const results = resultsOf(credential);
 		if (!results || results.length === 0) return passthroughMissing('result');
 		const withAlignment = results.filter(
@@ -299,10 +282,6 @@ export const openSkillAlignmentIssuerChecks: Record<string, CheckFn> = {
 };
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-
-function additiveOff(): CheckResult {
-	return { status: 'n/a', message: 'Additive profile not selected.' };
-}
 
 function passthroughMissing(field: 'resultDescription' | 'result'): CheckResult {
 	return {

@@ -1,11 +1,25 @@
 import { assertValidCatalog } from './catalog-validation.js';
+import {
+	ob3DirectIssuerEcdsa,
+	ob3DirectIssuerEddsa,
+	oid4IssuerEcdsa,
+	oid4IssuerEddsa,
+	vcalmIssuerEcdsa,
+	vcalmIssuerEddsa
+} from './issuer-dic-producer.js';
+import { ob3DirectIssuerDelivery } from './ob3-direct-issuer-delivery.js';
+import { ob3DirectIssuerSkillsData } from './ob3-direct-issuer-skills-data.js';
 import { ob3DirectVerifierAcceptance } from './ob3-direct-verifier-acceptance.js';
+import { oid4IssuerIssuance } from './oid4-issuer-issuance.js';
+import { oid4IssuerSkillsData } from './oid4-issuer-skills-data.js';
 import { oid4VerifierAcceptance } from './oid4-verifier-acceptance.js';
 import { oid4VerifierDelivery } from './oid4-verifier-delivery.js';
 import { oid4WalletAcceptance } from './oid4-wallet-acceptance.js';
 import { oid4WalletFaithfulRendering } from './oid4-wallet-faithful-rendering.js';
 import { oid4WalletRefusalDiscrimination } from './oid4-wallet-refusal-discrimination.js';
 import type { Scenario } from './scenario-schema.js';
+import { vcalmIssuerIssuance } from './vcalm-issuer-issuance.js';
+import { vcalmIssuerSkillsData } from './vcalm-issuer-skills-data.js';
 import { vcalmVerifierAcceptance } from './vcalm-verifier-acceptance.js';
 import { vcalmVerifierDelivery } from './vcalm-verifier-delivery.js';
 
@@ -32,7 +46,19 @@ export const allScenarios: Scenario[] = [
 	vcalmVerifierDelivery,
 	vcalmVerifierAcceptance,
 	oid4VerifierDelivery,
-	oid4VerifierAcceptance
+	oid4VerifierAcceptance,
+	ob3DirectIssuerDelivery,
+	vcalmIssuerIssuance,
+	oid4IssuerIssuance,
+	ob3DirectIssuerSkillsData,
+	vcalmIssuerSkillsData,
+	oid4IssuerSkillsData,
+	ob3DirectIssuerEddsa,
+	vcalmIssuerEddsa,
+	oid4IssuerEddsa,
+	ob3DirectIssuerEcdsa,
+	vcalmIssuerEcdsa,
+	oid4IssuerEcdsa
 ];
 
 // Fail loudly at import rather than rendering a meter whose denominator is

@@ -134,7 +134,12 @@ async function createExchange(
 	onFailed: (error: RunnerError) => void
 ): Promise<CreateExchangeBody | undefined> {
 	const action = step.action;
-	if (!action || action.kind === 'deliver-direct' || action.kind === 'present-to-verifier') {
+	if (
+		!action ||
+		action.kind === 'deliver-direct' ||
+		action.kind === 'present-to-verifier' ||
+		action.kind === 'receive-from-issuer'
+	) {
 		onFailed({ message: `Step "${step.id}" has no exchange to create.` });
 		return undefined;
 	}

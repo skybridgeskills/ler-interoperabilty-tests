@@ -32,8 +32,7 @@ const step1Ran = (ctx: Oid4IssuerFlowObservations) => ctx.offerUrl !== undefined
 export function credCtx(ctx: Oid4IssuerFlowObservations): CheckCtx {
 	return {
 		credential: ctx.delivery?.credential,
-		verifierResult: { verified: !!ctx.verify?.verified },
-		includeAdditive: false
+		verifierResult: { verified: !!ctx.verify?.verified }
 	};
 }
 

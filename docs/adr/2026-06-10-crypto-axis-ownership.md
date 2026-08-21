@@ -72,3 +72,31 @@ shared additive (which also matches vcalm) and never in `profiles/vcalm/*`
 - A future alternative-key-proof bundle (e.g. JWT) would be a new additive plus
   transaction-service support (per-exchange `proof_types_supported` + jwt proof
   handling) — a separate plan.
+
+## Amendment (2026-08-21, M11 — the producer axis is now scored per suite)
+
+The ownership split this ADR sets is unchanged. What changed is that the
+cryptosuite axis is now **measured**, on the producer side, through
+`data-integrity-cryptosuites` memberships rather than checklist rows.
+
+- **Producer, per suite.** Six issuer scenarios — one per (protocol × suite) —
+  form two cross-protocol `oneOf` groups, `dic-issuer-eddsa` and
+  `dic-issuer-ecdsa`. The additive's issuer card therefore carries two
+  obligations, each satisfiable over any one protocol. This is decomposition of
+  checks that already ran, not new measurement: `producer.cryptosuite-supported`
+  and each base scenario's own `di-proof` row already asserted it.
+- **The producer floor stays on the base profile**, exactly as this ADR has it:
+  "signed with a bundle suite" is a `required` row on each base scenario
+  (`credential-di-proof-bundle` on the live pages, `credential-di-proof-eddsa` on
+  the direct one). The additive answers _which_ suite, not _whether_.
+- **The consumer half is deferred.** "Your issuer verifies our DIDAuth /
+  `di_vp` key proof in every supported suite" — `consumer.verify-vp-all` and
+  `consumer.resolve-holder-dids` — is **unscored today** (no check was ever
+  registered for it) and stays unscored. It needs a per-suite key-proof run and
+  is entangled with the wallet-side present axis, so it belongs to the M15
+  sibling effort, which can see issuer, wallet and verifier at once.
+- **Two producer ids stay unmeasured, deliberately.** `producer.key-type-matches`
+  needs DID resolution and has never been registered. `producer.proof-purpose` is
+  `assertionMethod` by construction on an issuer's credential proof, so nothing
+  observed would ever fail it. Recorded here so the absence does not read as
+  coverage.

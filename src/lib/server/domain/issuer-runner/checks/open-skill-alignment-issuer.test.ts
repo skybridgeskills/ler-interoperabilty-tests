@@ -9,13 +9,7 @@ import type { CheckCtx } from './types.js';
 
 const ctxOn = (credential: unknown): CheckCtx => ({
 	credential,
-	verifierResult: { verified: true, log: [{ id: 'valid_signature', valid: true }] },
-	includeAdditive: true
-});
-
-const ctxOff = (credential: unknown): CheckCtx => ({
-	...ctxOn(credential),
-	includeAdditive: false
+	verifierResult: { verified: true, log: [{ id: 'valid_signature', valid: true }] }
 });
 
 describe('open-skill-alignment — happy-path fixtures', () => {
@@ -71,14 +65,11 @@ describe('open-skill-alignment — happy-path fixtures', () => {
 	});
 });
 
-describe('open-skill-alignment — additive toggle off', () => {
-	it('returns n/a on every additive check when includeAdditive=false', () => {
-		const ctx = ctxOff(rawScoreFixture);
-		for (const fn of Object.values(openSkillAlignmentIssuerChecks)) {
-			expect(fn(ctx).status).toBe('n/a');
-		}
-	});
-});
+// The `includeAdditive` toggle is gone (M11): a group is only built for a
+// specifically-selected additive, so the flag decided nothing. Its cases went
+// with it; every other case in this file still guards the standing engine, and
+// the migrated `osa-*` checks carry them forward in
+// `interop/scenario-run/checks/osa-checks.test.ts`.
 
 describe('open-skill-alignment — rejection cases', () => {
 	it('fails when resultDescription[] is empty', () => {

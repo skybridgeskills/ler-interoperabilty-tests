@@ -17,7 +17,6 @@ export type ChecklistInput = {
 export type CheckRunnerInput = {
 	credential: unknown;
 	verifierResult: VerifierCoreResultLite;
-	includeAdditive: boolean;
 	checklists: ChecklistInput[];
 };
 
@@ -73,8 +72,7 @@ function evaluate(
 	}
 	const { status, message } = fn({
 		credential: input.credential,
-		verifierResult: input.verifierResult,
-		includeAdditive: input.includeAdditive
+		verifierResult: input.verifierResult
 	});
 	return { id: req.id!, level: req.level, status, message };
 }
