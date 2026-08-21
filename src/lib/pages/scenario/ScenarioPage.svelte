@@ -131,7 +131,15 @@
 				busy={run.presentBusy}
 				note={run.presentNote}
 				retry={run.presentRetry}
-				onPresent={(url) => run.present(url)}
+				canReuse={run.presentCanReuse}
+				lastRequest={run.presentLastRequest}
+				prompt={activeStep.action.transport === 'oid4vp'
+					? 'Paste a presentation request from your verifier'
+					: 'Paste a fresh interaction URL from your verifier'}
+				placeholder={activeStep.action.transport === 'oid4vp'
+					? 'openid4vp://… (or a request_uri URL or the request JSON)'
+					: 'https://your-verifier.example/interactions/…'}
+				onPresent={(request) => run.present(request)}
 			/>
 		{/if}
 	{:else if run.link}

@@ -37,7 +37,7 @@ export const POST = async ({ request }: { request: Request }) => {
 			{
 				code: 400,
 				message: 'Unrecognised present request',
-				hint: 'Send { credential, interactionUrl, transport: "vcalm", tamper? }.'
+				hint: 'Send { credential, interactionUrl, transport: "vcalm" | "oid4vp", tamper? }.'
 			},
 			{ status: 400 }
 		);

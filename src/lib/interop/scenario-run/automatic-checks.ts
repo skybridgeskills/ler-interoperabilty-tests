@@ -1,6 +1,12 @@
 import { exchangeReachedComplete } from './checks/exchange-reached-complete.js';
 import { holderDidBound } from './checks/holder-did-bound.js';
 import { offerWasFetched } from './checks/offer-was-fetched.js';
+import { oid4RequestDiVpFormat } from './checks/oid4-request-di-vp-format.js';
+import { oid4RequestEndpoint } from './checks/oid4-request-endpoint.js';
+import { oid4RequestMatchable } from './checks/oid4-request-matchable.js';
+import { oid4RequestTls } from './checks/oid4-request-tls.js';
+import { oid4ResponseEndpoint } from './checks/oid4-response-endpoint.js';
+import { oid4ResponseTls } from './checks/oid4-response-tls.js';
 import { vcalmInteractionEndpoint } from './checks/vcalm-interaction-endpoint.js';
 import { vcalmRequestTls } from './checks/vcalm-request-tls.js';
 import { vcalmResponseEndpoint } from './checks/vcalm-response-endpoint.js';
@@ -48,7 +54,18 @@ export const automaticChecks: Record<string, AutomaticCheck> = {
 	[vcalmVprDidauth.id]: vcalmVprDidauth,
 	[vcalmRequestTls.id]: vcalmRequestTls,
 	[vcalmResponseTls.id]: vcalmResponseTls,
-	[vcalmResponseEndpoint.id]: vcalmResponseEndpoint
+	[vcalmResponseEndpoint.id]: vcalmResponseEndpoint,
+	// The OID4VP verifier floor + delivery, ported from the verifier-runner oid4
+	// engine as pure functions over a `present-to-verifier` step's request/present
+	// evidence. di-vp-format fails only on a JWT-only request; request-tls reads an
+	// inline request as met (SHOULD); nonce-freshness is intentionally absent (a
+	// future expanded-set candidate — see the M10b notes).
+	[oid4RequestEndpoint.id]: oid4RequestEndpoint,
+	[oid4RequestMatchable.id]: oid4RequestMatchable,
+	[oid4RequestDiVpFormat.id]: oid4RequestDiVpFormat,
+	[oid4RequestTls.id]: oid4RequestTls,
+	[oid4ResponseTls.id]: oid4ResponseTls,
+	[oid4ResponseEndpoint.id]: oid4ResponseEndpoint
 };
 
 /**

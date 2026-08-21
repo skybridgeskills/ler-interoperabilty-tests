@@ -11,14 +11,12 @@ export type TlsSummary = {
 };
 
 /**
- * The facts a `present-to-verifier` step observed while engaging the operator's
- * verifier — the request half. A **client-safe** summary (plain data, no server
- * types): the present route on the server derives it from the live exchange and
- * hands it back, and the vcalm floor `automatic` checks read it. Absent fields
- * are not "false" — the whole summary is absent until the step presents.
+ * The facts a **VCALM** `present-to-verifier` step observed — its request half.
+ * A **client-safe** summary (plain data, no server types): the present route
+ * derives it from the live VC-API exchange, and the vcalm floor `automatic`
+ * checks read it.
  */
-export type VerifierRequestSummary = {
-	/** Which live transport engaged the verifier. `'oid4vp'` arrives in M10b. */
+export type VcalmRequestSummary = {
 	transport: 'vcalm';
 	/** The interaction URL advertised a `vcapi` exchange endpoint. */
 	vcapiAdvertised: boolean;
@@ -35,6 +33,53 @@ export type VerifierRequestSummary = {
 	/** TLS on the `vcapi` host. */
 	responseTls: TlsSummary;
 };
+
+/**
+ * The facts an **OID4VP** `present-to-verifier` step observed while inspecting
+ * the pasted authorization request — its request half (the floor). Client-safe;
+ * the present leaf computes each field, and the oid4 floor `automatic` checks
+ * read them. Unlike VCALM (whose floor rides on a VC-API fetch), the OID4 floor
+ * comes from inspecting the pasted `openid4vp://` request in the same present.
+ */
+export type Oid4RequestSummary = {
+	transport: 'oid4vp';
+	/** How the pasted input carried the request. */
+	requestForm: 'inline' | 'by-reference';
+	/**
+	 * The request parsed **and** validated as an OID4VP authorization request
+	 * (the request-endpoint row). `false` means the paste was a link/JSON that
+	 * failed the OID4VP shape or a by-reference fetch failed — scored, not thrown.
+	 */
+	requestResolved: boolean;
+	/** The `presentation_definition` matched a seeded OpenBadgeCredential. */
+	matchable: boolean;
+	/** Why the presentation definition did not match, when it didn't. */
+	matchReason?: string;
+	/**
+	 * DI VP format posture. `di` = a `ldp_vp`/`di_vp` format is pinned; `jwt-only`
+	 * = only JWT formats are declared (a DI-proof OB3 cannot be presented — fails);
+	 * `unpinned` = nothing, or a mixed non-JWT set, is declared (passes — don't
+	 * over-fail a lenient verifier).
+	 */
+	diVpFormat: 'di' | 'jwt-only' | 'unpinned';
+	/**
+	 * TLS on the request endpoint. For an **inline** request there is no endpoint,
+	 * so the leaf writes a synthetic met summary — the SHOULD check reads inline
+	 * as met (nothing to fault).
+	 */
+	requestTls: TlsSummary;
+	/** TLS on the `response_uri` endpoint (always present — the credential's transport). */
+	responseTls: TlsSummary;
+};
+
+/**
+ * The request half a `present-to-verifier` step observed — a **client-safe,
+ * transport-discriminated union**. One evidence slot, one accessor
+ * ({@link verifierRequestForStep}); each transport's checks narrow on
+ * `transport` before reading their fields. The whole summary is absent until the
+ * step presents.
+ */
+export type VerifierRequestSummary = VcalmRequestSummary | Oid4RequestSummary;
 
 /**
  * The delivery half of a `present-to-verifier` step: did the signed credential

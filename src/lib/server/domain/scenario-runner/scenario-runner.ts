@@ -1,4 +1,7 @@
-import type { PresentToVcalmResult } from '$lib/server/domain/verifier-present/index.js';
+import type {
+	PresentToOid4Result,
+	PresentToVcalmResult
+} from '$lib/server/domain/verifier-present/index.js';
 import type { WalletCryptosuite } from '$lib/server/domain/wallet-crypto/index.js';
 
 /**
@@ -15,16 +18,17 @@ export type DeliverDirectFn = (args: {
 /**
  * Present one recipe credential to the operator's verifier over a live exchange,
  * for a `present-to-verifier` step. The suite is the holder; `interactionUrl` is
- * the operator's run-time input. `transport` is the seam OID4VP slots into
- * (M10b); M10a serves `'vcalm'` only.
+ * the operator's run-time input (a VC-API interaction URL for `'vcalm'`, or a
+ * pasted OID4VP authorization request for `'oid4vp'`). `transport` is the seam
+ * the live transports slot into — `'vcalm'` (M10a) and `'oid4vp'` (M10b).
  */
 export type PresentFn = (args: {
 	doc: Record<string, unknown>;
 	cryptosuite: WalletCryptosuite;
 	tamper?: 'proof' | 'claim';
-	transport: 'vcalm';
+	transport: 'vcalm' | 'oid4vp';
 	interactionUrl: string;
-}) => Promise<PresentToVcalmResult>;
+}) => Promise<PresentToVcalmResult | PresentToOid4Result>;
 
 /**
  * The scenario-runner's server surface — the scenario actions the transaction

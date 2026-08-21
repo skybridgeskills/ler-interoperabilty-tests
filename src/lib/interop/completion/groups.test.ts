@@ -39,11 +39,13 @@ function fullRun(slug: string): ScenarioRunRecord {
 describe('completionGroups', () => {
 	it('emits a group only for a (profile, role) that has scenarios', () => {
 		const groups = completionGroups({ runs: {} });
-		// vcalm × verifier (M10a), oid4 × wallet from the PoC, and the migrated
-		// ob3-direct-delivery × verifier (M10) — profile-major, in allProfiles order.
+		// vcalm × verifier (M10a), oid4 × wallet (PoC) + oid4 × verifier (M10b), and
+		// the migrated ob3-direct-delivery × verifier (M10) — profile-major, in
+		// allProfiles order.
 		expect(groups.map((g) => `${g.profileSlug}:${g.roleSlug}`)).toEqual([
 			'vcalm:verifier',
 			'oid4:wallet',
+			'oid4:verifier',
 			'ob3-direct-delivery:verifier'
 		]);
 	});
@@ -71,7 +73,8 @@ describe('completionGroupsForProfile', () => {
 			profileName: 'OID4',
 			runs: {}
 		});
-		expect(groups.map((g) => g.roleSlug)).toEqual(['wallet']);
+		// oid4 now spans both roles: wallet (PoC) and verifier (M10b).
+		expect(groups.map((g) => g.roleSlug)).toEqual(['wallet', 'verifier']);
 	});
 
 	it('scopes vcalm to its verifier scenarios', () => {

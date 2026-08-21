@@ -64,6 +64,15 @@ export function createScenarioRunController(
 	let presentBusy = $state(false);
 	let presentNote = $state<string | undefined>(undefined);
 	let presentRetry = $state(false);
+	/** The active present step's transport, so the field can offer the OID4VP reuse affordance. */
+	let presentTransport = $state<'vcalm' | 'oid4vp' | undefined>(undefined);
+	/**
+	 * The last request an OID4VP present used, persisted across steps so a later
+	 * pass can reuse it (VCALM exchanges are single-use, so this never applies to
+	 * them). Set when a present is initiated, not just on success — a reused
+	 * request came from a prior success anyway.
+	 */
+	let lastPresentRequest = $state<string | undefined>(undefined);
 
 	const runSteps = $derived(current ? stepsInRunOrder(scenario, current) : scenario.steps);
 	const outcomes = $derived<Record<string, RequirementOutcome>>(
@@ -161,6 +170,7 @@ export function createScenarioRunController(
 			presentBusy = false;
 			presentNote = undefined;
 			presentRetry = false;
+			presentTransport = step.action.transport;
 			presentDriver = startPresentStep(step, {
 				onSettled: (evidence: StepEvidence) => settle(evidence),
 				onMiss: (note: string) => {
@@ -212,12 +222,17 @@ export function createScenarioRunController(
 		advanceIfAnswered();
 	}
 
-	/** Present the active `present-to-verifier` step with the operator's pasted URL. */
-	function present(interactionUrl: string) {
+	/**
+	 * Present the active `present-to-verifier` step with the operator's pasted
+	 * request (or, for OID4VP, a reused prior request the field chose). Remember
+	 * it so a later OID4VP pass can offer to reuse it.
+	 */
+	function present(request: string) {
 		if (!presentDriver || presentBusy) return;
 		presentBusy = true;
 		presentNote = undefined;
-		presentDriver.present(interactionUrl);
+		if (presentTransport === 'oid4vp') lastPresentRequest = request;
+		presentDriver.present(request);
 	}
 
 	/** Move on only once the live step has nothing left to ask. */
@@ -290,6 +305,18 @@ export function createScenarioRunController(
 		},
 		get presentRetry() {
 			return presentRetry;
+		},
+		/** OID4VP only: a prior request exists to offer for reuse on this present step. */
+		get presentCanReuse() {
+			return presentTransport === 'oid4vp' && lastPresentRequest !== undefined;
+		},
+		/** The prior request to reuse, when `presentCanReuse`. */
+		get presentLastRequest() {
+			return lastPresentRequest;
+		},
+		/** The active present step's transport, so the page can pick the field's copy. */
+		get presentTransport() {
+			return presentTransport;
 		},
 		engineStateOf,
 		answerableNow,

@@ -12,6 +12,8 @@ export const vcalmVprDidauth: AutomaticCheck = {
 	run: ({ stepId, evidence }) => {
 		const request = verifierRequestForStep(evidence, stepId);
 		if (!request) return { met: false, detail: 'This step did not present to a verifier.' };
+		if (request.transport !== 'vcalm')
+			return { met: false, detail: 'This step did not present over VCALM.' };
 		return request.didAuth
 			? { met: true, detail: 'The presentation request includes a DIDAuthentication query.' }
 			: {

@@ -103,3 +103,45 @@ evidence fields.**
   this action" phase in the pure engine. Rejected as unnecessary: the
   discovery pass found the input is a client-driver concern; the pure model
   only needs to carry the resulting evidence.
+
+## Amendment (2026-08-20, M10b — OID4VP transport)
+
+M10b added `transport: 'oid4vp'` to the seam this ADR established, migrating the
+last live verifier page (`oid4-verifier-delivery` / `oid4-verifier-acceptance`).
+The predictions above held: the action shape, step-driver, paste-field pattern,
+and evidence fields were unchanged; the new work was a second present leaf
+(`present-to-oid4-verifier.ts`) and its summary builder. Three decisions specific
+to OID4 are recorded here:
+
+- **`VerifierRequestSummary` became a transport-discriminated union**
+  (`VcalmRequestSummary | Oid4RequestSummary` on `transport`), not a superset with
+  optional fields. The two protocols' floor facts barely overlap (only TLS), so a
+  union gives each check exact, non-optional fields with compile-time safety; it
+  is still one type, one `StepEvidence.verifierRequest` slot, and one
+  `verifierRequestForStep` accessor — not a fork. Each transport's checks narrow
+  on `transport` before reading their fields.
+
+- **Inspect folds into the present.** OID4's floor comes from inspecting the
+  pasted authorization request, not from a fetch the way VCALM's rides on a VC-API
+  exchange. Rather than add a separate `inspect` action/step, the OID4 present leaf
+  does both in one call — it inspects the request (the five floor facts) and
+  submits a valid control (delivery) — returning the same `{ request, present }`
+  shape. No new primitive; the delivery scenario reads both halves, the acceptance
+  scenario only whether the submission landed.
+
+- **The floor's soft branches resolve at authoring**, since the automatic model
+  has no `warn`/`n/a`: `request-di-vp-format` stays a MUST but fails **only** on a
+  JWT-only request (a DI-proof OB3 cannot be presented there — the sole genuine
+  interop-breaker; a request that declares nothing or a mixed non-JWT set passes);
+  `request-tls` is demoted to a **SHOULD** with an inline request reading as met
+  (no request endpoint to fault — the credential's real transport is the
+  `response_uri`, a MUST `response-tls`); and `nonceFreshness` is **dropped** from
+  the happy-path floor (a soft, by-reference-only replay heuristic — a candidate
+  expanded-set check for the future, not built).
+
+- **Intake boundary: throw vs score.** A blank / non-link / non-JSON paste throws
+  `PresentInputError` (→ 400, operator re-pastes); a paste that reads as a
+  link/JSON but fails the OID4VP shape, or a by-reference fetch that fails, is
+  **scored** (`requestResolved: false`, present skipped). In the delivery scenario
+  the scored miss surfaces as a clear retryable amber note with the six rows held
+  at WAITING — better UX for a paste error than ending the run.

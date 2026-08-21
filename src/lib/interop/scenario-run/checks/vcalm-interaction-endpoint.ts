@@ -14,6 +14,8 @@ export const vcalmInteractionEndpoint: AutomaticCheck = {
 	run: ({ stepId, evidence }) => {
 		const request = verifierRequestForStep(evidence, stepId);
 		if (!request) return { met: false, detail: 'This step did not present to a verifier.' };
+		if (request.transport !== 'vcalm')
+			return { met: false, detail: 'This step did not present over VCALM.' };
 		return request.vcapiAdvertised
 			? { met: true, detail: 'The interaction URL advertised a `vcapi` exchange endpoint.' }
 			: {

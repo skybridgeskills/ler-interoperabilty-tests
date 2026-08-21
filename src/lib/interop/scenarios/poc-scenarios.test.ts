@@ -16,7 +16,9 @@ describe('PoC scenario catalog', () => {
 			'oid4-wallet-faithful-rendering',
 			'ob3-direct-verifier-acceptance',
 			'vcalm-verifier-delivery',
-			'vcalm-verifier-acceptance'
+			'vcalm-verifier-acceptance',
+			'oid4-verifier-delivery',
+			'oid4-verifier-acceptance'
 		]);
 		expect(validateCatalog(allScenarios)).toEqual([]);
 	});

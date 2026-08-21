@@ -19,18 +19,21 @@ codebase evolves.
   ephemeral did:key issuer for a file the operator hands over — and the
   `present-to-verifier` driver `scenarioRunner.present`, which presents a
   signed recipe to the operator's verifier over a live exchange),
-  `verifier-present` (the shared holder-side present primitive both the
-  scenario runner and OID4 use — a leaf neither `scenario-runner` nor
-  `verifier-runner` crosses into the other for), and `verifier-runner`
+  `verifier-present` (the shared holder-side present primitives — one leaf per
+  live transport, `present-to-vcalm-verifier` and `present-to-oid4-verifier`,
+  each independent of both `scenario-runner` and `verifier-runner`; the OID4
+  leaf inspects the pasted authorization request for the floor **and** submits
+  the credential in one call, since OID4's floor does not ride on a fetch the
+  way VCALM's does), and `verifier-runner`
   (the OID4VP/VCALM verifier acceptance engine — acceptance-pass
   generator + scorer, request floors, and present-time delivery; see
   [`adr/2026-07-04-verifier-assessment-model.md`](adr/2026-07-04-verifier-assessment-model.md)).
-  The **direct-delivery** and **VCALM** verifier pages have migrated to
-  scenarios (`ob3-direct-verifier-acceptance`, and the pair
-  `vcalm-verifier-delivery` / `vcalm-verifier-acceptance`);
-  `verifier-runner` now serves the **OID4** verifier page until its own
-  migration (M10b), plus the still-standing VCALM engine that M13 sweeps
-  with the other legacy page components
+  **All three verifier pages have now migrated to scenarios** — direct-delivery
+  (`ob3-direct-verifier-acceptance`), VCALM
+  (`vcalm-verifier-delivery` / `vcalm-verifier-acceptance`), and OID4VP
+  (`oid4-verifier-delivery` / `oid4-verifier-acceptance`, M10b). `verifier-runner`
+  is now **dead code** — the standing VCALM + OID4 engines, their API routes, and
+  the two legacy page components are swept together in M13
   ([`adr/2026-08-19-migrating-a-server-scorer-onto-scenarios.md`](adr/2026-08-19-migrating-a-server-scorer-onto-scenarios.md)).
 
 ## Scenarios
@@ -67,8 +70,8 @@ Four properties are load-bearing:
   download and hand over; `present-to-verifier` is the inverse of
   `request-presentation` — the suite is **holder**, presenting a signed recipe to
   the operator's own verifier over a live exchange the operator drives (they
-  paste the interaction URL at run time), `transport: 'vcalm'` today, OID4VP in
-  M10b (see
+  paste the interaction URL / authorization request at run time),
+  `transport: 'vcalm' | 'oid4vp'` — both live (see
   [`adr/2026-08-20-present-to-verifier-action.md`](adr/2026-08-20-present-to-verifier-action.md)).
 - **The level belongs to the membership, not the scenario.** A scenario carries
   `memberships[]`, each `required | optional | { oneOf }`, exactly one naming a

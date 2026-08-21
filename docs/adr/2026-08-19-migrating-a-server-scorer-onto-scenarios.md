@@ -136,3 +136,16 @@ proposed is now realised for VCALM (OID4 follows in M10b):
   rather than risking OID4 in M10a. The reusable holder-side present
   primitive moved to a new shared leaf, `server/domain/verifier-present/`,
   which OID4 (M10b) reuses.
+
+## Amendment (2026-08-20, M10b — the OID4 half landed)
+
+The deferred wire-check half is now landed for **both** protocols.
+`oid4-verifier-delivery` (pure-automatic floor + delivery) and
+`oid4-verifier-acceptance` (attested discrimination) mirror the VCALM pair, with
+the OID4 floor's genuine soft branches resolved at authoring (see the
+`present-to-verifier` ADR's M10b amendment: di-vp-format MUST/only-JWT-fails,
+request-tls SHOULD/inline⇒met, nonce dropped). With both live verifier pages
+migrated, **`verifier-runner` is now fully dead code** — the standing VCALM +
+OID4 engines, their API routes, and the two legacy page components are swept
+together in M13. M10b, like M10a, deleted only the **route** (no redirect); it did
+not touch the shared engine.

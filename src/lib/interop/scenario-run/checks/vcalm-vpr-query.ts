@@ -13,6 +13,8 @@ export const vcalmVprQuery: AutomaticCheck = {
 	run: ({ stepId, evidence }) => {
 		const request = verifierRequestForStep(evidence, stepId);
 		if (!request) return { met: false, detail: 'This step did not present to a verifier.' };
+		if (request.transport !== 'vcalm')
+			return { met: false, detail: 'This step did not present over VCALM.' };
 		if (!request.vprReceived) {
 			return { met: false, detail: 'The exchange returned no presentation request.' };
 		}

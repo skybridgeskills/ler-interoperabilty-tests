@@ -106,14 +106,15 @@ export const ScenarioAction = ZodFactory(
 		 * the operator supplies the interaction URL at run time (a paste field on
 		 * the step); the suite signs the step's credential and submits it.
 		 *
-		 * `transport` is the seam OID4VP slots into (M10b); M10a ships `'vcalm'`
-		 * only. `tamper` corrupts the credential after signing, exactly as
-		 * `deliver-direct` does, so a discrimination pass can present a broken one.
+		 * `transport` is the seam the live transports slot into — `'vcalm'` (M10a)
+		 * and `'oid4vp'` (M10b). `tamper` corrupts the credential after signing,
+		 * exactly as `deliver-direct` does, so a discrimination pass can present a
+		 * broken one.
 		 */
 		z.object({
 			kind: z.literal('present-to-verifier'),
 			credential: RecipeId.schema,
-			transport: z.enum(['vcalm']),
+			transport: z.enum(['vcalm', 'oid4vp']),
 			tamper: z.enum(['proof', 'claim']).optional()
 		})
 	])

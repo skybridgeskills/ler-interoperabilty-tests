@@ -1,7 +1,7 @@
 import type {
 	TlsSummary,
-	VerifierPresentResult,
-	VerifierRequestSummary
+	VcalmRequestSummary,
+	VerifierPresentResult
 } from '$lib/interop/scenario-run/index.js';
 
 import { tamperClaimValue, tamperProofValue } from '../credential-tamper/index.js';
@@ -14,7 +14,7 @@ import { PresentInputError } from './present-input-error.js';
 
 /** The request + delivery evidence one VCALM present produced. Both halves are client-safe. */
 export type PresentToVcalmResult = {
-	request: VerifierRequestSummary;
+	request: VcalmRequestSummary;
 	present: VerifierPresentResult;
 };
 
@@ -77,7 +77,7 @@ export async function presentToVcalmVerifier(args: {
 			? await args.probe(result.fetch.vcapiUrl)
 			: { ok: false, atLeastTls12: false, error: 'The exchange advertised no endpoint to probe.' };
 
-	const request: VerifierRequestSummary = {
+	const request: VcalmRequestSummary = {
 		transport: 'vcalm',
 		vcapiAdvertised,
 		vprReceived: result.vprReceived,
