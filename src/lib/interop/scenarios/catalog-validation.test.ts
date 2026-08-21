@@ -125,6 +125,37 @@ describe('validateCatalog', () => {
 		});
 	});
 
+	describe('rule 4b — additive-only is a base level and something must claim the scenario', () => {
+		it('accepts a base additive-only membership when an additive claims the scenario', () => {
+			const catalog = [
+				scenario({
+					memberships: [
+						{ profile: 'oid4', level: 'additive-only' },
+						{ profile: 'data-integrity-cryptosuites', level: 'required' }
+					]
+				})
+			];
+			expect(codes(catalog)).not.toContain('additive-only-misuse');
+		});
+
+		it('rejects a base additive-only membership no additive claims — it would reach no meter', () => {
+			const catalog = [scenario({ memberships: [{ profile: 'oid4', level: 'additive-only' }] })];
+			expect(codes(catalog)).toContain('additive-only-misuse');
+		});
+
+		it('rejects additive-only on an additive membership — an additive is never the protocol', () => {
+			const catalog = [
+				scenario({
+					memberships: [
+						{ profile: 'oid4', level: 'required' },
+						{ profile: 'data-integrity-cryptosuites', level: 'additive-only' }
+					]
+				})
+			];
+			expect(codes(catalog)).toContain('additive-only-misuse');
+		});
+	});
+
 	describe('rule 5 — oneOf members declare identical requirement ids', () => {
 		const eddsa = scenario({
 			slug: 'oid4-issue-eddsa',

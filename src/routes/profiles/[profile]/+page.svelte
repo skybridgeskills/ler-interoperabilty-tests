@@ -46,7 +46,9 @@
 		const groups = completionGroupsForProfile({
 			profileSlug: data.profile.slug,
 			profileName: data.profile.name,
-			runs
+			runs,
+			// Honoured for a base profile only — see `completionGroupsForProfile`.
+			additives: [...selectionStore.additiveProfiles]
 		});
 		const selectedRoles = new Set<string>(selectionStore.roles);
 		return [...groups].sort(
@@ -93,6 +95,7 @@
 		profileName={group.profileName}
 		roleName={group.roleName}
 		result={group.result}
+		additives={group.additives}
 		{runs}
 		claimHref={badgeHrefFor(group.profileSlug, group.roleSlug)}
 		claim={claimedInfoFor(group.profileSlug, group.roleSlug, claims)}

@@ -13,10 +13,11 @@ import { badgeKey, type BadgeDefinition, type BadgeTier } from './badge-schema.j
  * Reuses the catalog's own membership inversion (`membershipsOfProfile`) over the
  * badge's `(profile, role)` key, then keeps only the memberships **its tier
  * scores** (`levelInTier`): `base` the required floor and `oneOf` alternatives,
- * `complete` the same base profile's `optional` set, `additive` the whole
- * additive set. This is the single seam that scopes a badge — the fingerprint,
+ * `complete` that floor **plus** the same base profile's `optional` set,
+ * `additive` the whole additive set. This is the single seam that scopes a badge — the fingerprint,
  * the claim snapshot, and the criteria page all read through it, so a base badge
- * and a complete badge for one `(profile, role)` are two different sets.
+ * and a complete badge for one `(profile, role)` are two different sets — now
+ * **nested** rather than disjoint, since Complete is cumulative.
  * Catalog order is preserved.
  */
 export function scenariosBehindBadge(badge: BadgeDefinition): Scenario[] {
@@ -27,13 +28,24 @@ export function scenariosBehindBadge(badge: BadgeDefinition): Scenario[] {
 }
 
 /**
- * Whether a membership level belongs to a tier's sub-set. `base` counts the
- * `required` floor and `oneOf` alternatives (one obligation each, gating stops
- * once one passes); `complete` counts the base profile's own `optional` set;
- * `additive` counts every level, because an additive is single-tier.
+ * Whether a membership level belongs to a tier's sub-set.
+ *
+ * - `base` — the `required` floor and `oneOf` alternatives (one obligation
+ *   each; gating stops once one passes). The Essential set.
+ * - `complete` — **cumulative**: the same `required`/`oneOf` floor *plus* the
+ *   profile's own `optional` set. A Complete badge means "everything this
+ *   profile asks of this role", so its set **nests inside** the base badge's
+ *   rather than partitioning against it. (M14 scored it against `optional`
+ *   alone; that made the badge claimable without the floor.)
+ * - `additive` — every level, because an additive is single-tier.
+ *
+ * `additive-only` belongs to **no** base-profile tier. It is how a base profile
+ * names a scenario it does not claim, so counting it would put an add-on's work
+ * inside a Complete badge that nobody opted into.
  */
 function levelInTier(level: MembershipLevel, tier: BadgeTier): boolean {
-	if (tier === 'complete') return level === 'optional';
+	if (level === 'additive-only') return tier === 'additive';
+	if (tier === 'complete') return true;
 	if (tier === 'additive') return true;
 	return level === 'required' || oneOfGroupOf(level) !== undefined;
 }

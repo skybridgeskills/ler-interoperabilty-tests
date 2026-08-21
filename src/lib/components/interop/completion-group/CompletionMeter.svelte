@@ -21,7 +21,7 @@
 		total: number;
 		/**
 		 * Dense readout for the two-tier header: `met/total · pct%` instead of
-		 * `met/total requirements`. The tier's own label already says "Core" /
+		 * `met/total requirements`. The tier's own label already says "Essential" /
 		 * "Complete", so the word "requirements" is redundant there.
 		 */
 		showPercent?: boolean;

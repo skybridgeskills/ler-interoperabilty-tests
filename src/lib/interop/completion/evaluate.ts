@@ -3,6 +3,7 @@ import type { ProfileSlug, RoleSlug } from '$lib/interop/profile-schema.js';
 import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
 import {
 	type CannotServe,
+	type MembershipLevel,
 	membershipsOfProfile,
 	oneOfGroupOf,
 	type Scenario
@@ -56,6 +57,11 @@ export type CompletionResult = {
  *    SHOULD is therefore not met here even though it does not fail its
  *    scenario — the two numbers answer different questions, and both come from
  *    the same outcome map.
+ * 6. **`additive-only` memberships are not this profile's work at all.** They
+ *    are in the catalog under this profile because it is the protocol they run
+ *    over; the requirements belong to whichever additive claims them, and they
+ *    surface on a card as that add-on's own category. Counting them here would
+ *    put add-on work no one asked for into a base profile's denominator.
  */
 export function evaluateCompletion(args: {
 	profile: ProfileSlug | AdditiveProfileSlug;
@@ -69,11 +75,29 @@ export function evaluateCompletion(args: {
 		(m) => m.scenario.role === args.role
 	);
 
+	return evaluateMemberships(memberships, args.runs, args.blocked);
+}
+
+/**
+ * Score a set of memberships that has **already been selected**.
+ *
+ * The arithmetic every completion set shares, extracted so a narrower view —
+ * {@link evaluateAdditiveSlice}'s one-base-profile slice — cannot drift from
+ * the whole-profile numbers by re-implementing it. All six rules above apply
+ * here; the caller only decides which memberships are in scope.
+ */
+export function evaluateMemberships(
+	memberships: { scenario: Scenario; level: MembershipLevel }[],
+	runs: Record<string, ScenarioRunRecord>,
+	blocked?: Record<string, CannotServe>
+): CompletionResult {
 	const required: Obligation[] = [];
 	const optional: Obligation[] = [];
 	const groups = new Map<string, Scenario[]>();
 
 	for (const { scenario, level } of memberships) {
+		// Rule 6: this profile names the scenario but claims none of it.
+		if (level === 'additive-only') continue;
 		const group = oneOfGroupOf(level);
 		if (group) {
 			groups.set(group, [...(groups.get(group) ?? []), scenario]);
@@ -89,8 +113,8 @@ export function evaluateCompletion(args: {
 		required.push({ kind: 'oneOf', group, members, requirementIds: requirementIdsOf(members[0]) });
 	}
 
-	const base = required.map((o) => progressFor(o, args.runs, args.blocked));
-	const extra = optional.map((o) => progressFor(o, args.runs, args.blocked));
+	const base = required.map((o) => progressFor(o, runs, blocked));
+	const extra = optional.map((o) => progressFor(o, runs, blocked));
 
 	return {
 		...totalsOf(base),

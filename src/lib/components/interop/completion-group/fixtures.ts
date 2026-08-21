@@ -1,4 +1,8 @@
-import type { CompletionResult, ObligationProgress } from '$lib/interop/completion/index.js';
+import type {
+	AdditiveSliceData,
+	CompletionResult,
+	ObligationProgress
+} from '$lib/interop/completion/index.js';
 import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
 import { type CannotServe, type Scenario, scenarioBySlug } from '$lib/interop/scenarios/index.js';
 
@@ -112,7 +116,7 @@ export const blockedRuns: Record<string, ScenarioRunRecord> = {
 	[acceptance.slug]: runRecord(acceptance.slug, 'passed')
 };
 
-/** A full core tier beside a partly-run expanded (Complete) tier. */
+/** A full Essential tier beside a partly-run Expanded set. */
 export const optionalResult = resultOf(
 	[scenarioProgress(acceptance, 4, 4)],
 	[scenarioProgress(refusal, 2, 9)]
@@ -122,7 +126,7 @@ export const optionalRuns: Record<string, ScenarioRunRecord> = {
 	[refusal.slug]: runRecord(refusal.slug, 'failed')
 };
 
-/** Both tiers full — both the base and the Complete badge are claimable. */
+/** Both sets full — the base badge and the cumulative Complete badge are claimable. */
 export const twoTierFullResult = resultOf(
 	[scenarioProgress(acceptance, 4, 4)],
 	[scenarioProgress(refusal, 9, 9)]
@@ -130,4 +134,24 @@ export const twoTierFullResult = resultOf(
 export const twoTierFullRuns: Record<string, ScenarioRunRecord> = {
 	[acceptance.slug]: runRecord(acceptance.slug, 'passed'),
 	[refusal.slug]: runRecord(refusal.slug, 'passed')
+};
+
+/**
+ * An add-on slice for the card's third kind of category.
+ *
+ * A slice is one base profile's share of an additive whose badge spans several,
+ * so it carries no claim control. `required` and `optional` both count — an
+ * additive is single-tier — which is why the fixture puts work in each.
+ */
+export const additiveSlice: AdditiveSliceData = {
+	slug: 'data-integrity-cryptosuites',
+	name: 'Data Integrity Cryptosuites',
+	result: resultOf([scenarioProgress(acceptance, 2, 4)], [scenarioProgress(refusal, 0, 2)])
+};
+
+/** A second selected add-on, for the two-add-on stack. */
+export const secondAdditiveSlice: AdditiveSliceData = {
+	slug: 'open-skill-alignment',
+	name: 'Open Skill Alignment',
+	result: resultOf([scenarioProgress(refusal, 0, 4)])
 };

@@ -10,6 +10,8 @@ import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
  * - `rich-content` — **optional** in `oid4`, one requirement
  * - `eddsa` / `ecdsa` — a `oneOf` group in `oid4`, sharing requirement ids
  * - `issuer-side` — required in `oid4` but for a different role
+ * - `ecdsa-accept` — **`additive-only`** in `oid4` and required in the
+ *   `data-integrity-cryptosuites` additive: oid4 hosts it, claims none of it
  */
 const catalog = vi.hoisted(() => {
 	const requirement = (id: string) => ({
@@ -46,14 +48,21 @@ const catalog = vi.hoisted(() => {
 		scenario('rich-content', 'optional', ['r1']),
 		scenario('eddsa', { oneOf: 'producer-floor' }, ['c1', 'c2']),
 		scenario('ecdsa', { oneOf: 'producer-floor' }, ['c1', 'c2']),
-		scenario('issuer-side', 'required', ['i1'], 'issuer')
+		scenario('issuer-side', 'required', ['i1'], 'issuer'),
+		{
+			...scenario('ecdsa-accept', 'additive-only', ['x1', 'x2']),
+			memberships: [
+				{ profile: 'oid4' as const, level: 'additive-only' },
+				{ profile: 'data-integrity-cryptosuites' as const, level: 'required' }
+			]
+		}
 	];
 });
 
 vi.mock('$lib/interop/scenarios/all-scenarios.js', () => ({ allScenarios: catalog }));
 
 const { evaluateCompletion } = await import('./evaluate.js');
-const { isClaimable } = await import('./claimable.js');
+const { completeTotals, isClaimable, isExpandedClaimable } = await import('./claimable.js');
 
 /** A stored run where the named requirement ids passed and the rest did not. */
 function run(slug: string, passed: string[], failed: string[] = []): ScenarioRunRecord {
@@ -161,6 +170,45 @@ describe('optional memberships are excluded from the base meter', () => {
 
 		expect(isClaimable(result)).toBe(true);
 		expect(result.optional.met).toBe(0);
+	});
+});
+
+describe("additive-only memberships are not the base profile's work", () => {
+	it('leaves them out of the Essential meter and its obligations', () => {
+		const result = evaluate({});
+		const slugs = result.obligations.flatMap((o) =>
+			o.obligation.kind === 'scenario' ? [o.obligation.scenario.slug] : []
+		);
+
+		expect(slugs).not.toContain('ecdsa-accept');
+	});
+
+	it('leaves them out of the Expanded set too — they belong to no base tier', () => {
+		const result = evaluate({});
+		const slugs = result.optional.obligations.flatMap((o) =>
+			o.obligation.kind === 'scenario' ? [o.obligation.scenario.slug] : []
+		);
+
+		expect(slugs).not.toContain('ecdsa-accept');
+	});
+
+	it("does not move the base profile's numbers at all", () => {
+		const result = evaluate({});
+
+		// acceptance(2) + presentation(1) + the oneOf group(2) — the additive-only
+		// scenario's two requirements are absent from both totals.
+		expect(result.total).toBe(5);
+		expect(result.optional.total).toBe(1);
+	});
+
+	it('counts in full for the additive that claims it', () => {
+		const result = evaluateCompletion({
+			profile: 'data-integrity-cryptosuites',
+			role: 'wallet',
+			runs: { 'ecdsa-accept': run('ecdsa-accept', ['x1']) }
+		});
+
+		expect(result).toMatchObject({ met: 1, total: 2 });
 	});
 });
 
@@ -286,5 +334,51 @@ describe('isClaimable', () => {
 	it('ignores optional work entirely', () => {
 		expect(isClaimable(evaluate(full))).toBe(true);
 		expect(evaluate(full).optional.met).toBe(0);
+	});
+});
+
+describe('the Complete tier is cumulative — Essential ∪ Expanded', () => {
+	const essentialFull = {
+		acceptance: run('acceptance', ['a1', 'a2']),
+		presentation: run('presentation', ['p1']),
+		eddsa: run('eddsa', ['c1', 'c2'])
+	};
+	const expandedFull = { 'rich-content': run('rich-content', ['r1']) };
+
+	it('totals the two sets together, and never the additive-only work', () => {
+		// 5 Essential + 1 Expanded. `ecdsa-accept`'s two requirements belong to the
+		// additive that claims them and appear in neither.
+		expect(completeTotals(evaluate({}))).toEqual({ met: 0, total: 6 });
+	});
+
+	it('is not claimable while the Expanded set is outstanding', () => {
+		const result = evaluate(essentialFull);
+
+		expect(isClaimable(result)).toBe(true);
+		expect(isExpandedClaimable(result)).toBe(false);
+		expect(completeTotals(result)).toEqual({ met: 5, total: 6 });
+	});
+
+	it('is NOT claimable when only the Expanded set is done — the bug this replaces', () => {
+		// Under M14's disjoint reading this returned true: a Complete badge offered
+		// to someone who had done none of the Essential work it is a superset of.
+		const result = evaluate(expandedFull);
+
+		expect(result.optional.met).toBe(result.optional.total);
+		expect(isExpandedClaimable(result)).toBe(false);
+	});
+
+	it('is claimable when both sets are full', () => {
+		const result = evaluate({ ...essentialFull, ...expandedFull });
+
+		expect(isExpandedClaimable(result)).toBe(true);
+		expect(completeTotals(result)).toEqual({ met: 6, total: 6 });
+	});
+
+	it('is not claimable when there is no Expanded set — there is no second badge to earn', () => {
+		const result = evaluateCompletion({ profile: 'oid4', role: 'issuer', runs: {} });
+
+		expect(result.optional.total).toBe(0);
+		expect(isExpandedClaimable(result)).toBe(false);
 	});
 });

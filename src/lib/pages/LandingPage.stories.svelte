@@ -3,16 +3,20 @@
 
 	import LandingPage from './LandingPage.svelte';
 
-	// Seed localStorage so the story renders the populated console with a couple of
-	// roles/profiles selected. The page hydrates this on mount (browser-only),
-	// exactly as in the real app. There are no run results to seed: the
-	// combination-keyed store is gone, and these rows are statusless now.
+	// Seed localStorage so the story renders the filtered console rather than the
+	// unfiltered one. The page hydrates this on mount (browser-only), exactly as in
+	// the real app. There are no run results to seed: the combination-keyed store
+	// is gone, and these rows are statusless now.
+	//
+	// The selection is one that actually **matches** — wallet and verifier both
+	// have OID4 scenario sets. A selection matching nothing renders the empty state
+	// instead, which is the FilterBar's own stories' job to show.
 	if (typeof localStorage !== 'undefined') {
 		localStorage.setItem(
 			'lits.selection.v1',
 			JSON.stringify({
-				roles: ['issuer', 'wallet'],
-				profiles: ['vcalm', 'ob3-direct-delivery'],
+				roles: ['wallet', 'verifier'],
+				profiles: ['oid4'],
 				additiveProfiles: ['data-integrity-cryptosuites']
 			})
 		);

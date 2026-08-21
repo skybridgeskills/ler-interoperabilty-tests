@@ -50,6 +50,18 @@ describe('completionGroups', () => {
 		]);
 	});
 
+	it('carries no add-on slices against the real catalog — none declares an additive membership', () => {
+		// Honest today: selecting an add-on adds nothing to a card because no
+		// scenario claims one yet. The slice machinery is exercised against
+		// fixtures in `additive-slice.test.ts`.
+		const groups = completionGroups({
+			runs: {},
+			additives: ['data-integrity-cryptosuites', 'open-skill-alignment']
+		});
+
+		expect(groups.every((g) => g.additives.length === 0)).toBe(true);
+	});
+
 	it('carries M4’s evaluated result, not a recomputation', () => {
 		const oid4 = completionGroups({ runs: {} }).find((g) => g.profileSlug === 'oid4')!;
 		expect(oid4.result.met).toBe(0);

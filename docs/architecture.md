@@ -224,14 +224,34 @@ badge?" is answerable at a glance rather than spread across three headings. It
 renders in two places: the homepage (replacing the flat workflow list) and each
 profile detail page (one group per role, scoped to that profile).
 
-A base profile-role is a **two-tier bundle** (M14): **Core** (the base profile's
-`required` + `oneOf` scenarios → the base badge, e.g. _OID4 Wallet_) and
-**Complete** (the _same_ base profile's `optional` scenarios → the _"— Complete"_
-badge, for an implementer who covers the profile-role fully). Both meters and both
-claim affordances sit in the header, colour-cued (Core = primary, Complete =
-accent) into two body sections. A group with no expanded set — an **additive**
-profile (a single-tier axis of its own), or a base profile before any `optional`
-scenario exists — renders single-tier, exactly as before.
+A base profile-role reads as up to **three kinds of category**, in this order:
+
+1. **Essential interoperability** — the profile's `required` + `oneOf` scenarios →
+   the base badge, e.g. _OID4 Wallet_.
+2. **Expanded interoperability** — the _same_ profile's `optional` scenarios.
+   Together with Essential these form the **Complete** tier → the _"— Complete"_
+   badge. Complete is **cumulative**: its meter counts Essential ∪ Expanded, so it
+   spans two body sections. That is why **every category heading carries its own
+   count** — `8/13 + 0/4 = 8/17` has to be a sum the reader can do from the rows on
+   screen, or a cumulative meter is unauditable.
+3. **Add-ons** — one section per selected additive profile that reaches this
+   `(profile, role)`, counted toward **neither** base tier. An additive layers work
+   many implementers will never want; a denominator they cannot opt out of would
+   put Complete beyond their reach. The section shows a **slice** —
+   `evaluateAdditiveSlice`, this base profile's share of an additive whose badge
+   spans several — so it carries **no claim control**; claiming happens on the
+   additive's own page.
+
+Tier colour is cued on the dot, label and rule (Essential = primary, Complete and
+Expanded = accent, add-on = `live`), never on the bar: meter **fill** stays
+semantic everywhere (green full, warm partial). A group with no expanded set and no
+selected add-on renders as one meter and one flat list, exactly as before.
+
+The level that makes category 3 possible is **`additive-only`**: a base membership
+that names the delivery protocol a scenario runs over while placing it in neither
+of that profile's tiers. See
+[the badge award model ADR](./adr/2026-08-18-badge-award-model.md) § Amendment
+2026-08-21.
 
 Every number the group shows comes from M4's `evaluateCompletion` in
 `src/lib/interop/completion/` — the widget **computes nothing**:
@@ -241,13 +261,17 @@ Every number the group shows comes from M4's `evaluateCompletion` in
   scenario with a failing SHOULD is not flattened to a bare ✗.
 - **A `oneOf` group renders as one obligation** — "any one of" siblings that
   each stay runnable but stop gating once one passes.
-- **`optional` memberships render in the Complete sub-meter**, never folded into
-  the Core meter — including them would mean Core could never fill.
+- **`optional` memberships render in the Expanded section**, never folded into the
+  Essential meter — including them would mean Essential could never fill. They
+  _are_ counted by the cumulative Complete meter above them.
+- **`additive-only` memberships are not the base profile's work at all** and
+  appear in neither Essential nor Expanded — only in the add-on's own section.
 - **A blocked scenario renders disabled with its `CannotServe` reason and still
   counts in the denominator** — the badge is blocked, not made easier.
-- **Each tier's meter fills exactly when _its_ badge is claimable.** Core comes
-  from `isClaimable(result)` (the `required` meter), Complete from
-  `isExpandedClaimable(result)` (the `optional` sub-meter); a tier's meter fill and
+- **Each tier's meter fills exactly when _its_ badge is claimable.** Essential
+  comes from `isClaimable(result)` (the `required` meter), Complete from
+  `isExpandedClaimable(result)` over `completeTotals(result)` — both sets full, and
+  never claimable with an empty Expanded set; a tier's meter fill and
   its `[Claim …]` control both read that one predicate, so a header cannot lie.
   Each control links to its own `/badges/[slug]` (base via `badgeFor`, Complete via
   `completeBadgeFor`) or stays disabled where no badge is registered. Once claimed,

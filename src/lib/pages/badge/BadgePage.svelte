@@ -20,6 +20,7 @@
 	import {
 		type CompletionResult,
 		evaluateCompletion,
+		completeTotals,
 		isClaimable,
 		isExpandedClaimable
 	} from '$lib/interop/completion/index.js';
@@ -91,15 +92,23 @@
 	);
 	const error = $derived(driverError ?? claimErrorForStory);
 
-	// A `complete` badge is claimed against the optional sub-meter; base/additive
-	// against the base meter. The tier picks which meter drives claimability and
-	// which numbers ride in the award narrative.
+	// A `complete` badge is cumulative — Essential ∪ Expanded — while base/additive
+	// score the base meter. The tier picks which numbers drive claimability and
+	// which ride in the award narrative; both come from `claimable.ts` so the page
+	// and the meter cannot disagree.
 	const isComplete = $derived(badge.tier === 'complete');
 	const claimable = $derived(
 		result ? (isComplete ? isExpandedClaimable(result) : isClaimable(result)) : false
 	);
-	const tierMet = $derived(result ? (isComplete ? result.optional.met : result.met) : 0);
-	const tierTotal = $derived(result ? (isComplete ? result.optional.total : result.total) : 0);
+	const tierTotals = $derived(
+		result
+			? isComplete
+				? completeTotals(result)
+				: { met: result.met, total: result.total }
+			: { met: 0, total: 0 }
+	);
+	const tierMet = $derived(tierTotals.met);
+	const tierTotal = $derived(tierTotals.total);
 	const scenarioCount = $derived(scenariosBehindBadge(badge).length);
 	const newInfo = $derived(prior ? newSince(prior, requirementIdsBehindBadge(badge)) : undefined);
 

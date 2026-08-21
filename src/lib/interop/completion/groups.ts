@@ -4,14 +4,17 @@ import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
 import {
 	allScenarios,
 	type CannotServe,
+	isBaseProfile,
 	type Scenario,
 	scenariosFor
 } from '$lib/interop/scenarios/index.js';
 
+import { allAdditiveProfiles } from '../additive-profiles/all-additive-profiles.js';
 import { allProfiles } from '../profiles/all-profiles.js';
 import { allRoles } from '../roles.js';
 import type { ChecklistCombination } from '../selection/checklist-selection.js';
 
+import { evaluateAdditiveSlice, sliceIsEmpty } from './additive-slice.js';
 import { evaluateCompletion, type CompletionResult, type ObligationProgress } from './evaluate.js';
 
 /**
@@ -29,6 +32,21 @@ export type CompletionGroupData = {
 	roleSlug: RoleSlug;
 	roleName: string;
 	result: CompletionResult;
+	/**
+	 * The selected add-ons that apply to this group, each with its slice of work
+	 * in **this** base profile. Empty unless the caller passed a selection.
+	 *
+	 * A slice is **not** a badge key and carries no claim: an additive badge spans
+	 * every base profile it applies to, and this is one profile's share of it.
+	 */
+	additives: AdditiveSliceData[];
+};
+
+/** One selected add-on's work inside one `(base profile, role)` group. */
+export type AdditiveSliceData = {
+	slug: AdditiveProfileSlug;
+	name: string;
+	result: CompletionResult;
 };
 
 /**
@@ -43,6 +61,11 @@ export type CompletionGroupData = {
 export function completionGroups(args: {
 	runs: Record<string, ScenarioRunRecord>;
 	blocked?: Record<string, CannotServe>;
+	/**
+	 * The add-ons the reader has selected. Each contributes a slice to every group
+	 * it actually reaches; omit for no add-on sections at all.
+	 */
+	additives?: AdditiveProfileSlug[];
 }): CompletionGroupData[] {
 	const groups: CompletionGroupData[] = [];
 	for (const profile of allProfiles) {
@@ -58,11 +81,52 @@ export function completionGroups(args: {
 					role: role.slug,
 					runs: args.runs,
 					blocked: args.blocked
+				}),
+				additives: additiveSlicesFor({
+					baseProfile: profile.slug,
+					role: role.slug,
+					selected: args.additives ?? [],
+					runs: args.runs,
+					blocked: args.blocked
 				})
 			});
 		}
 	}
 	return groups;
+}
+
+/**
+ * The slices a group should render, in **catalog order** so two cards never
+ * disagree about which add-on comes first.
+ *
+ * An add-on that reaches this `(base profile, role)` with **no** scenarios is
+ * omitted rather than rendered empty: a 0/0 meter is not information, and until
+ * additive scenarios are authored that is every add-on. Selecting one and seeing
+ * nothing appear is the honest outcome — better than a row of empty sections
+ * implying work that does not exist yet.
+ */
+function additiveSlicesFor(args: {
+	baseProfile: ProfileSlug;
+	role: RoleSlug;
+	selected: AdditiveProfileSlug[];
+	runs: Record<string, ScenarioRunRecord>;
+	blocked?: Record<string, CannotServe>;
+}): AdditiveSliceData[] {
+	const slices: AdditiveSliceData[] = [];
+	for (const additive of allAdditiveProfiles) {
+		if (!args.selected.includes(additive.slug)) continue;
+		if (!(additive.appliesToBaseProfiles as readonly string[]).includes(args.baseProfile)) continue;
+		const result = evaluateAdditiveSlice({
+			additive: additive.slug,
+			baseProfile: args.baseProfile,
+			role: args.role,
+			runs: args.runs,
+			blocked: args.blocked
+		});
+		if (sliceIsEmpty(result)) continue;
+		slices.push({ slug: additive.slug, name: additive.name, result });
+	}
+	return slices;
 }
 
 /**
@@ -76,6 +140,13 @@ export function completionGroupsForProfile(args: {
 	profileName: string;
 	runs: Record<string, ScenarioRunRecord>;
 	blocked?: Record<string, CannotServe>;
+	/**
+	 * The reader's selected add-ons. Honoured only for a **base** profile page, so
+	 * it matches the homepage. An additive's own page already *is* that additive's
+	 * aggregate across every base profile it touches, so nesting slices inside it
+	 * would list the same scenarios twice.
+	 */
+	additives?: AdditiveProfileSlug[];
 }): CompletionGroupData[] {
 	const groups: CompletionGroupData[] = [];
 	for (const role of allRoles) {
@@ -90,7 +161,16 @@ export function completionGroupsForProfile(args: {
 				role: role.slug,
 				runs: args.runs,
 				blocked: args.blocked
-			})
+			}),
+			additives: isBaseProfile(args.profileSlug)
+				? additiveSlicesFor({
+						baseProfile: args.profileSlug as ProfileSlug,
+						role: role.slug,
+						selected: args.additives ?? [],
+						runs: args.runs,
+						blocked: args.blocked
+					})
+				: []
 		});
 	}
 	return groups;

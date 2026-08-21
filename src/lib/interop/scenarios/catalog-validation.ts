@@ -1,4 +1,4 @@
-import { baseProfilesOf, oneOfGroupOf } from './membership.js';
+import { baseProfilesOf, isBaseProfile, oneOfGroupOf } from './membership.js';
 import type { Scenario } from './scenario-schema.js';
 
 /** Which rule a {@link CatalogViolation} broke. */
@@ -7,6 +7,7 @@ export type CatalogViolationCode =
 	| 'duplicate-step-id'
 	| 'duplicate-requirement-id'
 	| 'base-membership-count'
+	| 'additive-only-misuse'
 	| 'one-of-requirement-mismatch'
 	| 'choose-correct-not-an-option'
 	| 'discontiguous-shuffle'
@@ -35,6 +36,7 @@ export function validateCatalog(scenarios: Scenario[]): CatalogViolation[] {
 		...scenarios.flatMap(uniqueStepIds),
 		...scenarios.flatMap(uniqueRequirementIds),
 		...scenarios.flatMap(exactlyOneBaseMembership),
+		...scenarios.flatMap(additiveOnlyIsClaimedByAnAdditive),
 		...scenarios.flatMap(chooseCorrectIsAnOption),
 		...scenarios.flatMap(contiguousShuffle),
 		...scenarios.flatMap(shuffledScenarioDeclaresLabel),
@@ -107,6 +109,50 @@ function exactlyOneBaseMembership(scenario: Scenario): CatalogViolation[] {
 					: `${bases.length} memberships name base profiles (${bases.join(', ')}); exactly one must`
 		}
 	];
+}
+
+/**
+ * Rule 4b — `additive-only` is a base membership, and something must claim the
+ * scenario.
+ *
+ * Two ways to get this wrong, both authoring mistakes rather than states to
+ * render:
+ *
+ * - **A base membership at `additive-only` with no additive membership.** The
+ *   base profile claims none of the scenario and no additive claims it either,
+ *   which leaves it in no completion set at all — unreachable from every meter
+ *   and every badge, and therefore invisible on every page.
+ * - **An *additive* membership at `additive-only`.** The level says "I am the
+ *   protocol this runs over, and I claim none of it"; an additive is never the
+ *   protocol, so this can only be a mistake for `required` or `optional`.
+ */
+function additiveOnlyIsClaimedByAnAdditive(scenario: Scenario): CatalogViolation[] {
+	const violations: CatalogViolation[] = [];
+	const misplaced = scenario.memberships.filter(
+		(m) => m.level === 'additive-only' && !isBaseProfile(m.profile)
+	);
+	for (const membership of misplaced) {
+		violations.push({
+			code: 'additive-only-misuse',
+			subject: scenario.slug,
+			message: `additive profile "${membership.profile}" declares level "additive-only"; only a base membership may, since an additive is never the protocol a scenario runs over`
+		});
+	}
+
+	const baseIsAdditiveOnly = scenario.memberships.some(
+		(m) => m.level === 'additive-only' && isBaseProfile(m.profile)
+	);
+	const hasAdditive = scenario.memberships.some((m) => !isBaseProfile(m.profile));
+	if (baseIsAdditiveOnly && !hasAdditive) {
+		violations.push({
+			code: 'additive-only-misuse',
+			subject: scenario.slug,
+			message:
+				'base membership is "additive-only" but no additive profile claims this scenario; it would count toward no meter and appear on no card'
+		});
+	}
+
+	return violations;
 }
 
 /** Rule 6 — a `choose` answer's `correct` is one of its own option values. */

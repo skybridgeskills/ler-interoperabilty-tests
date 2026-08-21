@@ -3,6 +3,7 @@
 
 	import CompletionGroup from './CompletionGroup.svelte';
 	import {
+		additiveSlice,
 		blockedResult,
 		blockedRuns,
 		emptyResult,
@@ -13,6 +14,7 @@
 		optionalRuns,
 		partialResult,
 		partialRuns,
+		secondAdditiveSlice,
 		twoTierFullResult,
 		twoTierFullRuns
 	} from './fixtures.js';
@@ -94,8 +96,12 @@
 	</div>
 </Story>
 
-<!-- Two-tier bundle: core full, Complete tier in flight. Both claims live in the header. -->
-<Story name="Two-tier (core full · complete partial)" asChild>
+<!--
+	Essential full, Expanded still in flight. Complete reads the CUMULATIVE totals
+	and is therefore not claimable — under the old disjoint reading its claim
+	would already be live.
+-->
+<Story name="Essential full · Complete not claimable" asChild>
 	<div class="max-w-3xl bg-background p-6">
 		<CompletionGroup
 			profileName="OID4 Profile"
@@ -110,8 +116,8 @@
 	</div>
 </Story>
 
-<!-- Both tiers full — both badges claimable, base already claimed. -->
-<Story name="Two-tier — both claimable" asChild>
+<!-- Both sets full — both badges claimable, base already claimed. -->
+<Story name="Both tiers claimable" asChild>
 	<div class="max-w-3xl bg-background p-6">
 		<CompletionGroup
 			profileName="OID4 Profile"
@@ -154,6 +160,96 @@
 					claimHref="/badges/oid4-wallet"
 					expandedClaimHref="/badges/oid4-wallet-complete"
 					claim={{ claimedAt: '2026-08-12T09:00:00.000Z', requirementCount: 4, newSince: 0 }}
+				/>
+			</div>
+		</div>
+	</div>
+</Story>
+
+<!--
+	Three categories: Essential, Expanded, and one selected add-on. The add-on's
+	6 requirements are absent from Complete's denominator and its row offers no
+	claim — the card shows one base profile's slice of a badge that spans several.
+-->
+<Story name="With one add-on" asChild>
+	<div class="max-w-3xl bg-background p-6">
+		<CompletionGroup
+			profileName="OID4 Profile"
+			roleName="Wallet"
+			result={optionalResult}
+			runs={optionalRuns}
+			additives={[additiveSlice]}
+			baseBadgeName="OID4 Wallet"
+			completeBadgeName="OID4 Wallet — Complete"
+			claimHref="/badges/oid4-wallet"
+			expandedClaimHref="/badges/oid4-wallet-complete"
+		/>
+	</div>
+</Story>
+
+<!-- Two selected add-ons — the stack the ordering has to survive. -->
+<Story name="With two add-ons" asChild>
+	<div class="max-w-3xl bg-background p-6">
+		<CompletionGroup
+			profileName="OID4 Profile"
+			roleName="Wallet"
+			result={optionalResult}
+			runs={optionalRuns}
+			additives={[secondAdditiveSlice, additiveSlice]}
+			baseBadgeName="OID4 Wallet"
+			completeBadgeName="OID4 Wallet — Complete"
+			claimHref="/badges/oid4-wallet"
+			expandedClaimHref="/badges/oid4-wallet-complete"
+		/>
+	</div>
+</Story>
+
+<!--
+	An add-on selected on a profile-role with NO expanded set: no Complete tier at
+	all, so Essential and the add-on render as siblings.
+-->
+<Story name="Add-on with no expanded set" asChild>
+	<div class="max-w-3xl bg-background p-6">
+		<CompletionGroup
+			profileName="VCALM Profile"
+			roleName="Verifier"
+			result={partialResult}
+			runs={partialRuns}
+			additives={[additiveSlice]}
+			baseBadgeName="VCALM Verifier"
+			claimHref="/badges/oid4-wallet"
+		/>
+	</div>
+</Story>
+
+<!-- The three-category card in light + dark. -->
+<Story name="Add-on light + dark" asChild>
+	<div class="grid gap-4 xl:grid-cols-2">
+		<div class="bg-background p-6">
+			<CompletionGroup
+				profileName="OID4 Profile"
+				roleName="Wallet"
+				result={optionalResult}
+				runs={optionalRuns}
+				additives={[additiveSlice]}
+				baseBadgeName="OID4 Wallet"
+				completeBadgeName="OID4 Wallet — Complete"
+				claimHref="/badges/oid4-wallet"
+				expandedClaimHref="/badges/oid4-wallet-complete"
+			/>
+		</div>
+		<div class="dark">
+			<div class="bg-background p-6">
+				<CompletionGroup
+					profileName="OID4 Profile"
+					roleName="Wallet"
+					result={optionalResult}
+					runs={optionalRuns}
+					additives={[additiveSlice]}
+					baseBadgeName="OID4 Wallet"
+					completeBadgeName="OID4 Wallet — Complete"
+					claimHref="/badges/oid4-wallet"
+					expandedClaimHref="/badges/oid4-wallet-complete"
 				/>
 			</div>
 		</div>

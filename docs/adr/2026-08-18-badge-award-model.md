@@ -188,3 +188,58 @@ all stand.
   after M8. The M8 note "the `(base, additive, role)` keying exists with no second
   badge to exercise it" is retired: `oid4-wallet-complete` is registered (M14 P2),
   and the keying is now `(profile, role)` + tier.
+
+## Amendment — 2026-08-21: Complete is cumulative, and add-on work is outside it
+
+Amends the tier semantics above. Nothing about _how many_ badges exist changes —
+"two tiers would be two badges" still holds. What changes is **what the second
+badge is claimed against**, and a new membership level that keeps additive work
+out of it.
+
+- **A `complete` badge is claimed against the base profile's `required` + `oneOf`
+  **and** `optional` scenarios** — Essential ∪ Expanded — not the `optional` set
+  alone. It **nests inside** the base badge's set rather than partitioning against
+  it, because "a complete OID4 wallet" means everything the profile asks of that
+  role, not only the part beyond the floor. Under the previous reading the Complete
+  badge went claimable while the Essential meter still read 0/13: the suite
+  offering a superset badge to someone who had not done the subset.
+  `isExpandedClaimable` now requires both sets full, and still refuses an empty
+  Expanded set — a profile with no `optional` scenario has no second badge to earn.
+- **A fourth `MembershipLevel`, `additive-only`,** names the base profile a
+  scenario runs over while placing it in **neither** of that profile's tiers. It is
+  what keeps an additive's work — a cryptosuite bundle, skill alignment — out of a
+  cumulative Complete. Without it, an additive scenario authored as `optional` in
+  its base profile (which is how `membership.ts` used to illustrate memberships)
+  would inflate every implementer's Complete denominator with work most of them do
+  not want, putting Complete out of reach for anyone who declines the add-on.
+  Catalog validation rejects the level on an additive membership, and rejects a
+  base `additive-only` membership no additive claims — that scenario would reach no
+  meter and appear on no card.
+- **`levelInTier`** therefore reads: `additive-only` belongs to the `additive`
+  tier only; `complete` counts every other base level; `base` counts
+  `required`/`oneOf`. `additive` is unchanged — every level, single tier.
+- **Consequence for `oid4-wallet-complete`:** its scenario set grows from 1 to 3
+  and its `requirementIds` from 4 to 17, so its fingerprint moves (now `138056d1`).
+  This is ordinary catalog drift and needs **no migration**: the badge has never
+  been claimable — its Expanded set stands at 0/4 and, under the corrected rule,
+  Essential at 0/13 — so no claim snapshot can exist against the old set.
+  `oid4-wallet` (base) is untouched at 13 requirements, fingerprint `bb86a473`.
+- **A card renders an additive as a slice, and offers no claim for it.** An
+  additive badge is keyed `(additive, role)` and spans every base profile it
+  applies to; a `(base profile, role)` card can only honestly show that profile's
+  share. `evaluateAdditiveSlice` produces the slice for display; claiming stays on
+  the additive's own `/profiles/[slug]` page, which aggregates across base
+  profiles.
+
+**Alternative considered and rejected: re-key additive badges as `(base profile,
+additive, role)`** so each card could claim its own slice. It would make every card
+self-contained, at the cost of multiplying badge definitions (additives × base
+profiles × roles) and a third revision of the keying in three months. Recorded as a
+candidate if every claim should be reachable from the homepage.
+
+**Alternative considered and deferred: split `protocol` out of `memberships`** as
+its own `Scenario` field, so a base membership stops doing double duty (naming the
+delivery protocol _and_ declaring tier membership). That is the better model —
+`additive-only` papers over the double duty rather than removing it — but it
+touches `baseProfileOf`, catalog validation, `membershipsOfProfile`, `scenariosFor`,
+`evaluate` and the badge accessors. `additive-only` does not block it.

@@ -173,15 +173,41 @@ describe('badge tiers', () => {
 		]);
 	});
 
-	it('complete scores the same base profile’s optional set only', () => {
+	it('complete is cumulative — the floor plus the same base profile’s optional set', () => {
+		// Complete means "everything this profile asks of this role", so its set
+		// NESTS inside the base badge's rather than partitioning against it.
 		catalog.list = [
 			...baseList,
 			mkScenario('oid4-wallet-faithful-rendering', 'oid4', 'optional', 'zzz-rendered')
 		];
 		expect(scenariosBehindBadge(complete()).map((s) => s.slug)).toEqual([
+			'oid4-wallet-acceptance',
+			'oid4-wallet-refusal-discrimination',
 			'oid4-wallet-faithful-rendering'
 		]);
-		expect(requirementIdsBehindBadge(complete())).toEqual(['zzz-rendered']);
+		// Sorted, so member order cannot perturb a snapshot's requirementIds.
+		expect(requirementIdsBehindBadge(complete())).toEqual([
+			'aaa-refused',
+			'stored',
+			'zzz-rendered'
+		]);
+	});
+
+	it('neither base nor complete scores an additive-only scenario', () => {
+		// The base profile hosts it and claims none of it; it belongs to whichever
+		// additive requires it, and must not inflate a Complete denominator.
+		catalog.list = [
+			...baseList,
+			{
+				...mkScenario('oid4-wallet-ecdsa', 'oid4', 'additive-only', 'ddd-ecdsa'),
+				memberships: [
+					{ profile: 'oid4', level: 'additive-only' },
+					{ profile: 'data-integrity-cryptosuites', level: 'required' }
+				]
+			}
+		];
+		expect(scenariosBehindBadge(badge()).map((s) => s.slug)).not.toContain('oid4-wallet-ecdsa');
+		expect(scenariosBehindBadge(complete()).map((s) => s.slug)).not.toContain('oid4-wallet-ecdsa');
 	});
 
 	it('base and complete key to the same base profile-role', () => {

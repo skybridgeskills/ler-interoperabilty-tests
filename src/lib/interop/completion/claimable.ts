@@ -22,17 +22,43 @@ export function isClaimable(result: CompletionResult): boolean {
 }
 
 /**
- * Whether the **expanded ("Complete") tier's** badge can be claimed — the same
- * rule as {@link isClaimable}, applied to the `optional` sub-meter.
+ * The **Complete** tier's totals — Essential ∪ Expanded, and never add-on work.
  *
- * The Complete badge is a *second, distinct* badge, claimed against the base
- * profile's `optional` set (M14). Its meter fill and its claim affordance both
- * read from here, so the two tiers each obey "the meter fills exactly when the
- * badge becomes claimable" independently. An empty optional set is never
- * claimable, exactly as an empty base set is not.
+ * The one derivation both the Complete meter and the Complete claim read, so
+ * the pair cannot disagree. Add-on work is absent by construction rather than
+ * by filtering here: a scenario an additive claims takes `additive-only` in its
+ * base profile, so `evaluateCompletion` never put it in either bucket.
+ */
+export function completeTotals(result: CompletionResult): { met: number; total: number } {
+	return {
+		met: result.met + result.optional.met,
+		total: result.total + result.optional.total
+	};
+}
+
+/**
+ * Whether the **Complete** tier's badge can be claimed.
+ *
+ * Complete is **cumulative**: it means "everything this profile asks of this
+ * role", so it is claimable only when the Essential set is full *and* the
+ * Expanded set is full. It nests inside the Essential set rather than
+ * partitioning against it.
+ *
+ * This corrects M14, which scored the Complete badge against the `optional` set
+ * **alone**. Under that reading a Complete badge went claimable while the
+ * Essential meter still read 0/13 — the widget offering a superset badge to
+ * someone who had not done the subset.
+ *
+ * An **empty Expanded set is never claimable**: a base profile with no
+ * `optional` scenario has no second badge to earn, and a meter that reads
+ * "full" over nothing would award one for free. That is the same guard
+ * {@link isClaimable} applies to an empty Essential set, and it is why this
+ * cannot simply be `completeTotals` compared against itself.
  */
 export function isExpandedClaimable(result: CompletionResult): boolean {
-	return result.optional.total > 0 && result.optional.met === result.optional.total;
+	if (result.optional.total === 0) return false;
+	const { met, total } = completeTotals(result);
+	return total > 0 && met === total;
 }
 
 /**

@@ -108,3 +108,36 @@ export function additiveChecklistsForCombination(
 		return checklist ? [{ additive, checklist }] : [];
 	});
 }
+
+/**
+ * The roles an additive profile can be demonstrated in — the distinct roles
+ * across its own checklists, in catalog role order.
+ *
+ * An additive declares its layer per `(role, workflow)`, so its checklists are
+ * the only honest statement of which roles it has anything to say about. The
+ * `data-integrity-cryptosuites` bundle covers all three; `open-skill-alignment`
+ * covers issuer and verifier only.
+ */
+export function rolesOfAdditiveProfile(additive: AdditiveProfile): RoleSlug[] {
+	const declared = new Set<RoleSlug>(additive.checklists.map((c) => c.role));
+	return allRoles.filter((r) => declared.has(r.slug)).map((r) => r.slug);
+}
+
+/**
+ * The additive profiles worth offering for a set of selected roles — those
+ * declaring a checklist for at least one of them.
+ *
+ * **No selected role means no additive is offered.** An additive layers on a
+ * base profile in a specific role; offering one before a role is chosen asks a
+ * question the answer to which cannot yet be located anywhere on the page. The
+ * homepage filter bar uses this to decide whether the Add-ons dimension exists
+ * at all, and the selection store uses it to drop an additive whose last
+ * relevant role has been deselected.
+ */
+export function additiveProfilesForRoles(roles: Iterable<RoleSlug>): AdditiveProfile[] {
+	const selected = new Set<RoleSlug>(roles);
+	if (selected.size === 0) return [];
+	return allAdditiveProfiles.filter((additive) =>
+		rolesOfAdditiveProfile(additive).some((role) => selected.has(role))
+	);
+}
