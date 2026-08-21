@@ -161,3 +161,26 @@ describe('RevealStrip — role-neutral copy', UNDER_LOAD, () => {
 		await expect.element(page.getByText('That is not what actually happened.')).toBeInTheDocument();
 	});
 });
+
+describe('RequirementRow — attested reveals defer to end-of-run', UNDER_LOAD, () => {
+	it('echoes the answer flatly, no verdict, while the reveal is withheld', async () => {
+		render(RequirementRow, { requirement: handled, outcome: answeredWrongly, revealed: false });
+
+		// The flat echo of what was picked, and nothing that names the verdict.
+		await expect.element(page.getByText(/You answered/)).toBeInTheDocument();
+		expect(page.getByText('Not what happened').elements()).toHaveLength(0);
+		expect(page.getByText(/That is not what actually happened\./).elements()).toHaveLength(0);
+	});
+
+	it('shows the full reveal once revealed', async () => {
+		render(RequirementRow, { requirement: handled, outcome: answeredWrongly, revealed: true });
+
+		await expect.element(page.getByText('Not what happened')).toBeInTheDocument();
+		await expect.element(page.getByText('That is not what actually happened.')).toBeInTheDocument();
+	});
+
+	it('resolves automatic outcomes immediately regardless of revealed', async () => {
+		render(RequirementRow, { requirement: exchangeComplete, outcome: autoPass, revealed: false });
+		await expect.element(page.getByText('Pass')).toBeInTheDocument();
+	});
+});

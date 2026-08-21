@@ -24,6 +24,7 @@ import {
 	type StepLink
 } from './exchange-step.js';
 import { nowIso } from './now-iso.js';
+import { startPresentStep } from './present-step.js';
 
 /**
  * Drives one scenario run: the M3 engine, the exchange lifecycle, and when a
@@ -57,6 +58,12 @@ export function createScenarioRunController(
 	let stepError = $state<RunnerError | undefined>(undefined);
 	let recorded = $state(false);
 	let handle: { stop: () => void } | undefined;
+	/** The active `present-to-verifier` driver, kept so the paste field can call it. */
+	let presentDriver: { present: (interactionUrl: string) => void; stop: () => void } | undefined;
+	/** Paste-field state for the active present step: in-flight, an amber miss note, and a retry. */
+	let presentBusy = $state(false);
+	let presentNote = $state<string | undefined>(undefined);
+	let presentRetry = $state(false);
 
 	const runSteps = $derived(current ? stepsInRunOrder(scenario, current) : scenario.steps);
 	const outcomes = $derived<Record<string, RequirementOutcome>>(
@@ -146,6 +153,27 @@ export function createScenarioRunController(
 			return;
 		}
 
+		// A present-to-verifier step waits for the operator's run-time input — the
+		// interaction URL their verifier handed them. It does not run on its own:
+		// the paste field calls `present(url)`, and a transport miss stays in-flight
+		// so a fresh URL can be tried. It settles once the credential is submitted.
+		if (step.action.kind === 'present-to-verifier') {
+			presentBusy = false;
+			presentNote = undefined;
+			presentRetry = false;
+			presentDriver = startPresentStep(step, {
+				onSettled: (evidence: StepEvidence) => settle(evidence),
+				onMiss: (note: string) => {
+					presentBusy = false;
+					presentRetry = true;
+					presentNote = note;
+				},
+				onFailed: (error: RunnerError) => fail(step.id, error)
+			});
+			handle = presentDriver;
+			return;
+		}
+
 		const callbacks = {
 			onLink: (l: StepLink) => (link = l),
 			onSettled: (evidence: StepEvidence) => settle(evidence),
@@ -163,6 +191,7 @@ export function createScenarioRunController(
 		if (!state) return;
 		handle?.stop();
 		handle = undefined;
+		presentDriver = undefined;
 		current = settleStep(scenario, state, evidence.stepId, evidence);
 		advanceIfAnswered();
 	}
@@ -181,6 +210,14 @@ export function createScenarioRunController(
 		if (!state) return;
 		current = answerRequirement(scenario, state, requirementId, value);
 		advanceIfAnswered();
+	}
+
+	/** Present the active `present-to-verifier` step with the operator's pasted URL. */
+	function present(interactionUrl: string) {
+		if (!presentDriver || presentBusy) return;
+		presentBusy = true;
+		presentNote = undefined;
+		presentDriver.present(interactionUrl);
 	}
 
 	/** Move on only once the live step has nothing left to ask. */
@@ -245,12 +282,22 @@ export function createScenarioRunController(
 		get attachable() {
 			return attachable;
 		},
+		get presentBusy() {
+			return presentBusy;
+		},
+		get presentNote() {
+			return presentNote;
+		},
+		get presentRetry() {
+			return presentRetry;
+		},
 		engineStateOf,
 		answerableNow,
 		labelFor,
 		discoverStoredRun,
 		begin,
 		answer,
+		present,
 		finish,
 		destroy
 	};

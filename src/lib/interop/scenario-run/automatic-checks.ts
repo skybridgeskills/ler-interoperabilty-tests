@@ -1,6 +1,12 @@
 import { exchangeReachedComplete } from './checks/exchange-reached-complete.js';
 import { holderDidBound } from './checks/holder-did-bound.js';
 import { offerWasFetched } from './checks/offer-was-fetched.js';
+import { vcalmInteractionEndpoint } from './checks/vcalm-interaction-endpoint.js';
+import { vcalmRequestTls } from './checks/vcalm-request-tls.js';
+import { vcalmResponseEndpoint } from './checks/vcalm-response-endpoint.js';
+import { vcalmResponseTls } from './checks/vcalm-response-tls.js';
+import { vcalmVprDidauth } from './checks/vcalm-vpr-didauth.js';
+import { vcalmVprQuery } from './checks/vcalm-vpr-query.js';
 import type { RunEvidence } from './evidence.js';
 
 /** What a check decided, and why — the `detail` is shown beside the requirement. */
@@ -34,7 +40,15 @@ export type AutomaticCheck = {
 export const automaticChecks: Record<string, AutomaticCheck> = {
 	[exchangeReachedComplete.id]: exchangeReachedComplete,
 	[offerWasFetched.id]: offerWasFetched,
-	[holderDidBound.id]: holderDidBound
+	[holderDidBound.id]: holderDidBound,
+	// The VCALM verifier floor + delivery, ported from the verifier-runner engine
+	// as pure functions over a `present-to-verifier` step's request/present evidence.
+	[vcalmInteractionEndpoint.id]: vcalmInteractionEndpoint,
+	[vcalmVprQuery.id]: vcalmVprQuery,
+	[vcalmVprDidauth.id]: vcalmVprDidauth,
+	[vcalmRequestTls.id]: vcalmRequestTls,
+	[vcalmResponseTls.id]: vcalmResponseTls,
+	[vcalmResponseEndpoint.id]: vcalmResponseEndpoint
 };
 
 /**

@@ -96,3 +96,43 @@ differently:
   of running the live protocol). Rejected: an "oid4" test that never
   touches OID4VP misrepresents what was verified — the same "don't record
   a lie" principle the whole model rests on.
+
+## Update 2026-08-20 (M10a — the deferred wire-check half lands, for VCALM)
+
+M10a migrates the **VCALM** verifier page, and with it the "deferred
+half" this ADR named: the automated **floor + delivery** wire checks the
+`automatic`-check registry did not yet cover. The reconciliation this ADR
+proposed is now realised for VCALM (OID4 follows in M10b):
+
+- **The floor/delivery rows are now scenario `automatic` checks.** The
+  six VCALM wire checks (`vcalm-interaction-endpoint`, `-vpr-query`,
+  `-vpr-didauth`, `-request-tls`, `-response-tls`, `-response-endpoint`)
+  are pure functions over a **client-safe** request/present evidence
+  summary the `present-to-verifier` step produces — ported 1:1 from
+  `verifier-runner/vcalm` (`vpr-checks.ts` / `score-delivered-run.ts`).
+  No bespoke scorer, and `automatic` still means "a pure function over
+  evidence": the server produces the summary, the check reads it.
+
+- **Two scenarios, not one.** The wire measurement (floor + delivery) and
+  the discrimination measurement (verdict/reason) are **separated** into
+  `vcalm-verifier-delivery` (pure-automatic — the catalog's first) and
+  `vcalm-verifier-acceptance` (attested, mirroring M10's direct scenario).
+  A scenario is one measurement; cramming the floor into the
+  discrimination run would conflate two. The delivery scenario presents a
+  **valid control**, so its delivery row is scored without leaking any
+  concealed acceptance verdict.
+
+- **`warn`/`n/a` re-homed exactly as this ADR predicted.** The VCALM floor
+  was already pure pass/fail; the engine's `n/a` (intake-failure) rows,
+  which have no automatic equivalent, resolve to **fail** rather than being
+  carried.
+
+- **The standing engine shrinks but does not vanish yet.** The VCALM
+  verifier **route** is deleted (no redirect). The VCALM verifier-runner
+  engine, its API routes, and the legacy page component still stand,
+  because the shared `VerifierRunner` also serves OID4 and the page
+  component is M13's to remove — so the actual engine deletion is bundled
+  into M13 with the other legacy page components and the dynamic route,
+  rather than risking OID4 in M10a. The reusable holder-side present
+  primitive moved to a new shared leaf, `server/domain/verifier-present/`,
+  which OID4 (M10b) reuses.

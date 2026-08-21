@@ -44,6 +44,37 @@ export function stubExchangeApi(behaviour: StubBehaviour): () => void {
 			});
 		}
 
+		// A `present-to-verifier` step presents a credential to the operator's
+		// verifier here. `create-fails` models the present route erroring; a URL
+		// carrying `miss` returns an un-submitted delivery (the retry path);
+		// otherwise a clean floor and a landed submission.
+		if (url.includes('/api/scenario-runner/present')) {
+			if (behaviour.kind === 'create-fails') {
+				return jsonResponse(
+					{ code: 500, message: 'Could not present the credential to the verifier.' },
+					500
+				);
+			}
+			const body = init?.body
+				? (JSON.parse(init.body as string) as { interactionUrl?: string })
+				: {};
+			const miss = typeof body.interactionUrl === 'string' && body.interactionUrl.includes('miss');
+			return jsonResponse({
+				request: {
+					transport: 'vcalm',
+					vcapiAdvertised: true,
+					vprReceived: true,
+					vprMatched: true,
+					didAuth: true,
+					requestTls: { atLeastTls12: true, protocol: 'TLSv1.3' },
+					responseTls: { atLeastTls12: true, protocol: 'TLSv1.3' }
+				},
+				present: miss
+					? { submitted: false, error: { message: 'The exchange rejected the presentation.' } }
+					: { submitted: true, transportStatus: 200 }
+			});
+		}
+
 		if (!url.includes('/api/exchange-runner/')) return real(input, init);
 
 		if (url.includes('/create')) {

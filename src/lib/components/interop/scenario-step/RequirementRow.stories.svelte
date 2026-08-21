@@ -66,6 +66,16 @@
 	</div>
 </Story>
 
+<!--
+	Mid-run, the reveal is held: a neutral echo of the chosen answer, no tone dot,
+	no verdict, no ground truth — nothing that primes the next shuffled pass.
+-->
+<Story name="Attested — answered, reveal withheld" asChild>
+	<div class="max-w-2xl bg-background p-6">
+		<RequirementRow requirement={handled} outcome={answeredWrongly} revealed={false} />
+	</div>
+</Story>
+
 <Story name="Pending" asChild>
 	<div class="max-w-2xl bg-background p-6">
 		<RequirementRow requirement={displayed} pending />

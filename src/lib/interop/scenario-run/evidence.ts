@@ -1,5 +1,54 @@
 import type { RunnerExchangeView } from '$lib/interop/runner-state.js';
 
+/** One host's TLS posture, as observed by the present transport. Client-safe. */
+export type TlsSummary = {
+	/** The host negotiated TLS 1.2 or 1.3. */
+	atLeastTls12: boolean;
+	/** The negotiated protocol string, when known (`TLSv1.3`). */
+	protocol?: string;
+	/** Why the probe could not confirm TLS 1.2, when it couldn't. */
+	error?: string;
+};
+
+/**
+ * The facts a `present-to-verifier` step observed while engaging the operator's
+ * verifier — the request half. A **client-safe** summary (plain data, no server
+ * types): the present route on the server derives it from the live exchange and
+ * hands it back, and the vcalm floor `automatic` checks read it. Absent fields
+ * are not "false" — the whole summary is absent until the step presents.
+ */
+export type VerifierRequestSummary = {
+	/** Which live transport engaged the verifier. `'oid4vp'` arrives in M10b. */
+	transport: 'vcalm';
+	/** The interaction URL advertised a `vcapi` exchange endpoint. */
+	vcapiAdvertised: boolean;
+	/** The exchange returned a `verifiablePresentationRequest`. */
+	vprReceived: boolean;
+	/** The VPR's QueryByExample matched an OpenBadgeCredential. */
+	vprMatched: boolean;
+	/** Why the query did not match, when it didn't. */
+	matchReason?: string;
+	/** The VPR carried a DIDAuthentication query. */
+	didAuth: boolean;
+	/** TLS on the interaction host. */
+	requestTls: TlsSummary;
+	/** TLS on the `vcapi` host. */
+	responseTls: TlsSummary;
+};
+
+/**
+ * The delivery half of a `present-to-verifier` step: did the signed credential
+ * reach the verifier's exchange? A transport miss is `submitted: false` with a
+ * reason, **never** an error — the operator retries. Client-safe.
+ */
+export type VerifierPresentResult = {
+	submitted: boolean;
+	/** The exchange endpoint's HTTP status, when the submission reached it. */
+	transportStatus?: number;
+	/** Why the submission did not land, when it didn't. */
+	error?: { message: string };
+};
+
 /**
  * What one step produced, and the only thing an `automatic` check may read.
  *
@@ -15,6 +64,13 @@ export type StepEvidence = {
 	artifact?: unknown;
 	/** Transport-level outcome, independent of what the exchange record says. */
 	transport?: { delivered: boolean; error?: { message: string } };
+	/**
+	 * A `present-to-verifier` step's observed request — what the operator's
+	 * verifier asked for. The vcalm floor checks read this.
+	 */
+	verifierRequest?: VerifierRequestSummary;
+	/** A `present-to-verifier` step's delivery result. The delivery check reads this. */
+	verifierPresent?: VerifierPresentResult;
 };
 
 /**
@@ -61,4 +117,20 @@ export function artifactForStep(evidence: RunEvidence, stepId: string): unknown 
 /** Read an exchange variable by name, narrowing nothing — checks defend themselves. */
 export function exchangeVariable(evidence: RunEvidence, stepId: string, name: string): unknown {
 	return exchangeForStep(evidence, stepId)?.variables?.[name];
+}
+
+/** The verifier request a `present-to-verifier` step observed, or `undefined`. */
+export function verifierRequestForStep(
+	evidence: RunEvidence,
+	stepId: string
+): VerifierRequestSummary | undefined {
+	return evidence.steps[stepId]?.verifierRequest;
+}
+
+/** The delivery result of a `present-to-verifier` step, or `undefined`. */
+export function verifierPresentForStep(
+	evidence: RunEvidence,
+	stepId: string
+): VerifierPresentResult | undefined {
+	return evidence.steps[stepId]?.verifierPresent;
 }

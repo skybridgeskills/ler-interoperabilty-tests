@@ -173,6 +173,48 @@ export const directDeliveryScenario: Scenario = Scenario({
 	]
 });
 
+/**
+ * A `present-to-verifier` scenario — the operator pastes their verifier's live
+ * interaction URL, the suite presents a credential to it, and the operator
+ * attests the verdict. Drives the paste-field → present → settle → answer
+ * choreography that the exchange and direct fixtures cannot. Not a catalog entry
+ * (P4 authors the real vcalm scenarios).
+ */
+export const presentScenario: Scenario = Scenario({
+	slug: 'vcalm-present-fixture',
+	name: 'Present a credential to your verifier',
+	blurb: 'Paste your verifier’s interaction URL, present, and report what it decided.',
+	role: 'verifier',
+	workflow: 'credential-request-and-verification',
+	memberships: [{ profile: 'vcalm', level: 'required' }],
+	steps: [
+		{
+			id: 'present',
+			title: 'Present the credential',
+			summary: 'We will present a credential to your verifier over a VC-API exchange.',
+			action: { kind: 'present-to-verifier', credential: 'minimal-ob3', transport: 'vcalm' },
+			requirements: [
+				{
+					id: 'verdict',
+					statement: 'What did your verifier decide about this credential?',
+					level: 'MUST',
+					check: {
+						kind: 'attested',
+						answer: {
+							kind: 'choose',
+							options: [
+								{ value: 'accepted', label: 'Accepted it' },
+								{ value: 'rejected', label: 'Rejected it' }
+							],
+							correct: 'accepted'
+						}
+					}
+				}
+			]
+		}
+	]
+});
+
 /** A single-action-step scenario — the only shape attach mode accepts (D3). */
 export const singleStepScenario: Scenario = Scenario({
 	slug: 'oid4-wallet-acceptance',

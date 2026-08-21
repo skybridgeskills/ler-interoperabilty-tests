@@ -4,6 +4,8 @@ import { oid4WalletAcceptance } from './oid4-wallet-acceptance.js';
 import { oid4WalletFaithfulRendering } from './oid4-wallet-faithful-rendering.js';
 import { oid4WalletRefusalDiscrimination } from './oid4-wallet-refusal-discrimination.js';
 import type { Scenario } from './scenario-schema.js';
+import { vcalmVerifierAcceptance } from './vcalm-verifier-acceptance.js';
+import { vcalmVerifierDelivery } from './vcalm-verifier-delivery.js';
 
 /**
  * The scenario catalog — every runnable scenario in the suite, in display
@@ -24,7 +26,9 @@ export const allScenarios: Scenario[] = [
 	oid4WalletAcceptance,
 	oid4WalletRefusalDiscrimination,
 	oid4WalletFaithfulRendering,
-	ob3DirectVerifierAcceptance
+	ob3DirectVerifierAcceptance,
+	vcalmVerifierDelivery,
+	vcalmVerifierAcceptance
 ];
 
 // Fail loudly at import rather than rendering a meter whose denominator is

@@ -3,10 +3,12 @@ import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 
 import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
+import { scenarioBySlug } from '$lib/interop/scenarios/index.js';
 
 import {
 	demoScenario,
 	directDeliveryScenario,
+	presentScenario,
 	singleStepScenario,
 	storedRun
 } from './scenario-fixture.js';
@@ -122,18 +124,37 @@ describe('ScenarioPage — the reveal choreography', UNDER_LOAD, () => {
 			.toBeInTheDocument();
 	});
 
-	it('reveals immediately on answering, and a wrong answer does not stop the run', async () => {
+	it('withholds the attested reveal mid-run, echoing the answer, and does not stop the run', async () => {
 		withApi({ kind: 'settles' });
 		render(ScenarioPage, { scenario: demoScenario });
 
 		await page.getByRole('button', { name: 'Accepted it', exact: true }).click();
 
-		// Something was revealed, and the run moved on to the next step's question.
-		await expect
-			.element(page.getByText(/What actually happened|Correct/).first())
-			.toBeInTheDocument();
+		// The run moved on to the next step's question...
 		await expect
 			.element(page.getByRole('button', { name: 'Accepted it', exact: true }))
+			.toBeInTheDocument();
+		// ...but nothing has revealed yet — the answer is only echoed flatly, so the
+		// operator is not primed for the remaining shuffled passes.
+		await expect.element(page.getByText(/You answered/).first()).toBeInTheDocument();
+		expect(page.getByText(/What actually happened/).elements()).toHaveLength(0);
+	});
+
+	it('reveals every attested requirement together once the run is complete', async () => {
+		withApi({ kind: 'settles' });
+		render(ScenarioPage, { scenario: demoScenario });
+
+		// Answer all three passes, then the debrief — nothing has revealed so far.
+		await answerEachStep('Refused it', 3);
+		const debrief = page.getByRole('button', { name: 'Yes', exact: true });
+		await expect.element(debrief).toBeInTheDocument();
+		expect(page.getByText(/What actually happened/).elements()).toHaveLength(0);
+
+		await debrief.click();
+
+		// With nothing left to answer, the held reveals appear together.
+		await expect
+			.element(page.getByText(/What actually happened|Correct|Not what happened/).first())
 			.toBeInTheDocument();
 	});
 });
@@ -269,5 +290,68 @@ describe('ScenarioPage — a deliver-direct step', UNDER_LOAD, () => {
 		render(ScenarioPage, { scenario: directDeliveryScenario });
 
 		await expect.element(page.getByText(/cannot be recorded/)).toBeInTheDocument();
+	});
+});
+
+describe('ScenarioPage — a present-to-verifier step', UNDER_LOAD, () => {
+	it('presents once the operator pastes a URL, then offers the verdict', async () => {
+		withApi({ kind: 'settles' });
+		render(ScenarioPage, { scenario: presentScenario });
+
+		// The paste field is shown; no verdict is answerable yet.
+		const field = page.getByRole('textbox');
+		await expect.element(field).toBeInTheDocument();
+		expect(page.getByRole('button', { name: 'Accepted it', exact: true }).elements()).toHaveLength(
+			0
+		);
+
+		await field.fill('https://verifier.test/interactions/ex-1');
+		await page.getByRole('button', { name: 'Present', exact: true }).click();
+
+		// Presented → the confirmation shows and the verdict becomes answerable.
+		await expect.element(page.getByText(/Presented to your verifier/)).toBeInTheDocument();
+		const accepted = page.getByRole('button', { name: 'Accepted it', exact: true });
+		await expect.element(accepted).toBeInTheDocument();
+		await accepted.click();
+
+		const finish = page.getByRole('button', { name: 'Finish' });
+		await expect.element(finish).toBeEnabled();
+		await finish.click();
+		expect(persistedRun(presentScenario.slug)?.attempts).toBe(1);
+	});
+
+	it('stays in-flight and lets the operator re-present after a transport miss', async () => {
+		withApi({ kind: 'settles' });
+		render(ScenarioPage, { scenario: presentScenario });
+
+		const field = page.getByRole('textbox');
+		await field.fill('https://verifier.test/interactions/miss');
+		await page.getByRole('button', { name: 'Present', exact: true }).click();
+
+		// The amber note appears and the button offers a re-present — no verdict yet.
+		await expect.element(page.getByText(/rejected the presentation/)).toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: 'Re-present' })).toBeInTheDocument();
+		expect(page.getByRole('button', { name: 'Accepted it', exact: true }).elements()).toHaveLength(
+			0
+		);
+	});
+
+	it('drives the pure-automatic delivery scenario: present → wire checks resolve → finish', async () => {
+		withApi({ kind: 'settles' });
+		render(ScenarioPage, { scenario: scenarioBySlug('vcalm-verifier-delivery')! });
+
+		const field = page.getByRole('textbox');
+		await field.fill('https://verifier.test/interactions/ex-1');
+		await page.getByRole('button', { name: 'Present', exact: true }).click();
+
+		// No attested question — the six wire checks resolve and the run can finish.
+		const finish = page.getByRole('button', { name: 'Finish' });
+		await expect.element(finish).toBeEnabled();
+		expect(page.getByRole('button', { name: 'Accepted it', exact: true }).elements()).toHaveLength(
+			0
+		);
+
+		await finish.click();
+		expect(persistedRun('vcalm-verifier-delivery')?.status).toBe('passed');
 	});
 });

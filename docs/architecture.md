@@ -14,16 +14,23 @@ codebase evolves.
   `src/lib/server/domain/<feature>/` — today: `wallet-crypto`,
   `wallet-client`, `issuer-runner`, `wallet-runner`, `exchange-runner`,
   `scenario-runner` (credential recipes, presentation requests, the
-  `resolveIssuingContext` seam, and the `deliver-direct` local signer —
+  `resolveIssuingContext` seam, the `deliver-direct` local signer —
   `scenarioRunner.deliverDirect`, which signs one recipe with an
-  ephemeral did:key issuer for a file the operator hands over), and
-  `verifier-runner` (the OID4VP/VCALM verifier acceptance engine —
-  acceptance-pass generator + scorer, request floors, and present-time
-  delivery; see
+  ephemeral did:key issuer for a file the operator hands over — and the
+  `present-to-verifier` driver `scenarioRunner.present`, which presents a
+  signed recipe to the operator's verifier over a live exchange),
+  `verifier-present` (the shared holder-side present primitive both the
+  scenario runner and OID4 use — a leaf neither `scenario-runner` nor
+  `verifier-runner` crosses into the other for), and `verifier-runner`
+  (the OID4VP/VCALM verifier acceptance engine — acceptance-pass
+  generator + scorer, request floors, and present-time delivery; see
   [`adr/2026-07-04-verifier-assessment-model.md`](adr/2026-07-04-verifier-assessment-model.md)).
-  The **direct-delivery** verifier page has migrated to a scenario
-  (`ob3-direct-verifier-acceptance`); `verifier-runner` still serves the
-  oid4/vcalm verifier pages until their own migration
+  The **direct-delivery** and **VCALM** verifier pages have migrated to
+  scenarios (`ob3-direct-verifier-acceptance`, and the pair
+  `vcalm-verifier-delivery` / `vcalm-verifier-acceptance`);
+  `verifier-runner` now serves the **OID4** verifier page until its own
+  migration (M10b), plus the still-standing VCALM engine that M13 sweeps
+  with the other legacy page components
   ([`adr/2026-08-19-migrating-a-server-scorer-onto-scenarios.md`](adr/2026-08-19-migrating-a-server-scorer-onto-scenarios.md)).
 
 ## Scenarios
@@ -52,12 +59,17 @@ Four properties are load-bearing:
 - **`workflow` is taxonomy only.** It groups the catalog and never constrains
   what a step's action may do.
 - **`ScenarioAction` is a closed union** (`issue`, `request-presentation`,
-  `deliver-direct`). Extending it is the only escape hatch — a new kind is
-  reviewed once and reusable forever, unlike a bespoke page. `issue` and
-  `request-presentation` mint an exchange through the transaction service;
-  `deliver-direct` mints none — the suite signs the recipe locally
-  (`scenarioRunner.deliverDirect`, optional `tamper`) for the operator to
-  download and hand over.
+  `deliver-direct`, `present-to-verifier`). Extending it is the only escape
+  hatch — a new kind is reviewed once and reusable forever, unlike a bespoke
+  page. `issue` and `request-presentation` mint an exchange through the
+  transaction service; `deliver-direct` mints none — the suite signs the recipe
+  locally (`scenarioRunner.deliverDirect`, optional `tamper`) for the operator to
+  download and hand over; `present-to-verifier` is the inverse of
+  `request-presentation` — the suite is **holder**, presenting a signed recipe to
+  the operator's own verifier over a live exchange the operator drives (they
+  paste the interaction URL at run time), `transport: 'vcalm'` today, OID4VP in
+  M10b (see
+  [`adr/2026-08-20-present-to-verifier-action.md`](adr/2026-08-20-present-to-verifier-action.md)).
 - **The level belongs to the membership, not the scenario.** A scenario carries
   `memberships[]`, each `required | optional | { oneOf }`, exactly one naming a
   base profile. So a profile is a _derived_ set of memberships
@@ -337,10 +349,12 @@ page's read path is identical afterwards.
 exchange settles.
 
 The body is `{ kind: 'issue', credential, tamper?, intent?, exchangeIdPrefix? }`
-or `{ kind: 'request-presentation', request }`. (`deliver-direct`, the third
-`ScenarioAction` kind, mints no exchange and never reaches here.) There is no
-default action: an unrecognised body is a 400, as is an id no registry knows or
-an intent this deployment cannot serve.
+or `{ kind: 'request-presentation', request }`. (`deliver-direct` and
+`present-to-verifier` mint no suite exchange and never reach here — the first
+signs a file locally, the second joins an exchange the operator's verifier
+hosts, each via its own `scenario-runner` route.) There is no default action: an
+unrecognised body is a 400, as is an id no registry knows or an intent this
+deployment cannot serve.
 
 ### What a scenario may vary, and where it comes from
 

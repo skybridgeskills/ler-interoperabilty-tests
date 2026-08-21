@@ -97,6 +97,24 @@ export const ScenarioAction = ZodFactory(
 			 */
 			tamper: z.enum(['proof', 'claim']).optional(),
 			intent: IssuingIntent.schema.optional()
+		}),
+		/**
+		 * Present a credential to the operator's **own verifier** over a live
+		 * exchange. The suite is the **holder** here — the inverse of
+		 * `request-presentation`, where the suite is the verifier requesting from a
+		 * wallet. The operator's verifier drives (it issues the interaction), and
+		 * the operator supplies the interaction URL at run time (a paste field on
+		 * the step); the suite signs the step's credential and submits it.
+		 *
+		 * `transport` is the seam OID4VP slots into (M10b); M10a ships `'vcalm'`
+		 * only. `tamper` corrupts the credential after signing, exactly as
+		 * `deliver-direct` does, so a discrimination pass can present a broken one.
+		 */
+		z.object({
+			kind: z.literal('present-to-verifier'),
+			credential: RecipeId.schema,
+			transport: z.enum(['vcalm']),
+			tamper: z.enum(['proof', 'claim']).optional()
 		})
 	])
 );

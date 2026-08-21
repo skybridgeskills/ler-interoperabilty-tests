@@ -15,6 +15,7 @@
 	} from '$lib/interop/scenarios/index.js';
 
 	import { transportFor } from './exchange-step.js';
+	import PresentField from './PresentField.svelte';
 	import { createScenarioRunController } from './scenario-run-controller.svelte.js';
 
 	/**
@@ -48,6 +49,13 @@
 	/** The prop wins when given, so Storybook can drive read-only state without a browser store. */
 	const stored = $derived(storedRun ?? run.discovered);
 	const showingStored = $derived(!!stored && !run.hasActiveRun);
+	/**
+	 * Attested reveals hold until the run has nothing left to answer, then show
+	 * together — a mid-run reveal primes the operator across the remaining
+	 * shuffled passes. A stored, read-only run reveals from the start. Automatic
+	 * outcomes are unaffected (the row resolves them immediately either way).
+	 */
+	const revealed = $derived(showingStored || run.unanswered.length === 0);
 
 	onMount(() => {
 		if (blocked || storedRun) return;
@@ -108,6 +116,24 @@
 		{:else}
 			<p class="text-body-md text-muted-foreground">Preparing the credential…</p>
 		{/if}
+	{:else if activeStep?.action?.kind === 'present-to-verifier'}
+		<!--
+			The operator pastes their verifier's fresh interaction URL; the suite
+			presents the step's credential to it. Once submitted the step settles, so
+			the field gives way to a confirmation and the questions (if any) take over.
+		-->
+		{#if run.engineStateOf(activeStep.id) === 'settled'}
+			<p class="text-body-md text-muted-foreground">
+				Presented to your verifier. Report what it decided below.
+			</p>
+		{:else}
+			<PresentField
+				busy={run.presentBusy}
+				note={run.presentNote}
+				retry={run.presentRetry}
+				onPresent={(url) => run.present(url)}
+			/>
+		{/if}
 	{:else if run.link}
 		<ExchangeRunnerPanel data={panelData} actions={{}} />
 	{:else}
@@ -129,6 +155,7 @@
 				setup={step.summary}
 				requirements={step.requirements}
 				outcomes={run.outcomes}
+				{revealed}
 				onAnswer={run.answerableNow(step.id) ? run.answer : undefined}
 				action={!showingStored && step.id === run.activeStepId && step.action
 					? actionPanel

@@ -269,3 +269,31 @@ floor/delivery `automated` rows above **remain on this engine**, deferred
 to a child effort (planning issue 10 — the live present-to-verifier
 transport). The row-registry, `resolve-rows`, `score-run*`, and the
 floor checks are untouched and still serve those two pages until then.
+
+## Update 2026-08-20 (M10a — reveal timing splits by source)
+
+M10a refines the M10 amendment above ("reveal is now per requirement").
+Watching a live discrimination run, a wrong attested answer's reveal
+popped up mid-run, which primes the operator for the remaining shuffled
+passes — the very pattern the shuffle exists to prevent. The rule is now
+**split by outcome source**:
+
+- **Attested reveals defer to end-of-run.** An answered attested
+  requirement shows only a neutral echo of what was picked ("You answered
+  _Rejected it_.") — no tone dot, no verdict word, no ground truth — until
+  the run has nothing left to answer, at which point every attested reveal
+  appears together. This restores the deferral the pre-scenario verifier
+  flow had, but for legibility rather than to protect a score.
+- **Automatic reveals stay immediate.** The wire's pass/fail is the
+  teaching moment the model values, carries no answer to prime, and
+  resolves the instant the step settles — unchanged.
+
+The gate is a single `revealed` flag the page derives (`run.unanswered
+=== 0`, or a stored/read-only run) and threads down through
+`ScenarioStepCard` to `RequirementRow`; it is presentational only —
+scoring and the stored record are untouched, so a stored run re-renders
+its reveals exactly as before. This **retrofits M10's shipped
+`ob3-direct-verifier-acceptance`**: it now holds its reveals to the end
+too. No per-scenario flag is needed — the same rule does the right thing
+for a pure-automatic scenario (nothing to defer) and an attested
+discrimination scenario (deferred).

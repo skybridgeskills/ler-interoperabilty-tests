@@ -39,17 +39,19 @@ function fullRun(slug: string): ScenarioRunRecord {
 describe('completionGroups', () => {
 	it('emits a group only for a (profile, role) that has scenarios', () => {
 		const groups = completionGroups({ runs: {} });
-		// oid4 × wallet from the PoC, plus the migrated ob3-direct-delivery × verifier (M10).
+		// vcalm × verifier (M10a), oid4 × wallet from the PoC, and the migrated
+		// ob3-direct-delivery × verifier (M10) — profile-major, in allProfiles order.
 		expect(groups.map((g) => `${g.profileSlug}:${g.roleSlug}`)).toEqual([
+			'vcalm:verifier',
 			'oid4:wallet',
 			'ob3-direct-delivery:verifier'
 		]);
 	});
 
 	it('carries M4’s evaluated result, not a recomputation', () => {
-		const [group] = completionGroups({ runs: {} });
-		expect(group.result.met).toBe(0);
-		expect(group.result.total).toBeGreaterThan(0);
+		const oid4 = completionGroups({ runs: {} }).find((g) => g.profileSlug === 'oid4')!;
+		expect(oid4.result.met).toBe(0);
+		expect(oid4.result.total).toBeGreaterThan(0);
 	});
 
 	it('fills the meter when every requirement is passed', () => {
@@ -57,8 +59,8 @@ describe('completionGroups', () => {
 			'oid4-wallet-acceptance': fullRun('oid4-wallet-acceptance'),
 			'oid4-wallet-refusal-discrimination': fullRun('oid4-wallet-refusal-discrimination')
 		};
-		const [group] = completionGroups({ runs });
-		expect(group.result.met).toBe(group.result.total);
+		const oid4 = completionGroups({ runs }).find((g) => g.profileSlug === 'oid4')!;
+		expect(oid4.result.met).toBe(oid4.result.total);
 	});
 });
 
@@ -72,9 +74,22 @@ describe('completionGroupsForProfile', () => {
 		expect(groups.map((g) => g.roleSlug)).toEqual(['wallet']);
 	});
 
+	it('scopes vcalm to its verifier scenarios', () => {
+		const groups = completionGroupsForProfile({
+			profileSlug: 'vcalm',
+			profileName: 'VCALM',
+			runs: {}
+		});
+		expect(groups.map((g) => g.roleSlug)).toEqual(['verifier']);
+	});
+
 	it('is empty for a profile with no scenarios', () => {
 		expect(
-			completionGroupsForProfile({ profileSlug: 'vcalm', profileName: 'VCALM', runs: {} })
+			completionGroupsForProfile({
+				profileSlug: 'open-skill-alignment',
+				profileName: 'Open Skill Alignment',
+				runs: {}
+			})
 		).toEqual([]);
 	});
 });
@@ -102,10 +117,10 @@ describe('combinationHasScenario', () => {
 
 describe('obligationsByWorkflow', () => {
 	it('groups a set of obligations under their workflow', () => {
-		const [group] = completionGroups({ runs: {} });
-		const byWorkflow = obligationsByWorkflow(group.result.obligations);
+		const oid4 = completionGroups({ runs: {} }).find((g) => g.profileSlug === 'oid4')!;
+		const byWorkflow = obligationsByWorkflow(oid4.result.obligations);
 		expect(byWorkflow).toHaveLength(1);
 		expect(byWorkflow[0].workflow).toBe('credential-acceptance');
-		expect(byWorkflow[0].obligations.length).toBe(group.result.obligations.length);
+		expect(byWorkflow[0].obligations.length).toBe(oid4.result.obligations.length);
 	});
 });

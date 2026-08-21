@@ -36,7 +36,8 @@
 		outcomes,
 		onAnswer,
 		action,
-		error
+		error,
+		revealed = true
 	}: {
 		/** 1-based position in RUN order. */
 		index: number;
@@ -53,6 +54,11 @@
 		action?: Snippet;
 		/** What went wrong, when the harness could not run this step at all. */
 		error?: string;
+		/**
+		 * Whether answered attested requirements show their reveals — a whole-run
+		 * gate the page threads down, true once the run is complete or read-only.
+		 */
+		revealed?: boolean;
 	} = $props();
 
 	const summary = $derived(summariseStep(requirements, outcomes));
@@ -71,6 +77,7 @@
 		<RequirementRow
 			{requirement}
 			outcome={outcomes[requirement.id]}
+			{revealed}
 			onAnswer={readOnly || !onAnswer ? undefined : (value) => onAnswer(requirement.id, value)}
 		/>
 	{/each}
