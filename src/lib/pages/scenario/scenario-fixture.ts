@@ -132,6 +132,47 @@ export const storedRun: ScenarioRunRecord = {
 	attempts: 2
 };
 
+/**
+ * A `deliver-direct` scenario — a single file the operator downloads and hands
+ * to the system under test, then attests. No exchange is minted; the step
+ * settles as soon as the credential is signed, so this drives the
+ * download-panel-then-answer choreography the exchange fixtures cannot.
+ */
+export const directDeliveryScenario: Scenario = Scenario({
+	slug: 'ob3-direct-verifier-acceptance',
+	name: 'Hand your verifier a credential',
+	blurb: 'Download a credential, feed it to your verifier, and report what it decided.',
+	role: 'verifier',
+	workflow: 'direct-credential-verification',
+	memberships: [{ profile: 'ob3-direct-delivery', level: 'required' }],
+	steps: [
+		{
+			id: 'valid',
+			title: 'Offer the valid credential',
+			summary: 'We will hand your verifier a well-formed Open Badges credential.',
+			action: { kind: 'deliver-direct', credential: 'minimal-ob3' },
+			requirements: [
+				{
+					id: 'valid-verdict',
+					statement: 'What did your verifier decide about this credential?',
+					level: 'MUST',
+					check: {
+						kind: 'attested',
+						answer: {
+							kind: 'choose',
+							options: [
+								{ value: 'accepted', label: 'Accepted it' },
+								{ value: 'rejected', label: 'Rejected it' }
+							],
+							correct: 'accepted'
+						}
+					}
+				}
+			]
+		}
+	]
+});
+
 /** A single-action-step scenario — the only shape attach mode accepts (D3). */
 export const singleStepScenario: Scenario = Scenario({
 	slug: 'oid4-wallet-acceptance',

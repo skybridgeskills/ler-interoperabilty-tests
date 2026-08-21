@@ -1,6 +1,7 @@
 import type { AppContext } from './app-context.js';
 import { provideRealTransactionServiceClient } from './domain/exchange-runner/index.js';
 import { provideRealIssuerRunner } from './domain/issuer-runner/index.js';
+import { provideRealScenarioRunner } from './domain/scenario-runner/index.js';
 import { provideRealVerifierRunner } from './domain/verifier-runner/index.js';
 import {
 	provideRealOid4IssuerFlow,
@@ -16,6 +17,7 @@ import { RealTimeService } from './services/time-service/time-service.js';
 export function DevAppContext(env: Record<string, unknown>): AppContext {
 	const exchangeRunner = provideRealTransactionServiceClient(env);
 	const issuerRunner = provideRealIssuerRunner();
+	const scenarioRunner = provideRealScenarioRunner();
 	const verifierRunner = provideRealVerifierRunner();
 	const walletClient = provideRealWalletClient(exchangeRunner.exchangeRunnerConfig);
 	const vcalmIssuerFlow = provideRealVcalmIssuerFlow();
@@ -31,6 +33,7 @@ export function DevAppContext(env: Record<string, unknown>): AppContext {
 		...exchangeRunner,
 		...health,
 		...issuerRunner,
+		...scenarioRunner,
 		...verifierRunner,
 		...walletClient,
 		...vcalmIssuerFlow,

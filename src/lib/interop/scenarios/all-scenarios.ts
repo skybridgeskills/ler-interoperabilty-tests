@@ -1,4 +1,5 @@
 import { assertValidCatalog } from './catalog-validation.js';
+import { ob3DirectVerifierAcceptance } from './ob3-direct-verifier-acceptance.js';
 import { oid4WalletAcceptance } from './oid4-wallet-acceptance.js';
 import { oid4WalletFaithfulRendering } from './oid4-wallet-faithful-rendering.js';
 import { oid4WalletRefusalDiscrimination } from './oid4-wallet-refusal-discrimination.js';
@@ -22,7 +23,8 @@ import type { Scenario } from './scenario-schema.js';
 export const allScenarios: Scenario[] = [
 	oid4WalletAcceptance,
 	oid4WalletRefusalDiscrimination,
-	oid4WalletFaithfulRendering
+	oid4WalletFaithfulRendering,
+	ob3DirectVerifierAcceptance
 ];
 
 // Fail loudly at import rather than rendering a meter whose denominator is

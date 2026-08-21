@@ -24,6 +24,26 @@ export function stubExchangeApi(behaviour: StubBehaviour): () => void {
 
 	globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
 		const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+
+		// A `deliver-direct` step signs one credential here instead of minting an
+		// exchange. `create-fails` models the signing route erroring; otherwise it
+		// hands back a stub credential the step settles on.
+		if (url.includes('/api/scenario-runner/deliver-direct')) {
+			if (behaviour.kind === 'create-fails') {
+				return jsonResponse(
+					{ code: 500, message: 'Could not sign the deliverable credential.' },
+					500
+				);
+			}
+			return jsonResponse({
+				credential: {
+					type: ['VerifiableCredential', 'OpenBadgeCredential'],
+					name: 'LER Interop Test Credential',
+					proof: { type: 'DataIntegrityProof', proofValue: 'zStubProofValue' }
+				}
+			});
+		}
+
 		if (!url.includes('/api/exchange-runner/')) return real(input, init);
 
 		if (url.includes('/create')) {

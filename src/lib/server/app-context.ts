@@ -1,6 +1,7 @@
 import type { ExchangeRunnerConfig } from './domain/exchange-runner/exchange-runner-config.js';
 import type { TransactionServiceClient } from './domain/exchange-runner/transaction-service-client.js';
 import type { IssuerRunner } from './domain/issuer-runner/issuer-runner.js';
+import type { ScenarioRunner } from './domain/scenario-runner/index.js';
 import type { VerifierRunner } from './domain/verifier-runner/verifier-runner.js';
 import type {
 	Oid4IssuerFlow,
@@ -26,6 +27,7 @@ export interface AppContext {
 	exchangeRunnerConfig: ExchangeRunnerConfig;
 	healthRegistry: HealthRegistry;
 	issuerRunner: IssuerRunner;
+	scenarioRunner: ScenarioRunner;
 	verifierRunner: VerifierRunner;
 	walletClient: WalletClient;
 	vcalmIssuerFlow: VcalmIssuerFlow;

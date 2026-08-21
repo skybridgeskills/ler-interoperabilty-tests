@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 
+	import { DeliverableCredentialPanel } from '$lib/components/interop/deliverable-credential/index.js';
 	import { ExchangeRunnerPanel } from '$lib/components/interop/exchange-runner/index.js';
 	import { ScenarioStepCard } from '$lib/components/interop/scenario-step/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -60,6 +61,8 @@
 
 	const profile = $derived(baseProfileOf(scenario.memberships));
 	const activeStep = $derived(scenario.steps.find((s) => s.id === run.activeStepId));
+	const activeIndex = $derived(run.runSteps.findIndex((s) => s.id === run.activeStepId));
+	const deliverableLabel = $derived(activeStep ? run.labelFor(activeStep, activeIndex) : '');
 	const panelData = $derived({
 		intent: (activeStep?.action?.kind === 'request-presentation' ? 'verification' : 'issuance') as
 			| 'issuance'
@@ -94,12 +97,18 @@
 
 {#snippet actionPanel()}
 	<!--
-		The runner panel is repositioned, not redesigned: it renders inside the
-		live step's action slot. It is passed no actions, so nothing here can mint
-		out of band — the controller owns the run's lifecycle, and "Start over" is
-		the only route to another exchange.
+		The action slot of the live step. A `deliver-direct` step renders the signed
+		credential to download and hand over; the exchange kinds render the runner
+		panel — repositioned, not redesigned, and passed no actions so nothing can
+		mint out of band. "Start over" is the only route to another exchange.
 	-->
-	{#if run.link}
+	{#if activeStep?.action?.kind === 'deliver-direct'}
+		{#if run.deliverable !== undefined}
+			<DeliverableCredentialPanel credential={run.deliverable} label={deliverableLabel} />
+		{:else}
+			<p class="text-body-md text-muted-foreground">Preparing the credential…</p>
+		{/if}
+	{:else if run.link}
 		<ExchangeRunnerPanel data={panelData} actions={{}} />
 	{:else}
 		<p class="text-body-md text-muted-foreground">Creating the exchange…</p>

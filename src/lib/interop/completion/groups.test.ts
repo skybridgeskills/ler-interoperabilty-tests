@@ -39,8 +39,11 @@ function fullRun(slug: string): ScenarioRunRecord {
 describe('completionGroups', () => {
 	it('emits a group only for a (profile, role) that has scenarios', () => {
 		const groups = completionGroups({ runs: {} });
-		// The PoC catalog is oid4 × wallet only.
-		expect(groups.map((g) => `${g.profileSlug}:${g.roleSlug}`)).toEqual(['oid4:wallet']);
+		// oid4 × wallet from the PoC, plus the migrated ob3-direct-delivery × verifier (M10).
+		expect(groups.map((g) => `${g.profileSlug}:${g.roleSlug}`)).toEqual([
+			'oid4:wallet',
+			'ob3-direct-delivery:verifier'
+		]);
 	});
 
 	it('carries M4’s evaluated result, not a recomputation', () => {

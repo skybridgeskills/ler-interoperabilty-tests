@@ -16,6 +16,7 @@ import {
 } from '$lib/interop/scenario-run/index.js';
 import type { Scenario, ScenarioStep } from '$lib/interop/scenarios/index.js';
 
+import { startDirectStep } from './direct-step.js';
 import {
 	attachExchangeStep,
 	type RunnerError,
@@ -51,6 +52,8 @@ export function createScenarioRunController(
 	let current = $state<ScenarioRunState | undefined>(undefined);
 	let discovered = $state<ScenarioRunRecord | undefined>(undefined);
 	let link = $state<StepLink | undefined>(undefined);
+	/** The signed credential of the active `deliver-direct` step, for its download panel. */
+	let deliverable = $state<unknown>(undefined);
 	let stepError = $state<RunnerError | undefined>(undefined);
 	let recorded = $state(false);
 	let handle: { stop: () => void } | undefined;
@@ -97,6 +100,7 @@ export function createScenarioRunController(
 		handle?.stop();
 		handle = undefined;
 		link = undefined;
+		deliverable = undefined;
 		stepError = undefined;
 		recorded = false;
 		discovered = undefined;
@@ -120,6 +124,7 @@ export function createScenarioRunController(
 
 		current = beginStep(state, step.id);
 		link = undefined;
+		deliverable = undefined;
 		handle?.stop();
 		handle = undefined;
 
@@ -128,10 +133,15 @@ export function createScenarioRunController(
 			settle({ stepId: step.id });
 			return;
 		}
+
+		// A direct-delivery step mints no exchange: the suite signs a credential
+		// the operator downloads and hands to their tool, then answers. It settles
+		// as soon as the credential is in hand.
 		if (step.action.kind === 'deliver-direct') {
-			fail(step.id, {
-				message: 'Direct delivery is not yet drivable from a scenario page.',
-				hint: 'Run it from its runnable page until this action kind is wired up.'
+			handle = startDirectStep(step, {
+				onReady: (credential) => (deliverable = credential),
+				onSettled: (evidence: StepEvidence) => settle(evidence),
+				onFailed: (error: RunnerError) => fail(step.id, error)
 			});
 			return;
 		}
@@ -201,6 +211,9 @@ export function createScenarioRunController(
 		},
 		get link() {
 			return link;
+		},
+		get deliverable() {
+			return deliverable;
 		},
 		get stepError() {
 			return stepError;

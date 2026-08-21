@@ -1,5 +1,6 @@
 import type { PassKind } from '$lib/interop/verifier-run/index.js';
 import { minimalOpenBadgeCredential } from '$lib/server/domain/credential-fixtures/minimal-open-badge-credential.js';
+import { tamperProofValue } from '$lib/server/domain/credential-tamper/index.js';
 import type {
 	WalletCrypto,
 	WalletCryptosuite,
@@ -84,19 +85,6 @@ async function issueBase(
 	});
 	mutate?.(credential);
 	return { credential: await crypto.issueCredential({ issuer, credential }), holder };
-}
-
-/** Flip the last `proofValue` character (within the base58btc alphabet). */
-function tamperProofValue(signed: unknown): unknown {
-	const credential = signed as { proof?: { proofValue?: string } | { proofValue?: string }[] };
-	const proof = Array.isArray(credential.proof) ? credential.proof[0] : credential.proof;
-	if (!proof?.proofValue) {
-		throw new Error('Signed pass credential has no proof.proofValue to tamper with.');
-	}
-	const value = proof.proofValue;
-	const flipped = value.endsWith('2') ? '3' : '2';
-	proof.proofValue = value.slice(0, -1) + flipped;
-	return signed;
 }
 
 function daysAgo(days: number): Date {

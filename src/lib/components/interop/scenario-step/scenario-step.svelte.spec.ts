@@ -9,6 +9,7 @@ import type { AttestedAnswerValue, RequirementOutcome } from '$lib/interop/scena
 
 import AnswerPrompt from './AnswerPrompt.svelte';
 import {
+	answeredCorrectly,
 	answeredWrongly,
 	autoPass,
 	couldNotTell,
@@ -143,5 +144,20 @@ describe('ScenarioStepCard', UNDER_LOAD, () => {
 
 		await expect.element(page.getByText('Credential 3')).toBeInTheDocument();
 		await expect.element(page.getByText('Waiting')).toBeInTheDocument();
+	});
+});
+
+describe('RevealStrip — role-neutral copy', UNDER_LOAD, () => {
+	// The reveal must read for any role: the suite runs verifier and issuer
+	// scenarios too, so the explanation cannot hardcode "your wallet". The
+	// positive assertions below fail if the copy ever reverts to a role word.
+	it('says what actually happened, never naming a role', async () => {
+		render(RequirementRow, { requirement: handled, outcome: answeredCorrectly });
+		await expect.element(page.getByText('That is what actually happened.')).toBeInTheDocument();
+	});
+
+	it('says what did not happen for a wrong answer, still role-neutral', async () => {
+		render(RequirementRow, { requirement: handled, outcome: answeredWrongly });
+		await expect.element(page.getByText('That is not what actually happened.')).toBeInTheDocument();
 	});
 });

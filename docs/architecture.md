@@ -13,10 +13,18 @@ codebase evolves.
   `IdService`. Domain folders live under
   `src/lib/server/domain/<feature>/` — today: `wallet-crypto`,
   `wallet-client`, `issuer-runner`, `wallet-runner`, `exchange-runner`,
-  and `verifier-runner` (the verifier acceptance-pass generator +
-  scorer, plus the OID4VP and VCALM request floors and present-time
+  `scenario-runner` (credential recipes, presentation requests, the
+  `resolveIssuingContext` seam, and the `deliver-direct` local signer —
+  `scenarioRunner.deliverDirect`, which signs one recipe with an
+  ephemeral did:key issuer for a file the operator hands over), and
+  `verifier-runner` (the OID4VP/VCALM verifier acceptance engine —
+  acceptance-pass generator + scorer, request floors, and present-time
   delivery; see
   [`adr/2026-07-04-verifier-assessment-model.md`](adr/2026-07-04-verifier-assessment-model.md)).
+  The **direct-delivery** verifier page has migrated to a scenario
+  (`ob3-direct-verifier-acceptance`); `verifier-runner` still serves the
+  oid4/vcalm verifier pages until their own migration
+  ([`adr/2026-08-19-migrating-a-server-scorer-onto-scenarios.md`](adr/2026-08-19-migrating-a-server-scorer-onto-scenarios.md)).
 
 ## Scenarios
 
@@ -45,7 +53,11 @@ Four properties are load-bearing:
   what a step's action may do.
 - **`ScenarioAction` is a closed union** (`issue`, `request-presentation`,
   `deliver-direct`). Extending it is the only escape hatch — a new kind is
-  reviewed once and reusable forever, unlike a bespoke page.
+  reviewed once and reusable forever, unlike a bespoke page. `issue` and
+  `request-presentation` mint an exchange through the transaction service;
+  `deliver-direct` mints none — the suite signs the recipe locally
+  (`scenarioRunner.deliverDirect`, optional `tamper`) for the operator to
+  download and hand over.
 - **The level belongs to the membership, not the scenario.** A scenario carries
   `memberships[]`, each `required | optional | { oneOf }`, exactly one naming a
   base profile. So a profile is a _derived_ set of memberships

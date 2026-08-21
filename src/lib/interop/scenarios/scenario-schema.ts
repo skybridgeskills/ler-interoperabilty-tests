@@ -87,6 +87,15 @@ export const ScenarioAction = ZodFactory(
 		z.object({
 			kind: z.literal('deliver-direct'),
 			credential: RecipeId.schema,
+			/**
+			 * Same post-signing corruption the `issue` action carries, so a
+			 * `deliver-direct` scenario can hand a verifier a broken credential.
+			 * `proof` flips one character mid-`proofValue` (fails as a *signature*,
+			 * not a parse); `claim` appends to a signature-covered value and leaves
+			 * the proof untouched. Unlike `issue` — where the transaction service
+			 * applies the tamper — here the suite signs locally and tampers itself.
+			 */
+			tamper: z.enum(['proof', 'claim']).optional(),
 			intent: IssuingIntent.schema.optional()
 		})
 	])

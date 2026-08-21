@@ -56,8 +56,8 @@
 	 */
 	const explanation = $derived.by(() => {
 		if (outcome.detail) return outcome.detail;
-		if (verdict === 'correct') return 'That is what your wallet did.';
-		return 'That is not what your wallet did.';
+		if (verdict === 'correct') return 'That is what actually happened.';
+		return 'That is not what actually happened.';
 	});
 </script>
 

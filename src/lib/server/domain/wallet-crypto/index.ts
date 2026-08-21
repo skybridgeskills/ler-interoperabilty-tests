@@ -5,6 +5,7 @@ import { issueCredential, signPresentation } from './sign.js';
 import { verifyCredential, verifyPresentation, type VerifyResult } from './verify.js';
 
 export type { WalletCryptosuite } from './cryptosuite.js';
+export { WALLET_CRYPTOSUITES } from './cryptosuite.js';
 export type { WalletKey } from './holder-key.js';
 export type { VerifyResult } from './verify.js';
 export type { DocumentLoader } from './document-loader.js';

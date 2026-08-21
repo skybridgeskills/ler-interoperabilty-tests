@@ -218,3 +218,54 @@ vcalm/vpr.ts`) — recognizes a credential-presentation request for an
   mirror gained `vcalm.verifier-rejects-revoked` — a registry entry, not a
   refactor, as promised. Scoring reuses a shared `scoreDeliveredRun`
   (parameterized by the delivery row) across OID4VP and VCALM.
+
+## Update 2026-08-19 (M10 — direct delivery migrates to the scenario model)
+
+M10 migrates the **`ob3-direct-delivery` verifier page** onto the
+`Scenario` model (`ob3-direct-verifier-acceptance`). This model is not
+superseded — its `PassKind` ground truth, shuffled opaque labels, and
+cryptographically-honest fixtures are exactly what generalised into the
+scenario quiz — but four things change for the migrated page, and are
+recorded here rather than left to drift:
+
+- **Reveal is now per requirement, not deferred to end of run.** The
+  verifier flow deferred its reveal to protect a score; the scenario
+  model has no score, so the teaching beat lands the moment a
+  requirement is answered. This is a deliberate behaviour change to the
+  shipped flow.
+
+- **`warn` is gone.** The old scorer downgraded a right rejection with
+  the wrong reason to `warn` (recorded, non-blocking). The scenario
+  model has only `pass`/`fail`, so the two concerns split into two
+  requirements: a **verdict (MUST)** — accepting a defect, or rejecting
+  the valid one, fails — and a **reason (SHOULD)** — naming the wrong
+  problem is a recorded but non-blocking finding. The SHOULD carries
+  exactly what `warn` did, in the model's own levels. The reason is
+  asked on **every** pass (the valid pass's right answer is "no problem,
+  it accepted"), so all four passes keep an identical shape and the
+  shuffle leaks nothing.
+
+- **Acceptance scoring is absorbed, not adapted.** The operator's
+  verdict+reason is a `choose` attested requirement scored by the
+  generic `scoreAttestedAnswer`; no verifier-specific acceptance scorer
+  runs for the migrated page. `RejectionReason`'s closed enum survives —
+  but only as a scenario `choose`'s options, and only on the verifier
+  side, where a structured decision makes it answerable.
+
+- **`revoked` is dropped, not resolved.** The old `n/a`-resolving
+  `verifier-rejects-revoked` row has no home in a model where every
+  requirement must be answerable, so the migrated scenario simply omits
+  it (no pass, no requirement). The deferral is unchanged — `'revoked'`
+  still joins `PassKind` when status-list support lands.
+
+- **Reveal copy is role-neutral.** The shared reveal
+  (`RevealStrip.svelte`) said "that is what your **wallet** did"; the
+  first non-wallet scenario made that wrong, so it now reads "that is
+  what actually happened."
+
+**Scope:** only the direct-delivery page migrates in M10. The
+oid4/vcalm verifier pages, their live present-to-verifier flow, and the
+floor/delivery `automated` rows above **remain on this engine**, deferred
+to a child effort (planning issue 10 — the live present-to-verifier
+transport). The row-registry, `resolve-rows`, `score-run*`, and the
+floor checks are untouched and still serve those two pages until then.

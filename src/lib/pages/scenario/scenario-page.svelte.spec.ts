@@ -4,7 +4,12 @@ import { render } from 'vitest-browser-svelte';
 
 import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
 
-import { demoScenario, singleStepScenario, storedRun } from './scenario-fixture.js';
+import {
+	demoScenario,
+	directDeliveryScenario,
+	singleStepScenario,
+	storedRun
+} from './scenario-fixture.js';
 import ScenarioPage from './ScenarioPage.svelte';
 import { stubExchangeApi, type StubBehaviour } from './stub-exchange-api.js';
 
@@ -237,5 +242,32 @@ describe('ScenarioPage — a whole run', UNDER_LOAD, () => {
 		await expect.element(finish).toBeEnabled();
 		await finish.click();
 		expect(persistedRun(demoScenario.slug)?.attempts).toBe(1);
+	});
+});
+
+describe('ScenarioPage — a deliver-direct step', UNDER_LOAD, () => {
+	it('signs a downloadable credential, settles, then offers the verdict', async () => {
+		withApi({ kind: 'settles' });
+		render(ScenarioPage, { scenario: directDeliveryScenario });
+
+		// The download panel renders the signed deliverable...
+		await expect.element(page.getByRole('button', { name: /Download/ })).toBeInTheDocument();
+
+		// ...and because a direct step settles at once, the verdict is answerable.
+		const accepted = page.getByRole('button', { name: 'Accepted it', exact: true });
+		await expect.element(accepted).toBeInTheDocument();
+		await accepted.click();
+
+		const finish = page.getByRole('button', { name: 'Finish' });
+		await expect.element(finish).toBeEnabled();
+		await finish.click();
+		expect(persistedRun(directDeliveryScenario.slug)?.attempts).toBe(1);
+	});
+
+	it('cannot be recorded when signing fails', async () => {
+		withApi({ kind: 'create-fails' });
+		render(ScenarioPage, { scenario: directDeliveryScenario });
+
+		await expect.element(page.getByText(/cannot be recorded/)).toBeInTheDocument();
 	});
 });

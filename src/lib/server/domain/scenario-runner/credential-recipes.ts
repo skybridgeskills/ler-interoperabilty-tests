@@ -1,6 +1,7 @@
 import { minimalOb3 } from './recipes/minimal-ob3.js';
 import { ob3Expired } from './recipes/ob3-expired.js';
 import { richOb3 } from './recipes/rich-ob3.js';
+import { schemaInvalidOb3 } from './recipes/schema-invalid-ob3.js';
 
 /**
  * A named, unsigned credential document a scenario can ask the mint path to
@@ -33,7 +34,8 @@ export type CredentialRecipe = {
 export const credentialRecipes: Record<string, CredentialRecipe> = {
 	[minimalOb3.id]: minimalOb3,
 	[ob3Expired.id]: ob3Expired,
-	[richOb3.id]: richOb3
+	[richOb3.id]: richOb3,
+	[schemaInvalidOb3.id]: schemaInvalidOb3
 };
 
 /**
