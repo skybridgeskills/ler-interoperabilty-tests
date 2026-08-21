@@ -74,6 +74,7 @@
 	type Dimension = 'roles' | 'profiles' | 'additives';
 
 	const triggers: Partial<Record<Dimension, HTMLButtonElement>> = $state({});
+	let panel = $state<HTMLDivElement | undefined>(undefined);
 
 	const offeredAdditives = $derived(additiveProfilesForRoles(roles));
 	const showAdditives = $derived(offeredAdditives.length > 0);
@@ -82,6 +83,28 @@
 	// while the Add-ons panel is open would otherwise leave it hanging.
 	$effect(() => {
 		if (open === 'additives' && !showAdditives) open = null;
+	});
+
+	/**
+	 * The dimension already handed focus. A plain `let`, deliberately untracked:
+	 * the effect below must fire when a panel *opens*, not every time the panel
+	 * re-renders — toggling an item rebuilds the cards, and re-focusing the
+	 * container there would throw the operator out of the grid mid-selection.
+	 */
+	let focusedPanel: Dimension | null = null;
+
+	// Opening a panel moves focus into it. The panel is a labelled group, so
+	// landing on the container itself announces which filter opened and leaves the
+	// next Tab on the first control — rather than dropping the reader onto "Close",
+	// which is what focusing the first focusable element would do.
+	$effect(() => {
+		if (!open) {
+			focusedPanel = null;
+			return;
+		}
+		if (focusedPanel === open) return;
+		focusedPanel = open;
+		panel?.focus();
 	});
 
 	function close(returnFocus = true): void {
@@ -95,6 +118,34 @@
 			event.stopPropagation();
 			close();
 		}
+	}
+
+	/**
+	 * Focus leaving the panel closes it — the non-modal counterpart to the
+	 * backdrop's click-away. Tab off the last card and the panel gets out of the
+	 * way instead of leaving a full-width overlay open behind the page it is
+	 * covering; the panel is deliberately **not** a focus trap, because it is not
+	 * modal and the page behind it stays usable.
+	 *
+	 * Three things are not "leaving":
+	 *
+	 * - **No `relatedTarget`.** Focus went to the browser chrome or another window;
+	 *   closing on every Alt-Tab would lose a half-made selection.
+	 * - **Somewhere inside the panel.** Clicking a card, tabbing between them.
+	 * - **The trigger that owns this panel.** It is the same disclosure widget, and
+	 *   closing here would race the trigger's own click — a pointer press moves
+	 *   focus *before* the click fires, so we would close and the click would find
+	 *   the panel already shut and reopen it.
+	 */
+	function onFocusOut(event: FocusEvent): void {
+		if (!open) return;
+		const next = event.relatedTarget;
+		if (!(next instanceof HTMLElement)) return;
+		if (panel?.contains(next)) return;
+		if (next === triggers[open]) return;
+		// Focus has already moved where the operator sent it; pulling it back to the
+		// trigger would undo their Tab.
+		close(false);
 	}
 
 	/**
@@ -204,7 +255,12 @@
 
 <svelte:window onkeydown={onWindowKeydown} />
 
-<div class="relative">
+<!--
+	`focusout` is listened for on the whole widget — bar and panel together — rather
+	than on the panel alone, so a focus move *between* the two (the trigger, a
+	sibling trigger, Clear) is one event this handler can judge as a whole.
+-->
+<div class="relative" onfocusout={onFocusOut}>
 	<div
 		class="sticky top-14 z-30 -mx-4 border-b border-border bg-background/95 px-4 py-2.5 backdrop-blur"
 	>
@@ -264,11 +320,18 @@
 			class="fixed inset-0 z-20 cursor-default"
 			onclick={() => close(false)}
 		></button>
+		<!--
+			`tabindex="-1"` makes the container programmatically focusable without
+			adding a tab stop of its own: opening the panel focuses it once, and from
+			there Tab walks the controls inside in DOM order.
+		-->
 		<div
+			bind:this={panel}
 			id="filter-panel"
+			tabindex="-1"
 			role="group"
 			aria-label={`${dimensions.find((d) => d.key === open)?.label} filter`}
-			class="absolute inset-x-0 top-full z-30 -mx-4 border-b border-border bg-popover px-4 py-6 shadow-lg"
+			class="absolute inset-x-0 top-full z-30 -mx-4 border-b border-border bg-popover px-4 py-6 shadow-lg focus:outline-none"
 		>
 			{#if open === 'roles'}
 				<FilterPanel
