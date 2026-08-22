@@ -1,11 +1,36 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildPassCredential } from '$lib/server/domain/verifier-runner/index.js';
+import { minimalOpenBadgeCredential } from '$lib/server/domain/credential-fixtures/minimal-open-badge-credential.js';
+import { tamperProofValue } from '$lib/server/domain/credential-tamper/index.js';
 import { WalletCrypto, type WalletCryptosuite } from '$lib/server/domain/wallet-crypto/index.js';
 
 import type { ExchangeFlowTransport } from '../exchange-flow-transport.js';
 
 import { VcalmVerifierFlowDriver } from './vcalm-verifier-flow.js';
+import type { HeldCredential } from './vcalm-verifier-flow.js';
+
+/**
+ * A signed OB3 bound to a fresh holder key — what a wallet would be holding
+ * when it engages a verifier.
+ *
+ * This was `buildPassCredential` from `verifier-runner`, the engine M13 deleted.
+ * Only two of its pass kinds are exercised here, and both are three lines, so
+ * the fixture is local rather than re-homed: nothing else needs it, and the
+ * honesty contract that mattered — `broken-signature` tampers **after** signing,
+ * so the proof genuinely fails while the holder binding stays intact — is
+ * carried by `tamperProofValue`, which is still the real thing.
+ */
+async function heldCredential(
+	crypto: ReturnType<typeof WalletCrypto>,
+	cryptosuite: WalletCryptosuite,
+	kind: 'valid' | 'broken-signature'
+): Promise<HeldCredential> {
+	const issuer = await crypto.generateKey(cryptosuite);
+	const holder = await crypto.generateKey(cryptosuite);
+	const doc = minimalOpenBadgeCredential({ issuerDid: issuer.did, holderDid: holder.did });
+	const signed = await crypto.issueCredential({ issuer, credential: doc });
+	return { credential: kind === 'valid' ? signed : tamperProofValue(signed), holder };
+}
 
 type FakeOpts = {
 	fetchFails?: boolean;
@@ -82,7 +107,7 @@ describe('VcalmVerifierFlowDriver.runPresentation', () => {
 	for (const cs of CRYPTOSUITES) {
 		it(`engages, matches, and submits a valid credential (${cs})`, async () => {
 			const crypto = WalletCrypto();
-			const held = await buildPassCredential(crypto, cs, 'valid');
+			const held = await heldCredential(crypto, cs, 'valid');
 			const driver = VcalmVerifierFlowDriver({ crypto, transport: fakeVerifierTransport() });
 
 			const result = await driver.runPresentation({
@@ -104,7 +129,7 @@ describe('VcalmVerifierFlowDriver.runPresentation', () => {
 
 	it('submits a broken-signature credential too (embedded VC proof does not gate submission)', async () => {
 		const crypto = WalletCrypto();
-		const held = await buildPassCredential(crypto, 'eddsa-rdfc-2022', 'broken-signature');
+		const held = await heldCredential(crypto, 'eddsa-rdfc-2022', 'broken-signature');
 		const driver = VcalmVerifierFlowDriver({ crypto, transport: fakeVerifierTransport() });
 		const result = await driver.runPresentation({
 			interactionUrl: URL_IN,
@@ -117,7 +142,7 @@ describe('VcalmVerifierFlowDriver.runPresentation', () => {
 
 	it('records a rejected submission as evidence, not an error', async () => {
 		const crypto = WalletCrypto();
-		const held = await buildPassCredential(crypto, 'eddsa-rdfc-2022', 'valid');
+		const held = await heldCredential(crypto, 'eddsa-rdfc-2022', 'valid');
 		const driver = VcalmVerifierFlowDriver({
 			crypto,
 			transport: fakeVerifierTransport({ rejectSubmission: true })
@@ -134,7 +159,7 @@ describe('VcalmVerifierFlowDriver.runPresentation', () => {
 
 	it('reports a fetch failure without a vcapi URL (no cascade)', async () => {
 		const crypto = WalletCrypto();
-		const held = await buildPassCredential(crypto, 'eddsa-rdfc-2022', 'valid');
+		const held = await heldCredential(crypto, 'eddsa-rdfc-2022', 'valid');
 		const driver = VcalmVerifierFlowDriver({
 			crypto,
 			transport: fakeVerifierTransport({ fetchFails: true })
@@ -151,7 +176,7 @@ describe('VcalmVerifierFlowDriver.runPresentation', () => {
 
 	it('does not match a DID-auth-only VPR (but still detects the DIDAuth query)', async () => {
 		const crypto = WalletCrypto();
-		const held = await buildPassCredential(crypto, 'eddsa-rdfc-2022', 'valid');
+		const held = await heldCredential(crypto, 'eddsa-rdfc-2022', 'valid');
 		const driver = VcalmVerifierFlowDriver({
 			crypto,
 			transport: fakeVerifierTransport({ didAuthOnly: true })

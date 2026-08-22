@@ -12,7 +12,7 @@ import type { Requirement } from './requirement-schema.js';
  * choice: a VCALM presentation is as inspectable through `results.default` as an
  * OID4VP one.
  *
- * **Twenty-two checklist rows collapse to these seven.** Five are wire truth,
+ * **Twenty-two legacy rows collapse to these seven.** Five are wire truth,
  * read off the exchange the suite observed as verifier. Two are attested,
  * because the exchange structurally cannot see them. `mapping.md` §§ 3, 4 and 7
  * record where every dropped and merged row went; the three decisions worth

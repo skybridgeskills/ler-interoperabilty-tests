@@ -1,13 +1,6 @@
 import type { AppContext } from './app-context.js';
 import { provideRealTransactionServiceClient } from './domain/exchange-runner/index.js';
-import { provideRealIssuerRunner } from './domain/issuer-runner/index.js';
 import { provideRealScenarioRunner } from './domain/scenario-runner/index.js';
-import { provideRealVerifierRunner } from './domain/verifier-runner/index.js';
-import {
-	provideRealOid4IssuerFlow,
-	provideRealVcalmIssuerFlow,
-	provideRealWalletClient
-} from './domain/wallet-client/index.js';
 import { provideHealthRegistry } from './health/provide-health-registry.js';
 import { RealIdService } from './services/id-service/id-service.js';
 import { PinoLoggerService } from './services/logging/logger-service.js';
@@ -21,12 +14,7 @@ import { RealTimeService } from './services/time-service/time-service.js';
  */
 export function HostedAppContext(env: Record<string, unknown>): AppContext {
 	const exchangeRunner = provideRealTransactionServiceClient(env);
-	const issuerRunner = provideRealIssuerRunner();
 	const scenarioRunner = provideRealScenarioRunner();
-	const verifierRunner = provideRealVerifierRunner();
-	const walletClient = provideRealWalletClient(exchangeRunner.exchangeRunnerConfig);
-	const vcalmIssuerFlow = provideRealVcalmIssuerFlow();
-	const oid4IssuerFlow = provideRealOid4IssuerFlow();
 	const health = provideHealthRegistry(exchangeRunner.exchangeRunnerConfig);
 	return {
 		logger: PinoLoggerService({
@@ -37,11 +25,6 @@ export function HostedAppContext(env: Record<string, unknown>): AppContext {
 		idService: RealIdService(),
 		...exchangeRunner,
 		...health,
-		...issuerRunner,
-		...scenarioRunner,
-		...verifierRunner,
-		...walletClient,
-		...vcalmIssuerFlow,
-		...oid4IssuerFlow
+		...scenarioRunner
 	};
 }

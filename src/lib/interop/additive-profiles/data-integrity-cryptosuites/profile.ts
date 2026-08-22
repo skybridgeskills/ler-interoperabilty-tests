@@ -17,9 +17,9 @@ import type { ProfileSlug } from '../../profile-schema.js';
  *
  * The bundle layers on the `vcalm` and `oid4` exchange profiles (across
  * their 4 shared workflows) and on the `ob3-direct-delivery` profile's
- * issuer direct-issuance operation (producer-only). Additive checklists
+ * issuer direct-issuance operation (producer-only). Additive requirement lists
  * are matched to a base profile by (role, workflow), not by the
- * checklist's own `profile` field.
+ * legacy list's own `profile` field.
  */
 export const dataIntegrityCryptosuitesMeta = {
 	id: 'data-integrity-cryptosuites-v1',

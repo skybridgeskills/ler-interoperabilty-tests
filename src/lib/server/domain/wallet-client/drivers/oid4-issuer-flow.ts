@@ -61,7 +61,7 @@ export type Oid4IssuerFlowRunResult = {
 	observations: Oid4IssuerFlowObservations;
 	/** `true` when a step's result made further progress impossible. */
 	blocked: boolean;
-	/** 1-based checklist step (1..3) the run stopped at (only when `blocked`). */
+	/** 1-based legacy step (1..3) the run stopped at (only when `blocked`). */
 	stoppedAtStep?: number;
 };
 
@@ -93,7 +93,7 @@ type StepStop = { blocked: true; stoppedAtStep: number };
  * OID4VCI 1.0 issuer-flow driver: acts as the holder against a **user-pasted** credential-offer
  * URL, running the whole pre-authorized-code flow in one pass and stopping at the first blocking
  * failure. Every HTTP call is captured as an {@link Oid4StepObservation} (never thrown) and mapped
- * onto the 3 checklist steps:
+ * onto the 3 legacy steps:
  *
  *   1. offer + issuer/AS metadata
  *   2. token redemption + `c_nonce`

@@ -44,7 +44,7 @@ describe('/+page.svelte', () => {
 		// combinations with no scenario yet, counting toward no meter — and it
 		// shrank with each migration; the wallet pages were the last three, so it
 		// now renders nothing. The section markup is M13's to delete along with
-		// `profile.checklists`; this asserts it is already empty, which is the
+		// the profiles' legacy requirement lists; this asserts it is already empty, which is the
 		// signal that M13 is unblocked.
 		await expect.element(page.getByText('Not yet migrated')).not.toBeInTheDocument();
 	});

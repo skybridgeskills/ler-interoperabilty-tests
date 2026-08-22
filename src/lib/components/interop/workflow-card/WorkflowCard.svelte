@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { ProfileBadge } from '$lib/components/interop/profile-badge/index.js';
 	import { RoleBadge } from '$lib/components/interop/role-badge/index.js';
 	import {
 		Card,
@@ -8,9 +7,17 @@
 		CardHeader,
 		CardTitle
 	} from '$lib/components/ui/card/index.js';
-	import { checklistHref, type Profile, type Role, type Workflow } from '$lib/interop/index.js';
+	import { scenarioHref, type Role, type Workflow } from '$lib/interop/index.js';
+	import type { Scenario } from '$lib/interop/scenarios/index.js';
 
-	let { workflow, role, profiles }: { workflow: Workflow; role: Role; profiles: Profile[] } =
+	/**
+	 * One workflow a role participates in, and the scenarios that measure it.
+	 *
+	 * It used to list **profiles**, each linking to that `(role, workflow,
+	 * profile)` legacy page. M13 deleted those pages, and the scenario is the
+	 * runnable unit now — so the card lists what can actually be run.
+	 */
+	let { workflow, role, scenarios }: { workflow: Workflow; role: Role; scenarios: Scenario[] } =
 		$props();
 </script>
 
@@ -23,19 +30,23 @@
 		<CardDescription>{workflow.blurb}</CardDescription>
 	</CardHeader>
 	<CardContent>
-		<p class="mb-3 text-label-md text-muted-foreground">Open the checklist for a profile:</p>
-		<ul class="space-y-2">
-			{#each profiles as profile (profile.slug)}
-				<li>
-					<a
-						class="flex items-center justify-between gap-3 text-body-md text-foreground hover:text-primary"
-						href={checklistHref(role.slug, workflow.slug, profile.slug)}
-					>
-						<ProfileBadge {profile} />
-						<span class="text-label-md text-muted-foreground">Open checklist →</span>
-					</a>
-				</li>
-			{/each}
-		</ul>
+		{#if scenarios.length === 0}
+			<p class="text-body-md text-muted-foreground">No scenarios measure this workflow yet.</p>
+		{:else}
+			<p class="mb-3 text-label-md text-muted-foreground">Run a scenario:</p>
+			<ul class="space-y-2">
+				{#each scenarios as scenario (scenario.slug)}
+					<li>
+						<a
+							class="flex items-center justify-between gap-3 text-body-md text-foreground hover:text-primary"
+							href={scenarioHref(scenario.slug)}
+						>
+							<span>{scenario.name}</span>
+							<span class="text-label-md text-muted-foreground">Open →</span>
+						</a>
+					</li>
+				{/each}
+			</ul>
+		{/if}
 	</CardContent>
 </Card>

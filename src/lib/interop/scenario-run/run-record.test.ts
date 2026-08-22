@@ -66,7 +66,7 @@ describe('recordFromRunState', () => {
 		state = answerRequirement(scenario, state, 'stored', { kind: 'affirm', value: true });
 
 		// A stored run is a list of outcomes. The trace is live-only, exactly as
-		// the checklist era's `raw` was — reopening a run shows no packet capture.
+		// the legacy era's `raw` was — reopening a run shows no packet capture.
 		const record = recordFromRunState(scenario, state, AT);
 		const serialised = JSON.stringify(record);
 		expect(serialised).not.toContain('trace');

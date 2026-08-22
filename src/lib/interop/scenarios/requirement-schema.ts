@@ -7,7 +7,7 @@ import { ZodFactory } from '$lib/util/zod-factory.js';
  *
  * Deliberately **`MUST | SHOULD` only** — there is no `MAY`. A `MAY` gates
  * nothing and cannot fail, so it contributes no arithmetic to the completion
- * meter while forcing every consumer to carry a third case. The checklist
+ * meter while forcing every consumer to carry a third case. The legacy list
  * vocabulary this replaces had one; those rows are dropped at migration rather
  * than carried forward.
  *

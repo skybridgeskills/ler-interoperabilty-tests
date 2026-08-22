@@ -70,7 +70,7 @@ describe('ob3-direct-issuer-delivery', () => {
 		).toBe(true);
 	});
 
-	it('gates on the two delivery affordances, which the checklist scored `n/a`', () => {
+	it('gates on the two delivery affordances, which the legacy list scored `n/a`', () => {
 		const [step] = scenario.steps;
 		const gating = step.requirements.filter((r) => r.level === 'MUST').map((r) => r.id);
 		expect(gating).toContain('downloadable-file');

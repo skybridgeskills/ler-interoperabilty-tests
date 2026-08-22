@@ -5,7 +5,6 @@ import {
 	receiveFromVcalmIssuer,
 	type ReceiveFromIssuerResult
 } from '$lib/server/domain/issuer-receive/index.js';
-import { RealVerifierCoreClient } from '$lib/server/domain/issuer-runner/verifier-core-client.js';
 import {
 	type PresentToOid4Result,
 	type PresentToVcalmResult,
@@ -22,6 +21,7 @@ import { WalletCrypto } from '$lib/server/domain/wallet-crypto/index.js';
 
 import type { ScenarioRunner } from './scenario-runner.js';
 import { signDeliverable } from './sign-deliverable.js';
+import { RealVerifierCoreClient } from './verifier-core-client.js';
 
 /** Production wiring: a real `WalletCrypto` signs each deliverable and drives each present locally. */
 export function provideRealScenarioRunner(): { scenarioRunner: ScenarioRunner } {

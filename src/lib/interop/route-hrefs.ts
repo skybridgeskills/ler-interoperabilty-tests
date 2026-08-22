@@ -1,26 +1,15 @@
+/**
+ * Every route-building helper in the app, in one place.
+ *
+ * It was named for the combination pages until M13 deleted them. `scenarioHref` lives here rather than beside the catalog
+ * accessors because routing is a routing concern, and keeping it here is what
+ * stops `interop/scenarios/` depending on `$app/paths`.
+ */
+
 import type { AdditiveProfileSlug } from './additive-profile-schema.js';
-import type { ProfileSlug, RoleSlug, WorkflowSlug } from './profile-schema.js';
+import type { ProfileSlug, RoleSlug } from './profile-schema.js';
 
 import { resolve } from '$app/paths';
-
-/**
- * Build the URL for a (role, workflow, profile) checklist page using the
- * SvelteKit typed `resolve()` helper. The role determines the route prefix.
- */
-export function checklistHref(
-	role: RoleSlug,
-	workflow: WorkflowSlug,
-	profile: ProfileSlug
-): string {
-	switch (role) {
-		case 'issuer':
-			return resolve('/issuer/[workflow]/[profile]', { workflow, profile });
-		case 'wallet':
-			return resolve('/wallet/[workflow]/[profile]', { workflow, profile });
-		case 'verifier':
-			return resolve('/verifier/[workflow]/[profile]', { workflow, profile });
-	}
-}
 
 /** Build the URL for a profile detail page. */
 export function profileHref(profile: ProfileSlug): string {

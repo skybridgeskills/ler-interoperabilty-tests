@@ -3,13 +3,13 @@ import { z } from 'zod';
 import { ZodFactory } from '$lib/util/zod-factory.js';
 
 /**
- * Top-level state for a runnable checklist page. Drives the right-column
+ * Top-level state for a runnable page. Drives the right-column
  * banner, CTA, and overall colorway.
  */
-export const ChecklistRunState = ZodFactory(
+export const RunnerRunState = ZodFactory(
 	z.enum(['idle', 'awaiting-wallet', 'wallet-connected', 'complete', 'error'])
 );
-export type ChecklistRunState = ReturnType<typeof ChecklistRunState>;
+export type RunnerRunState = ReturnType<typeof RunnerRunState>;
 
 /** State of a single step in the right column. */
 export const StepRunState = ZodFactory(
@@ -41,7 +41,7 @@ export type RunnerExchangeView = {
 };
 
 export type RunStateDerivation = {
-	run: ChecklistRunState;
+	run: RunnerRunState;
 	perStep: StepRunState[];
 };
 
@@ -80,7 +80,7 @@ function oid4vciStateOf(exchange: RunnerExchangeView): Oid4vciState | undefined 
  * on its inputs.
  *
  * `stepCount` is the number of steps on the left column (the source
- * checklist). The mapping below biases toward telling a clear story:
+ * step list). The mapping below biases toward telling a clear story:
  * one step in flight at a time, prior steps complete, later steps
  * pending, until the whole exchange completes.
  */

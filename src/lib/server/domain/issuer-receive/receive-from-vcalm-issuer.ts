@@ -54,9 +54,9 @@ export async function receiveFromVcalmIssuer(args: {
 	const { observations } = await args.flow.runIssuerFlow(url, args.keyProofSuite);
 	const { interaction, didAuth, delivery, verify, holder } = observations;
 
-	// One driver probe answers two checklist rows — the interaction URL resolved
+	// One driver probe answers two legacy rows — the interaction URL resolved
 	// and the participation endpoint answered are the same observation. Both are
-	// kept (faithful to the checklist) and both checks say so.
+	// kept (faithful to the legacy list) and both checks say so.
 	const interactionFetched = !!interaction?.ok && !!interaction.protocols;
 
 	const credential = delivery?.credential;

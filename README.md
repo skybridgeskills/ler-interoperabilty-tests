@@ -99,9 +99,9 @@ src/
     ├── health/+server.ts         # GET /health → { status, version }
     ├── version/+server.ts        # GET /version → { name, version, … }
     ├── scenarios/[slug]/         # the generic scenario runner (no bespoke pages)
-    ├── wallet/…                  # role landing + runnable wallet checklists
-    ├── verifier/…                # role landing + runnable verifier checklists
-    └── issuer/…                  # role landing + runnable issuer checklists
+    ├── wallet/…                  # role landing + redirects to wallet scenarios
+    ├── verifier/…                # role landing
+    └── issuer/…                  # role landing
 ```
 
 ## Theming

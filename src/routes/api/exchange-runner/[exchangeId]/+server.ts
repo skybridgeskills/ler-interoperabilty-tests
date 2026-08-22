@@ -20,7 +20,7 @@ export const GET = async ({ params, url }: { params: { exchangeId: string }; url
 
 	// `?stepCount=` is supplied by the page so derived per-step states match
 	// the visible left-column step count. Defaults to 5 (the wallet
-	// acceptance × VCALM checklist length); other runnable pages override.
+	// acceptance × VCALM legacy step count); other runnable pages override.
 	const stepCount = clampStepCount(url.searchParams.get('stepCount'), 5);
 
 	// Which workflow this exchange belongs to. The page carries it back from the

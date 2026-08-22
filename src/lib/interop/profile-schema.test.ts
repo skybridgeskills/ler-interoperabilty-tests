@@ -1,48 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-	ChecklistRequirement,
-	ChecklistStep,
-	Profile,
-	WorkflowChecklist
-} from './profile-schema.js';
-
-describe('ChecklistRequirement', () => {
-	it('parses a valid MUST clause', () => {
-		const r = ChecklistRequirement({
-			id: 'test.do-the-thing',
-			level: 'MUST',
-			text: 'Do the thing.'
-		});
-		expect(r).toEqual({ id: 'test.do-the-thing', level: 'MUST', text: 'Do the thing.' });
-	});
-
-	it('rejects an unknown level', () => {
-		expect(() =>
-			ChecklistRequirement({ id: 'test.bad-level', level: 'COULD' as 'MUST', text: 'x' })
-		).toThrow();
-	});
-});
-
-describe('ChecklistStep', () => {
-	it('accepts a step with no requirements', () => {
-		const step = ChecklistStep({ title: 'Step', summary: 'Summary.', requirements: [] });
-		expect(step.requirements).toEqual([]);
-	});
-});
-
-describe('WorkflowChecklist', () => {
-	it('rejects an unknown role enum', () => {
-		expect(() =>
-			WorkflowChecklist({
-				role: 'not-a-role' as 'issuer',
-				workflow: 'credential-issuance',
-				profile: 'vcalm',
-				steps: []
-			})
-		).toThrow();
-	});
-});
+import { Profile } from './profile-schema.js';
 
 describe('Profile', () => {
 	it('parses a minimal profile', () => {
@@ -55,8 +13,7 @@ describe('Profile', () => {
 			lastUpdated: '2026-01-01',
 			description: 'A test profile.',
 			keyComponents: [{ label: 'Suite', value: 'eddsa' }],
-			useCases: ['testing'],
-			checklists: []
+			useCases: ['testing']
 		});
 		expect(p.slug).toBe('vcalm');
 		expect(p.notes).toBeUndefined();
@@ -74,8 +31,7 @@ describe('Profile', () => {
 			lastUpdated: '2026-01-01',
 			description: 'A test profile.',
 			keyComponents: [{ label: 'Suite', value: 'eddsa' }],
-			useCases: ['testing'],
-			checklists: []
+			useCases: ['testing']
 		});
 		expect(p.url).toBe('https://example.com/profiles/test/');
 	});
@@ -92,8 +48,7 @@ describe('Profile', () => {
 				lastUpdated: '2026-01-01',
 				description: 'A test profile.',
 				keyComponents: [],
-				useCases: [],
-				checklists: []
+				useCases: []
 			})
 		).toThrow();
 	});

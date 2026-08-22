@@ -35,7 +35,7 @@ const FILE_SEP = '␜'; // between steps
  * stored result quietly misleading, which is the exact dishonest failure this
  * function exists to prevent.
  *
- * Unlike the checklist fingerprint this replaces, it is **order-dependent** —
+ * Unlike the legacy fingerprint this replaces, it is **order-dependent** —
  * step order and requirement order are both scoring-relevant.
  */
 export function scenarioFingerprint(scenario: Scenario): string {

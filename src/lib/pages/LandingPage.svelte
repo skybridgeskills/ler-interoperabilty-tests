@@ -9,29 +9,18 @@
 		importResults
 	} from '$lib/client/scenario-runs/index.js';
 	import { selectionStore } from '$lib/client/selection/index.js';
-	import { ChecklistRow } from '$lib/components/interop/checklist-row/index.js';
 	import { CompletionGroup } from '$lib/components/interop/completion-group/index.js';
 	import { FilterBar } from '$lib/components/interop/filter-bar/index.js';
 	import { ResultsTransfer } from '$lib/components/interop/results-transfer/index.js';
 	import {
-		additiveChecklistsForCombination,
 		badgeHrefFor,
 		badgeNameFor,
 		type BadgeClaimSnapshot,
-		checklistHref,
 		claimedInfoFor,
-		combinationHasScenario,
 		completeBadgeHrefFor,
 		completeBadgeNameFor,
 		completeClaimedInfoFor,
-		completionGroups,
-		isCombinationSelected,
-		profileBySlug,
-		roleBySlug,
-		sortCombinations,
-		workflowBySlug,
-		allCombinations,
-		type ChecklistCombination
+		completionGroups
 	} from '$lib/interop/index.js';
 	import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
 	import type { CannotServe } from '$lib/interop/scenarios/index.js';
@@ -47,9 +36,6 @@
 	 * is the honest default rather than a convenience.
 	 */
 	let { blocked = {} }: { blocked?: Record<string, CannotServe> } = $props();
-
-	// Static set of rows — pure, SSR-safe.
-	const combos = allCombinations();
 
 	// Persisted scenario runs — localStorage, so browser-only. Seeded empty for
 	// SSR and hydrated on mount, exactly like the selection; the meters render
@@ -70,7 +56,6 @@
 	});
 
 	const selection = $derived(selectionStore.selection);
-	const sortedCombos = $derived(sortCombinations(combos, selection));
 	const selectedAdditives = $derived(new SvelteSet(selectionStore.additiveProfiles));
 
 	// Completion groups — one per (profile, role) that has scenarios. A blocked
@@ -104,24 +89,6 @@
 	const shownGroups = $derived(groups.filter(matchesFilter));
 	const hiddenGroups = $derived(groups.filter((g) => !matchesFilter(g)));
 	let showHidden = $state(false);
-
-	// The parallel surface: combinations with no scenario yet, rendered with the
-	// now-statusless ChecklistRow. They count toward no meter. This section shrinks
-	// as the remaining pages migrate and is DELETED at the end of that work — do
-	// not mistake it for permanent architecture.
-	const unmigratedCombos = $derived(sortedCombos.filter((c) => !combinationHasScenario(c)));
-
-	/** Stable keyed-each identity for a combination row. */
-	function comboKey(combo: ChecklistCombination): string {
-		return `${combo.role}:${combo.workflow}:${combo.profile}`;
-	}
-
-	/** Selected additive profiles that apply to a given combination. */
-	function appliedAdditivesFor(combo: ChecklistCombination) {
-		return additiveChecklistsForCombination(combo.profile, combo.role, combo.workflow)
-			.filter(({ additive }) => selectedAdditives.has(additive.slug))
-			.map(({ additive }) => ({ slug: additive.slug, name: additive.name }));
-	}
 </script>
 
 <section class="space-y-3 pb-6">
@@ -162,20 +129,6 @@
 		expandedClaim={completeClaimedInfoFor(group.profileSlug, group.roleSlug, claims)}
 		completeBadgeName={completeBadgeNameFor(group.profileSlug, group.roleSlug)}
 	/>
-{/snippet}
-
-{#snippet checklistRow(combo: ChecklistCombination)}
-	{@const role = roleBySlug(combo.role)}
-	{@const workflow = workflowBySlug(combo.workflow)}
-	{@const profile = profileBySlug(combo.profile)}
-	{#if role && workflow && profile}
-		<ChecklistRow
-			combination={{ role, workflow, profile }}
-			selected={isCombinationSelected(combo, selection)}
-			href={checklistHref(combo.role, combo.workflow, combo.profile)}
-			appliedAdditives={appliedAdditivesFor(combo)}
-		/>
-	{/if}
 {/snippet}
 
 <section class="mt-8 space-y-6">
@@ -228,36 +181,4 @@
 	</p>
 
 	<ResultsTransfer onExport={exportResults} onImport={importResults} onImported={reloadResults} />
-
-	{#if unmigratedCombos.length > 0}
-		<!--
-			The "Not yet migrated" section — the honest handling of the parallel
-			surface. These (role, workflow, profile) combinations have no scenario
-			yet; they use the now-statusless ChecklistRow and count toward NO meter.
-			This section shrinks as the remaining pages migrate and is DELETED at the
-			end of that work. It is not permanent architecture.
-		-->
-		<details class="group space-y-3">
-			<summary class="cursor-pointer list-none space-y-1">
-				<span class="flex items-center gap-2">
-					<span
-						aria-hidden="true"
-						class="text-muted-foreground transition-transform group-open:rotate-90"
-					>
-						›
-					</span>
-					<span class="text-title-lg text-foreground">Not yet migrated</span>
-				</span>
-				<p class="max-w-prose pl-6 text-body-md text-muted-foreground">
-					These checklists are still being converted into scenarios. They do not count toward any
-					meter yet — open one to review its requirements and run its test.
-				</p>
-			</summary>
-			<div class="mt-3 space-y-2">
-				{#each unmigratedCombos as combo (comboKey(combo))}
-					{@render checklistRow(combo)}
-				{/each}
-			</div>
-		</details>
-	{/if}
 </section>

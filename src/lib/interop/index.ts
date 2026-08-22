@@ -4,17 +4,12 @@ export * from './roles.js';
 export * from './workflows.js';
 export * from './workflow-groups.js';
 export * from './accessors.js';
-export * from './checklist-href.js';
+export * from './route-hrefs.js';
 export * from './runner-state.js';
-export * from './wallet-activity.js';
 export * from './scenarios/index.js';
 export * from './scenario-run/index.js';
 export * from './completion/index.js';
 export * from './badges/index.js';
-// Presentation vocabulary for the surviving checklist pages. Goes with them at M13.
-export * from './checklist-status.js';
-export * from './combined-requirements.js';
-export * from './verifier-run/index.js';
 export * from './selection/index.js';
 export { allProfiles } from './profiles/all-profiles.js';
 export { allAdditiveProfiles } from './additive-profiles/all-additive-profiles.js';

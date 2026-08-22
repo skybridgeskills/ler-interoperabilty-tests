@@ -100,3 +100,11 @@ a header, so any divergence is a visible lie.
 - The `CannotServe` type moved from the server's `resolve-issuing-context.ts`
   into `interop/scenarios/`, because completion evaluation is client-side and
   needs it. Only the resolution against deployment config stays server-side.
+
+## Note (2026-08-22, M13 — the predicted deletions happened)
+
+The Consequences above end with _"They are deleted when `profile.checklists`
+is."_ M13 deleted `profile.checklists`, and with it both modules named there —
+the requirement-status vocabulary and `combinedRequirements`. Neither path
+exists any more; the paragraph is kept because it records **why** they outlived
+the run record, which is the part still worth reading.

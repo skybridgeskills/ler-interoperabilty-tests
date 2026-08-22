@@ -1,4 +1,4 @@
-import type { ChecklistRunState, StepRunState } from '$lib/interop/index.js';
+import type { RunnerRunState, StepRunState } from '$lib/interop/index.js';
 
 /**
  * Protocol identifier used by the page to select which single link a runner
@@ -19,7 +19,7 @@ export type ExchangeRunnerPanelData = {
 	intent: 'issuance' | 'verification';
 	/** The single protocol this runner drives; selects the QR header label. */
 	protocol: ExchangeProtocolId;
-	run: ChecklistRunState;
+	run: RunnerRunState;
 	perStep: StepRunState[];
 	/** The single protocol link to present (VCALM `iu`, the OID4VCI offer, or the OID4VP request). */
 	interactionUrl?: string;

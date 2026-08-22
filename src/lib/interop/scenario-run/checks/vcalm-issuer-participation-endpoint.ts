@@ -6,7 +6,7 @@ import { issuerFlowForStep } from '../evidence.js';
  * object. Ported 1:1 from the issuer engine's `participation-endpoint` row.
  *
  * Reads the **same single driver probe** as `vcalm-issuer-interaction-url`. Two
- * checklist rows over one observation, kept faithful to the checklist and honest
+ * legacy rows over one observation, kept faithful to the legacy list and honest
  * in the message about sharing a probe.
  */
 export const vcalmIssuerParticipationEndpoint: AutomaticCheck = {

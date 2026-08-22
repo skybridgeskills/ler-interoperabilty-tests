@@ -2,7 +2,6 @@ import type { AdditiveProfileSlug } from '$lib/interop/additive-profile-schema.j
 import type { ProfileSlug, RoleSlug } from '$lib/interop/profile-schema.js';
 import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
 import {
-	allScenarios,
 	type CannotServe,
 	isBaseProfile,
 	type Scenario,
@@ -12,7 +11,6 @@ import {
 import { allAdditiveProfiles } from '../additive-profiles/all-additive-profiles.js';
 import { allProfiles } from '../profiles/all-profiles.js';
 import { allRoles } from '../roles.js';
-import type { ChecklistCombination } from '../selection/checklist-selection.js';
 
 import { evaluateAdditiveSlice, sliceIsEmpty } from './additive-slice.js';
 import { evaluateCompletion, type CompletionResult, type ObligationProgress } from './evaluate.js';
@@ -174,20 +172,6 @@ export function completionGroupsForProfile(args: {
 		});
 	}
 	return groups;
-}
-
-/**
- * Whether any scenario covers a `(role, workflow, profile)` combination — the
- * scenario's role and workflow match and one of its memberships names the
- * profile.
- */
-export function combinationHasScenario(combination: ChecklistCombination): boolean {
-	return allScenarios.some(
-		(s) =>
-			s.role === combination.role &&
-			s.workflow === combination.workflow &&
-			s.memberships.some((m) => m.profile === combination.profile)
-	);
 }
 
 /**

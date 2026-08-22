@@ -109,3 +109,22 @@ until M12 and are deleted in M13. One thing did go early: the legacy
 It predated per-additive selection and decided nothing — a group was only ever
 built for a specifically-selected additive — so its only live effect was to make
 the open-skill-alignment checks return `n/a` when off.
+
+## Note (2026-08-22, M13 — the engine this describes is deleted)
+
+The code this ADR describes no longer exists. Every runnable page migrated to the
+scenario model (M6, M10/M10a/M10b, M11, M12), which left the scoring engines —
+`issuer-runner`, `wallet-runner`, `verifier-runner` and their API routes —
+scoring nothing reachable, and M13 deleted them along with `profile.checklists`
+and the eight legacy page components.
+
+**The decision itself was not reversed.** Its rules live on as `automatic` checks
+under `src/lib/interop/scenario-run/checks/`, ported function-for-function, with
+each check's docstring naming what it came from. What changed is where they run
+(pure, client-side, over `StepEvidence`) and how their `warn`/`n/a` branches
+resolve — the scenario model has neither, so every branch was given an explicit
+home at authoring. See
+[`2026-08-19-migrating-a-server-scorer-onto-scenarios.md`](2026-08-19-migrating-a-server-scorer-onto-scenarios.md),
+which records all four migrations and the pattern they share.
+
+Read on for the original reasoning; it is why the checks are shaped as they are.

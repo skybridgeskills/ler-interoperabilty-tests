@@ -11,9 +11,9 @@ import { NO_PRESENTATION, presentedVpFor, vpProofOf } from './presented-vp.js';
  * echoed rather than narrowing to an object — the string case is a real,
  * legible failure, not an absence.
  *
- * The VCALM scenario declares this row too, though the VCALM checklist never
+ * The VCALM scenario declares this row too, though the VCALM legacy list never
  * did: the check reads the same echoed VP either way, so scoring it costs
- * nothing and leaving it unscored would have been an accident of which checklist
+ * nothing and leaving it unscored would have been an accident of which legacy list
  * happened to list it. `mapping.md` § 4 records the gained coverage.
  *
  * The engine's `n/a` no-presentation branch resolves to **fail**.

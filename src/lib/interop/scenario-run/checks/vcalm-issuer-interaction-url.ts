@@ -7,7 +7,7 @@ import { issuerFlowForStep } from '../evidence.js';
  * `interaction-url-fetchable` row.
  *
  * This and `vcalm-issuer-participation-endpoint` read the **same single driver
- * probe** — the checklist asked two questions of one observation, and both are
+ * probe** — the legacy list asked two questions of one observation, and both are
  * kept rather than silently collapsed. Both messages say so, so two green rows
  * are not mistaken for two independent measurements.
  */

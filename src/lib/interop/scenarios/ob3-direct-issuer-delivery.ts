@@ -11,7 +11,7 @@ import { Scenario } from './scenario-schema.js';
  *
  * Seven of the nine requirements are `automatic` over the received credential;
  * two are **attested**, and they are the interesting half. `downloadable-file`
- * and `copy-paste-text` were hardcoded `n/a` MUSTs on the checklist this
+ * and `copy-paste-text` were hardcoded `n/a` MUSTs on the legacy list this
  * replaces — genuinely unobservable from a pasted credential, and therefore
  * gating nothing. As attested affirms they gate: the operator has just performed
  * the delivery, so they can answer for the run they did, which is exactly the

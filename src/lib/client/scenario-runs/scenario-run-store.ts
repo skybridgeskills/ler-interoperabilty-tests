@@ -15,8 +15,8 @@ const STORAGE_KEY = 'lits.scenario-runs.v1';
  * Removed on first write. There is **no migration** from either: existing runs
  * are transient and trivially recreated, and migration was never available
  * anyway — the bucket key died with the combination page, `statuses` was keyed
- * by a deleted requirement vocabulary, and `checklistFingerprint` hashed a
- * `profile.checklists` that no longer exists.
+ * by a deleted requirement vocabulary, and the legacy fingerprint hashed a
+ * the profiles' legacy requirement lists that no longer exists.
  */
 const LEGACY_KEYS = ['lits.run-history.v2', 'lits.run-history.v1'];
 

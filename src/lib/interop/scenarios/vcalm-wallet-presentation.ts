@@ -10,8 +10,8 @@ import { walletPresentationRequirements } from './wallet-presentation-requiremen
  * differs, and the scenario does not even name it: `transportFor` derives the
  * `iu` link from the base profile.
  *
- * **This scenario measures more than the VCALM checklist ever did.** The old
- * checklist declared `proof-binding` but not `di-vp-not-jwt` or
+ * **This scenario measures more than the VCALM legacy list ever did.** The old
+ * legacy list declared `proof-binding` but not `di-vp-not-jwt` or
  * `vp-signature-valid`, and the engine registered a check for the first only —
  * so two facts the exchange plainly reported went unscored. They are scored
  * here, from checks that already existed. `mapping.md` § 4 records the gain.

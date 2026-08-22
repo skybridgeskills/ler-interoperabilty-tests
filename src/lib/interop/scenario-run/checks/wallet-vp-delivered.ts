@@ -10,7 +10,7 @@ import { oid4vpStateFor, presentedVpFor } from './presented-vp.js';
  * under `variables.oid4vp.responseReceived`; on VCALM there is no such flag, so a
  * VP echoed into `results.default` is the delivery.
  *
- * This row also absorbs four checklist rows that cannot fail independently of it
+ * This row also absorbs four legacy rows that cannot fail independently of it
  * — `accept-unsigned-request`, `parse-request` (oid4) and `interaction-url-support`,
  * `initiate-exchange`, `process-request` (vcalm). The suite mints only an
  * unsigned `redirect_uri` request, so a matching VP arriving *is* the proof that

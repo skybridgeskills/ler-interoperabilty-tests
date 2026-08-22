@@ -10,7 +10,7 @@ import { Scenario } from './scenario-schema.js';
  * an OID4 result with a VCALM one should be comparing like with like. A test
  * asserts that parity, so an edit to one side cannot silently drift.
  *
- * Nothing here was ported from the VCALM checklist, because there was nothing
+ * Nothing here was ported from the VCALM legacy list, because there was nothing
  * to port: `/wallet/credential-acceptance/vcalm` called no scoring endpoint and
  * not one `vcalm.wallet.credential-acceptance.*` id had a registered check.
  * Twenty-one rows rendered and none of them gated. `mapping.md` § 2 records

@@ -243,3 +243,17 @@ attach links; otherwise delete outright._ M6 and M12 redirect (their routes pars
 M10a, M10b and M11 deleted (theirs carried none). That is one rule consistently applied, not two
 policies — a distinction worth making explicitly, because the surface reads like an inconsistency
 until you know what decides it.
+
+## Amendment (2026-08-22, M13 — the engines are deleted)
+
+The four migrations this ADR records left `issuer-runner`, `wallet-runner` and
+`verifier-runner` scoring nothing reachable. M13 deleted all three, their API
+routes, the eight runnable page components, `profile.checklists` and the whole
+checklist type family — the parallel surface is gone, and the catalog is the only
+statement of what this suite measures.
+
+Five earlier ADRs describe those engines. **None is superseded**: their rules are
+what the ported checks implement, so each carries a dated note pointing here
+rather than a status change. An ADR whose reasoning still holds but whose code
+has moved is not a reversed decision, and marking it superseded would lose the
+reasoning that explains the checks.

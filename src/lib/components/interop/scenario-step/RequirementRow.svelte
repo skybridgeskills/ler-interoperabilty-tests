@@ -22,7 +22,7 @@
 	 * Purely presentational: it takes an outcome, it never scores one. The layout
 	 * follows `RequirementStatusRow` — dot, level badge, text, trailing label —
 	 * deliberately matching its visual language without importing it, because
-	 * that component takes the checklist-era `RequirementStatus` shape which is
+	 * that component takes the legacy `RequirementStatus` shape which is
 	 * removed at M13.
 	 *
 	 * **Attested reveals defer to end-of-run.** An answered attested requirement

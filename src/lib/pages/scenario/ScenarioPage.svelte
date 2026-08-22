@@ -5,7 +5,7 @@
 	import { ExchangeRunnerPanel } from '$lib/components/interop/exchange-runner/index.js';
 	import { ScenarioStepCard } from '$lib/components/interop/scenario-step/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { profileHref } from '$lib/interop/checklist-href.js';
+	import { profileHref } from '$lib/interop/route-hrefs.js';
 	import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
 	import {
 		baseProfileOf,

@@ -10,7 +10,7 @@ import { resolve } from '$app/paths';
  * **The query string is preserved.** Attach links in the CA probe runbook carry
  * `?exchangeId=…&workflow=claim`, and the scenario route adopts them into step 1;
  * dropping the query would silently break the runbook. `resolve()` keeps the
- * target base-path aware, matching the house pattern in `checklist-href.ts`.
+ * target base-path aware, matching the house pattern in `route-hrefs.ts`.
  *
  * The vcalm sibling (`/wallet/credential-acceptance/vcalm`) redirects the same
  * way as of M12, as do both presentation routes. All four carry attach links,

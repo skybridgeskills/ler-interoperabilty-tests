@@ -10,45 +10,34 @@ codebase evolves.
   variables, then **wrapped per request** in AsyncLocalStorage so any
   server code can access services via thin accessors.
 - **No database.** Day-one services are `LoggerService`, `TimeService`,
-  `IdService`. Domain folders live under
-  `src/lib/server/domain/<feature>/` — today: `wallet-crypto`,
-  `wallet-client`, `issuer-runner`, `wallet-runner`, `exchange-runner`,
-  `scenario-runner` (credential recipes, presentation requests, the
-  `resolveIssuingContext` seam, the `deliver-direct` local signer —
-  `scenarioRunner.deliverDirect`, which signs one recipe with an
-  ephemeral did:key issuer for a file the operator hands over — and the
-  `present-to-verifier` driver `scenarioRunner.present`, which presents a
-  signed recipe to the operator's verifier over a live exchange, and the
-  `receive-from-issuer` driver `scenarioRunner.receive`, which takes delivery of
-  a credential the operator's _own_ issuer produced),
-  `verifier-present` (the shared holder-side present primitives — one leaf per
-  live transport, `present-to-vcalm-verifier` and `present-to-oid4-verifier`,
-  each independent of both `scenario-runner` and `verifier-runner`; the OID4
-  leaf inspects the pasted authorization request for the floor **and** submits
-  the credential in one call, since OID4's floor does not ride on a fetch the
-  way VCALM's does), `issuer-receive` (its mirror image — the shared
-  **recipient**-side intake primitives, `receive-direct`,
-  `receive-from-vcalm-issuer` and `receive-from-oid4-issuer`. The two live leaves
-  add no protocol code: they wrap the existing `wallet-client/drivers/*-issuer-flow`
-  drivers and project their observations into a client-safe `IssuerFlowSummary`,
-  independent of `wallet-runner`), and `verifier-runner`
-  (the OID4VP/VCALM verifier acceptance engine — acceptance-pass
-  generator + scorer, request floors, and present-time delivery; see
-  [`adr/2026-07-04-verifier-assessment-model.md`](adr/2026-07-04-verifier-assessment-model.md)).
-  **All three verifier pages have now migrated to scenarios** — direct-delivery
-  (`ob3-direct-verifier-acceptance`), VCALM
-  (`vcalm-verifier-delivery` / `vcalm-verifier-acceptance`), and OID4VP
-  (`oid4-verifier-delivery` / `oid4-verifier-acceptance`, M10b). **All three
-  issuer pages have too** (M11) — direct-delivery
-  (`ob3-direct-issuer-delivery`), VCALM (`vcalm-issuer-issuance`) and OID4VCI
-  (`oid4-issuer-issuance`), plus nine additive scenarios. **And so have the three
-  wallet pages** (M12) — `vcalm-wallet-acceptance`,
-  `{oid4,vcalm}-wallet-presentation` and eight
-  `data-integrity-cryptosuites` scenarios. That is **all four page families**, so
-  `verifier-runner`, `issuer-runner` and `wallet-runner` are now **all dead
-  code**: nothing reachable scores through any of them. The standing engines,
-  their API routes and the legacy page components are swept together in M13
-  ([`adr/2026-08-19-migrating-a-server-scorer-onto-scenarios.md`](adr/2026-08-19-migrating-a-server-scorer-onto-scenarios.md)).
+  `IdService`. Domain folders live under `src/lib/server/domain/<feature>/` —
+  today:
+  - **`wallet-crypto`** — ephemeral `did:key` pairs, Data Integrity signing and
+    verification for the two cryptosuites.
+  - **`wallet-client`** — the suite's own test wallet, server side: the VCALM and
+    OID4VCI issuer-flow drivers, the OID4VP presentation driver, and the HTTP +
+    TLS primitives they share.
+  - **`exchange-runner`** — the transaction-service client and the config seam.
+  - **`scenario-runner`** — credential recipes, presentation requests, the
+    `resolveIssuingContext` seam, the verifier-core client, and three drivers:
+    `deliverDirect` (signs one recipe with an ephemeral `did:key` issuer for a
+    file the operator hands over), `present` (presents a signed recipe to the
+    operator's verifier over a live exchange) and `receive` (takes delivery of a
+    credential the operator's _own_ issuer produced).
+  - **`verifier-present`** — the shared holder-side present primitives, one leaf
+    per live transport. The OID4 leaf inspects the pasted authorization request
+    for the floor **and** submits the credential in one call, since OID4's floor
+    does not ride on a fetch the way VCALM's does.
+  - **`issuer-receive`** — its mirror image: the shared **recipient**-side intake
+    primitives. The two live leaves add no protocol code; they wrap
+    `wallet-client`'s issuer-flow drivers and project their observations into a
+    client-safe `IssuerFlowSummary`.
+
+  **M13 deleted the four scoring engines** — `issuer-runner`, `wallet-runner`,
+  `verifier-runner` and their API routes — along with the eight runnable page
+  components and `profile.checklists`. Every page family migrated to scenarios
+  (M6, M10/M10a/M10b, M11, M12), which left them scoring nothing reachable. See
+  [`adr/2026-08-19-migrating-a-server-scorer-onto-scenarios.md`](adr/2026-08-19-migrating-a-server-scorer-onto-scenarios.md).
 
 ## Scenarios
 
@@ -306,7 +295,7 @@ key**, which is the distinction the whole family turns on.
   **verifier**, which is why this half needed no new `ScenarioAction`, no server
   leaf and no new evidence slot: the transaction service folds verifier-core's
   result into `variables.results.default`, and the poll route already returns it.
-  The nine checks are the `wallet-runner` scorer's own functions, moved.
+  The nine checks are the deleted wallet scorer's own functions, moved.
 - **`data-integrity-cryptosuites`, eight scenarios on two axes.** The
   **producer** axis (`{oid4,vcalm}-wallet-present-{eddsa,ecdsa}`) is **observed**:
   the wallet holds the key and nothing in a presentation request can choose a
@@ -416,12 +405,13 @@ Every number the group shows comes from M4's `evaluateCompletion` in
   line (see **§ Badges**).
 
 Run records are browser-only (`localStorage`), so both surfaces hydrate them in
-`onMount` and render a zeroed meter during SSR. The homepage additionally carries
-a **"Not yet migrated"** section — the `(role, workflow, profile)` combinations
-that have no scenario yet, rendered with the now-statusless `ChecklistRow`. It
-counts toward no meter, shrinks as M10–M12 migrate pages, and is deleted in M13.
-There is deliberately **no separate `/scenarios` index**: the homepage is the
-catalog.
+`onMount` and render a zeroed meter during SSR. There is deliberately **no
+separate `/scenarios` index**: the homepage is the catalog.
+
+The homepage used to carry a **"Not yet migrated"** section listing the
+`(role, workflow, profile)` combinations no scenario covered yet. It counted
+toward no meter and shrank with each migration; M12 emptied it and M13 deleted
+it along with the combinations themselves.
 
 ## Provider dependency injection
 
@@ -509,8 +499,8 @@ read path is identical afterwards.
 to be where this happened. They are now query-preserving `308` redirects to their
 scenarios — **redirect iff the route carries documented attach links** is the rule
 the whole migration followed, which is why the verifier and issuer routes, which
-carried none, were deleted outright instead. The legacy page components and the
-`wallet-runner` engine still stand, unreachable, until the cutover sweep.)
+carried none, were deleted outright instead. M13 deleted the legacy page
+components and the engine behind them.)
 
 **Mint** (the default). The page `POST`s **a scenario action** to
 `/api/exchange-runner/create`, takes the one protocol link its profile speaks
@@ -706,7 +696,7 @@ no scenario definitions: records from a catalog that has moved on just drop.
 `lits.run-history.v2` and `.v1` are **removed on first write and never read**.
 There is no migration: those runs were keyed by a combination that is no longer
 runnable, their `statuses` used a deleted requirement vocabulary, and their
-`checklistFingerprint` hashed a `profile.checklists` that is on its way out. See
+fingerprint hashed a per-profile requirement list that no longer exists. See
 [`docs/adr/2026-08-13-scenario-run-record-and-completion.md`](adr/2026-08-13-scenario-run-record-and-completion.md)
 (supersedes [`2026-07-11-run-history-v2-flat-record.md`](adr/2026-07-11-run-history-v2-flat-record.md)).
 

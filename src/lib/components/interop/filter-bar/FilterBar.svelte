@@ -34,7 +34,7 @@
 	 * Two rules the bar exists to make visible:
 	 *
 	 * 1. **Add-ons appear with a role.** The Add-ons dimension is absent entirely
-	 *    until a role some additive declares a checklist for is selected — an
+	 *    until a role some additive declares a legacy list for is selected — an
 	 *    additive layers on a base profile *in a role*, so offering one earlier
 	 *    asks a question with nowhere to put the answer. `selectionStore` prunes a
 	 *    stale additive out of state to match; this component only decides what to

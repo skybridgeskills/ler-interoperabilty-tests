@@ -159,8 +159,7 @@
 			<h2 class="text-headline-md text-foreground">Success, run result + progress</h2>
 			<p class="max-w-prose text-body-md text-muted-foreground">
 				<code class="font-mono">success</code> (green) marks anything completed + successful — a
-				done checklist step and a passed run (<code class="font-mono">result-pass</code> aliases
-				it).
+				done step and a passed run (<code class="font-mono">result-pass</code> aliases it).
 				<code class="font-mono">result-fail</code>
 				(red, aliases destructive), <code class="font-mono">result-incomplete</code> (neutral). The
 				warm <code class="font-mono">progress</code> family aliases

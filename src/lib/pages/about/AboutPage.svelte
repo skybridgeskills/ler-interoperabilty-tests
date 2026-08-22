@@ -7,9 +7,9 @@
 	<p class="max-w-prose text-body-md text-muted-foreground">
 		The LER Interoperability Test Suite is an always-available, self-help kit for teams building
 		Learning &amp; Employment Record systems — wallets, verifiers, and issuers working with Open
-		Badges 3.0 and related standards. Pick the roles and profiles you care about, run the
-		checklists, and get an honest read on whether your implementation actually interoperates with
-		the rest of the ecosystem — not just whether it follows a specification on paper.
+		Badges 3.0 and related standards. Pick the roles and profiles you care about, run the legacy
+		lists, and get an honest read on whether your implementation actually interoperates with the
+		rest of the ecosystem — not just whether it follows a specification on paper.
 	</p>
 </section>
 
@@ -58,7 +58,7 @@
 	</div>
 	<p class="text-body-sm max-w-prose text-muted-foreground">
 		Other axes break interoperability the same way: status-list handling, and schema or extension
-		expectations two implementations don’t share.
+		assumptions two implementations don’t share.
 	</p>
 </section>
 
@@ -72,7 +72,7 @@
 		cryptosuite — so that “interoperable” means something concrete.
 	</p>
 	<p class="max-w-prose text-body-md text-muted-foreground">
-		Pick the profiles you must interoperate with, run their checklists, and prove real
+		Pick the profiles you must interoperate with, run their legacy lists, and prove real
 		interoperability instead of spec conformance on paper.
 	</p>
 	<p class="max-w-prose text-body-md">

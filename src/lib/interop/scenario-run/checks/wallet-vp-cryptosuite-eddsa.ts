@@ -6,7 +6,7 @@ import { vpCryptosuiteResult } from './wallet-holder-key.js';
  * The presentation was signed with `eddsa-rdfc-2022`.
  *
  * The `dic-wallet-present-eddsa` group's cryptosuite row. Split from the single
- * `producer.vp-cryptosuite-supported` checklist row, which asked only "one of
+ * `producer.vp-cryptosuite-supported` legacy row, which asked only "one of
  * the bundle" and so could not say *which* suite a wallet had proven — the
  * additive's whole point.
  */

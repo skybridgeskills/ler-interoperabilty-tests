@@ -17,7 +17,7 @@ import { resolve } from '$app/paths';
  * the oid4 acceptance route carried them, so they redirect.
  *
  * `resolve()` keeps the target base-path aware, matching the house pattern in
- * `checklist-href.ts`.
+ * `route-hrefs.ts`.
  */
 export function load({ url }: { url: URL }) {
 	redirect(

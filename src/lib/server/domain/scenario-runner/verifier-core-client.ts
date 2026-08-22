@@ -1,10 +1,27 @@
 import { verifyCredential } from '@digitalcredentials/verifier-core';
 
-import type { VerifierCoreResultLite } from './checks/index.js';
+/**
+ * The verifier-core wrapper the scenario runner verifies delivered credentials
+ * with.
+ *
+ * It lived in `issuer-runner/` until M13 deleted that engine. Nothing about it
+ * was issuer-specific — the scenario runner was already its only caller — so it
+ * moved here rather than being deleted with its former neighbours.
+ */
 
 /**
- * Minimal input the issuer-runner passes to the verifier-core client.
- * Keeps the surface small so the fake stays trivial.
+ * Minimal verifier-core result shape we depend on. Was
+ * `VerifierCoreResultLite` in the deleted engine's `checks/types.ts`; inlined
+ * here, since this is now the only thing that names it.
+ */
+export type VerifierCoreResultLite = {
+	verified: boolean;
+	log?: Array<{ id: string; valid: boolean; error?: { name?: string } }>;
+};
+
+/**
+ * Minimal input passed to the verifier-core client. Keeps the surface small so
+ * a fake stays trivial.
  */
 export type VerifyCredentialInput = { credential: unknown };
 

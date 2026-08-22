@@ -103,7 +103,7 @@ both light and dark.
 
 The `requirement` family renders RFC 2119 conformance levels
 (MUST / SHOULD / MAY) in cool blue. Red stays reserved for actual run
-failures, so a checklist of requirements never reads as a wall of errors.
+failures, so a list of requirements never reads as a wall of errors.
 All three levels use the single `requirement` Badge variant; intensity
 encodes the level.
 
@@ -142,14 +142,14 @@ token of its own rather than continuing to borrow `live`.
 ### Success, run result + progress
 
 `success` is the green "done / good" family. It marks anything completed
-and successful: a **completed checklist step** (the `StepRunStateIndicator`
-`complete` state and the "Run complete" banner read prominently green) and a
-**passed run** (`result-pass` aliases `success`). Green is reserved for
-_finished success_ — the warm `progress`/`live` flame stays for _in-flight_
-work, so a filling checklist and a finished one are never confused.
+and successful: a **completed step** (the `complete` state and the "Run
+complete" banner read prominently green) and a **passed run** (`result-pass`
+aliases `success`). Green is reserved for _finished success_ — the warm
+`progress`/`live` flame stays for _in-flight_ work, so a filling meter and a
+finished one are never confused.
 
-Per-run outcome tokens summarise the most recent run of a checklist
-combination on the homepage rows and in `RunResultBadge`:
+Per-run outcome tokens summarise the most recent run of a scenario on the
+homepage rows:
 
 | Token / class           | Meaning                                                                                                     |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -219,51 +219,6 @@ fills. The `progress` aliases let runtime components (e.g.
 
 `--radius` defaults to `0.5rem` and is exposed as `--radius-sm/md/lg/xl`
 via `@theme inline`.
-
-## Test wallet
-
-The runnable issuer pages (VCALM, OID4, OB3 direct-delivery) drive a
-stripped-down **test wallet** rendered by
-`src/lib/components/interop/test-wallet/`. It reads top-to-bottom like a real
-(minimal) digital wallet, on the warm `live` runtime surface:
-
-1. **Header** — wallet identity + a small live/idle state chip.
-2. **Primary action** — a semantically-labelled initiation input (interaction
-   URL / credential-offer URL / pasted credential) + a semantic submit button.
-3. **Wallet settings** — a visually-separated section (holder cryptosuite);
-   omitted entirely for the paste variant.
-4. **Credentials** — `WalletArtifact` summary cards for produced credentials.
-5. **Activity** — the ordered `WalletActivity[]` list; each row leads with a
-   neutral kind icon (interaction vs check) and trails with a
-   `RunStatusIndicator`, so activity results read in the same status language as
-   the checklist.
-
-**Base + variants (composition, not inheritance).** `TestWallet.svelte` is the
-presentational base — every label and the settings contents are props/snippets,
-no protocol strings. Thin wrappers `VcalmIssuerFlowWallet`, `Oid4IssuerFlowWallet`,
-and `DirectDeliveryWallet` supply per-flow copy/settings and forward run data.
-
-**Normalized run-response model.** The `/api/wallet-runner/issuer-{vcalm,oid4}/run`
-and `/api/issuer-runner/verify` endpoints return a client-safe
-`walletActivity: WalletActivity[]` + `artifacts: WalletArtifact[]`, derived
-server-side by a shared mapper (`wallet-activity-map.ts`) so the three
-structurally-different flows speak one activity vocabulary. Schema:
-`src/lib/interop/wallet-activity.ts`; rationale:
-[ADR 2026-07-03](adr/2026-07-03-normalized-wallet-run-response.md).
-
-**Overall verdict outside the box.** The wallet box owns artifacts + activity
-only. The overall pass/fail/stopped-early/error verdict renders in a dedicated
-`RunResultCard` in the right column, above the wallet — the detailed counterpart
-to the at-a-glance "Run complete/failed" badge `RunnableChecklist` shows at the
-top of the page.
-
-**Responsive.** Additive-profile sections render inside the left checklist
-column (via `RunnableChecklist`'s `belowSteps` snippet) so they align to the
-requirements width rather than spanning full width. On mobile the right-column
-verdict + wallet move into `MobileWalletDrawer` — a live-colored drawer opened by
-a persistent edge handle (or, in the idle state, an inline call-to-action);
-inline and unchanged on `lg+`. The drawer is opt-in and used only on the three
-issuer pages.
 
 ## Fonts
 

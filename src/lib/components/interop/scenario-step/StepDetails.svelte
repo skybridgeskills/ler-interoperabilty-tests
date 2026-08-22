@@ -5,7 +5,7 @@
 	 * What a step's transport actually did — the collapsed **Details** disclosure
 	 * at the foot of a step card.
 	 *
-	 * **Step-level, not per-requirement.** The checklist pages this replaces hung
+	 * **Step-level, not per-requirement.** The legacy pages this replaces hung
 	 * a `Details` disclosure off every requirement, with each page hand-mapping a
 	 * requirement id to a slice of the run payload. That does not port: checks in
 	 * the scenario model are pure functions over one step's evidence and there are

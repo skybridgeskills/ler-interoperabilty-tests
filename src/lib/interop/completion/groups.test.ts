@@ -1,15 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { allCombinations } from '$lib/interop/accessors.js';
 import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
 import { scenarioBySlug, scenarioFingerprint } from '$lib/interop/scenarios/index.js';
 
-import {
-	combinationHasScenario,
-	completionGroups,
-	completionGroupsForProfile,
-	obligationsByWorkflow
-} from './groups.js';
+import { completionGroups, completionGroupsForProfile, obligationsByWorkflow } from './groups.js';
 
 /** A record marking every requirement of a scenario passed, so the meter reads full. */
 function fullRun(slug: string): ScenarioRunRecord {
@@ -149,34 +143,6 @@ describe('completionGroupsForProfile', () => {
 			runs: {}
 		});
 		expect(groups.map((g) => g.roleSlug)).toEqual(['issuer', 'verifier']);
-	});
-});
-
-describe('combinationHasScenario', () => {
-	it('is true for the migrated oid4 wallet acceptance combination', () => {
-		expect(
-			combinationHasScenario({ role: 'wallet', workflow: 'credential-acceptance', profile: 'oid4' })
-		).toBe(true);
-	});
-
-	it('is true for every combination the catalog actually has', () => {
-		// M12 migrated the last three wallet pages, so NO real combination answers
-		// false any more and the homepage's "Not yet migrated" section renders
-		// nothing. That emptiness is what unblocks deleting `profile.checklists`,
-		// so it is asserted here rather than left to be noticed.
-		expect(allCombinations().filter((c) => !combinationHasScenario(c))).toEqual([]);
-	});
-
-	it('is false for a (role, workflow, profile) triple that is not a combination', () => {
-		// There is no wallet × credential-request-and-verification checklist; the
-		// function answers for any triple, and an unknown one has no scenario.
-		expect(
-			combinationHasScenario({
-				role: 'wallet',
-				workflow: 'credential-request-and-verification',
-				profile: 'oid4'
-			})
-		).toBe(false);
 	});
 });
 
