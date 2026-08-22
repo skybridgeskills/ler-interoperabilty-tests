@@ -223,6 +223,54 @@ describe('POST /api/exchange-runner/create', { timeout: 20_000 }, () => {
 			});
 		});
 
+		it('forwards the three conduct fields under the service’s wire names', async () => {
+			await withCtx(async () => {
+				const { status, payload } = await callPost({
+					kind: 'request-presentation',
+					request: 'ob3-any',
+					queryLanguage: 'pex',
+					limitDisclosure: 'required',
+					advertiseCryptosuites: ['ecdsa-sd-2023']
+				});
+
+				expect(status).toBe(200);
+				const stored = asFakeTransactionServiceClient(transactionServiceClient()).getStored(
+					payload.exchangeId!
+				);
+				expect(stored?.variables).toMatchObject({
+					oid4vpQueryLanguage: 'pex',
+					vprLimitDisclosure: 'required',
+					vprAdvertiseCryptosuites: ['ecdsa-sd-2023']
+				});
+			});
+		});
+
+		it('sends no conduct variable when the action carries none', async () => {
+			await withCtx(async () => {
+				const { payload } = await callPost({ kind: 'request-presentation', request: 'ob3-any' });
+
+				const stored = asFakeTransactionServiceClient(transactionServiceClient()).getStored(
+					payload.exchangeId!
+				);
+				expect(stored?.variables).not.toHaveProperty('oid4vpQueryLanguage');
+				expect(stored?.variables).not.toHaveProperty('vprLimitDisclosure');
+				expect(stored?.variables).not.toHaveProperty('vprAdvertiseCryptosuites');
+			});
+		});
+
+		it('400s an unknown query language rather than dropping it', async () => {
+			await withCtx(async () => {
+				const { status, payload } = await callPost({
+					kind: 'request-presentation',
+					request: 'ob3-any',
+					queryLanguage: 'sparql'
+				});
+
+				expect(status).toBe(400);
+				expect(payload.message).toBe('Unrecognised exchange action');
+			});
+		});
+
 		it('400s an unknown request id', async () => {
 			await withCtx(async () => {
 				const { status, payload } = await callPost({

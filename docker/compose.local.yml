@@ -1,0 +1,47 @@
+# The LOCAL-BUILD stack: all three services built from sibling checkouts, and the
+# only configuration that can run the whole scenario catalogue today. Layered
+# over compose.dev.yml, which keeps the ports, volumes and env files:
+#
+#   pnpm dev:services:local
+#
+# The pinned stack is deliberately behind — see docker/README.md — so while the
+# transaction service's harness branch is unmerged, scenario work needs this one.
+#
+# Build contexts are relative to THIS FILE, so `../../` from `docker/` reaches
+# the checkouts' shared parent. Note the status service's path shape differs from
+# the other two, which sit under `dcc/`. Override a path by exporting the shell
+# variable; that is as far as source-directory configuration goes.
+
+services:
+  transaction-service:
+    image: !reset null
+    build:
+      context: ${TRANSACTION_SERVICE_SRC:-../../dcc/dcc-transaction-service}
+    # STATUS_SERVICE lives HERE, never in the shared docker/env/transaction.env.
+    # Both compose files read that file, and the pinned stack runs no status
+    # service — the claim path allocates a status entry BEFORE signing, so a
+    # dangling STATUS_SERVICE would fail every claim on the pinned stack. Keeping
+    # it in the override is what `if (config.statusService)` is for.
+    #
+    # `environment:` merges over `env_file:`, so this wins where they overlap.
+    environment:
+      STATUS_SERVICE: http://status-service:4008
+      STATUS_SERVICE_TOKEN: wCD5juHzm1Ayj-G-9sdwE9OLT_ebjKhVMUk03tYIdMs
+
+  signing-service:
+    image: !reset null
+    build:
+      context: ${SIGNING_SERVICE_SRC:-../../dcc/dcc-signing-service}
+
+  status-service:
+    build:
+      context: ${STATUS_SERVICE_SRC:-../../vcalm-status-service}
+    container_name: lits-status-service
+    ports:
+      - '4008:4008'
+    env_file:
+      - env/status.env
+      - path: env/status.local.env
+        required: false
+    volumes:
+      - ./.data/status-service:/data

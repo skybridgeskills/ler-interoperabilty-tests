@@ -74,6 +74,16 @@
 			"interactive": true
 		},
 
+		// The same stack built from sibling checkouts, plus the status service —
+		// the only configuration that runs the whole scenario catalogue while the
+		// transaction service's harness branch is unmerged. Two commands, no
+		// selector: which one you ran is visible in your shell history.
+		"dev:services:local": {
+			"cache": false,
+			"persistent": true,
+			"interactive": true
+		},
+
 		// Managed variant used by dev:full — wraps compose up with a signal trap
 		// (scripts/dev-services.sh) so the containers are stopped when the turbo
 		// session ends, however turbo terminates the task.

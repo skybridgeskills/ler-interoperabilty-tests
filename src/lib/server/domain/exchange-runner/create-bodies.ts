@@ -52,6 +52,13 @@ export function issuanceExchangeBody(
  * `exchangeCreateSchemaVerify` (elements optional, the array is not), so it is
  * always sent, defaulting to `[]`. `trustedIssuers`/`trustedRegistries` are
  * genuinely optional and only sent when present.
+ *
+ * The three conduct variables are spread **conditionally, never as an explicit
+ * `undefined`**. Upstream they are `.optional()` with no `.default()`, and this
+ * suite is the only party that sets them — so a variable appears in the stored
+ * `exchange.variables` if and only if we sent it and the service knows the
+ * field. That is exactly what the `*-recorded` automatic checks read, and an
+ * explicit `undefined` would muddy it.
  */
 export function verificationExchangeBody(
 	config: ExchangeRunnerConfig,
@@ -64,7 +71,10 @@ export function verificationExchangeBody(
 			vprCredentialType: req.vprCredentialType,
 			vprContext: req.vprContext,
 			vprClaims: req.vprClaims ?? [],
-			...(req.trustedIssuers ? { trustedIssuers: req.trustedIssuers } : {})
+			...(req.trustedIssuers ? { trustedIssuers: req.trustedIssuers } : {}),
+			...(req.queryLanguage ? { oid4vpQueryLanguage: req.queryLanguage } : {}),
+			...(req.limitDisclosure ? { vprLimitDisclosure: req.limitDisclosure } : {}),
+			...(req.advertiseCryptosuites ? { vprAdvertiseCryptosuites: req.advertiseCryptosuites } : {})
 		}
 	};
 }

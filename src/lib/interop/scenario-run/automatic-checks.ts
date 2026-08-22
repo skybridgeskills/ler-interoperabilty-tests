@@ -1,3 +1,4 @@
+import { advertisedCryptosuitesRecorded } from './checks/advertised-cryptosuites-recorded.js';
 import { credentialDiProofBundle } from './checks/credential-di-proof-bundle.js';
 import { credentialDiProofEcdsa } from './checks/credential-di-proof-ecdsa.js';
 import { credentialDiProofEddsa } from './checks/credential-di-proof-eddsa.js';
@@ -8,9 +9,11 @@ import { credentialStatusList } from './checks/credential-status-list.js';
 import { credentialSubjectIdentifierEmail } from './checks/credential-subject-identifier-email.js';
 import { credentialValidUntil } from './checks/credential-valid-until.js';
 import { credentialVcdm2 } from './checks/credential-vcdm2.js';
+import { discoveryConstructionRfc8414 } from './checks/discovery-construction-rfc8414.js';
 import { exchangeReachedComplete } from './checks/exchange-reached-complete.js';
 import { holderDidBound } from './checks/holder-did-bound.js';
 import { issuerBindsHolderDid } from './checks/issuer-binds-holder-did.js';
+import { limitDisclosureRecorded } from './checks/limit-disclosure-recorded.js';
 import { offerWasFetched } from './checks/offer-was-fetched.js';
 import { oid4IssuerCredentialEndpoint } from './checks/oid4-issuer-credential-endpoint.js';
 import { oid4IssuerDiVpAccepted } from './checks/oid4-issuer-di-vp-accepted.js';
@@ -26,6 +29,7 @@ import { oid4RequestMatchable } from './checks/oid4-request-matchable.js';
 import { oid4RequestTls } from './checks/oid4-request-tls.js';
 import { oid4ResponseEndpoint } from './checks/oid4-response-endpoint.js';
 import { oid4ResponseTls } from './checks/oid4-response-tls.js';
+import { oid4vpQueryLanguageRecorded } from './checks/oid4vp-query-language-recorded.js';
 import { osaAchievedLevelMatches } from './checks/osa-achieved-level-matches.js';
 import { osaCtdlAlignment } from './checks/osa-ctdl-alignment.js';
 import { osaNumericValueInRange } from './checks/osa-numeric-value-in-range.js';
@@ -35,6 +39,7 @@ import { osaResultDescriptionPresent } from './checks/osa-result-description-pre
 import { osaResultLinksDescription } from './checks/osa-result-links-description.js';
 import { osaResultPresent } from './checks/osa-result-present.js';
 import { osaRubricLevelsPresent } from './checks/osa-rubric-levels-present.js';
+import { tamperRecorded } from './checks/tamper-recorded.js';
 import { vcalmInteractionEndpoint } from './checks/vcalm-interaction-endpoint.js';
 import { vcalmIssuerDidauthRequested } from './checks/vcalm-issuer-didauth-requested.js';
 import { vcalmIssuerInteractionUrl } from './checks/vcalm-issuer-interaction-url.js';
@@ -186,7 +191,27 @@ export const automaticChecks: Record<string, AutomaticCheck> = {
 	[walletVpCryptosuiteEcdsa.id]: walletVpCryptosuiteEcdsa,
 	[walletHolderDidMethod.id]: walletHolderDidMethod,
 	[walletHolderKeyTypeEddsa.id]: walletHolderKeyTypeEddsa,
-	[walletHolderKeyTypeEcdsa.id]: walletHolderKeyTypeEcdsa
+	[walletHolderKeyTypeEcdsa.id]: walletHolderKeyTypeEcdsa,
+	// The variation family: four presence checks proving a requested variation
+	// took effect, and one measuring the wallet's own metadata-discovery
+	// construction.
+	//
+	// The four read `exchange.variables` and nothing else. Upstream each variable
+	// is `.optional()` with no `.default()` and this suite is the only party that
+	// sets it, so **presence alone proves the request was honoured** — no
+	// comparison against what was asked, and therefore no new evidence field and
+	// no widening of the check signature. Every failure detail names the HARNESS:
+	// a stripped variable is this deployment's shortfall, and a reader must not
+	// take it for a defect in the wallet under test.
+	[oid4vpQueryLanguageRecorded.id]: oid4vpQueryLanguageRecorded,
+	[limitDisclosureRecorded.id]: limitDisclosureRecorded,
+	[tamperRecorded.id]: tamperRecorded,
+	[advertisedCryptosuitesRecorded.id]: advertisedCryptosuitesRecorded,
+	// Wallet-borne and therefore observed, never pinned: the service serves both
+	// well-known constructions, so the wallet's choice IS the measurement. Scores
+	// the ordered election array rather than a value, and is a SHOULD — a wallet
+	// with the bug completes here and fails against a stricter verifier later.
+	[discoveryConstructionRfc8414.id]: discoveryConstructionRfc8414
 };
 
 /**

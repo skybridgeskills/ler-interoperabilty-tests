@@ -301,6 +301,49 @@ describe('validateCatalog', () => {
 		});
 	});
 
+	describe('rule 9 — limitDisclosure needs queryLanguage: pex', () => {
+		const verify = (over: Record<string, unknown>) =>
+			scenario({
+				steps: [step({ action: { kind: 'request-presentation', request: 'ob3-any', ...over } })]
+			});
+
+		it('rejects limitDisclosure with no query language — the service would default to dcql', () => {
+			expect(codes([verify({ limitDisclosure: 'required' })])).toContain(
+				'limit-disclosure-without-pex'
+			);
+		});
+
+		it('rejects limitDisclosure alongside dcql', () => {
+			expect(codes([verify({ limitDisclosure: 'preferred', queryLanguage: 'dcql' })])).toContain(
+				'limit-disclosure-without-pex'
+			);
+		});
+
+		it('reports exactly one violation for one bad step', () => {
+			expect(
+				validateCatalog([verify({ limitDisclosure: 'required' })]).filter(
+					(v) => v.code === 'limit-disclosure-without-pex'
+				)
+			).toHaveLength(1);
+		});
+
+		it('accepts limitDisclosure alongside pex', () => {
+			expect(codes([verify({ limitDisclosure: 'required', queryLanguage: 'pex' })])).not.toContain(
+				'limit-disclosure-without-pex'
+			);
+		});
+
+		it('accepts pex with no limitDisclosure', () => {
+			expect(codes([verify({ queryLanguage: 'pex' })])).not.toContain(
+				'limit-disclosure-without-pex'
+			);
+		});
+
+		it('ignores actions of other kinds', () => {
+			expect(codes([scenario()])).not.toContain('limit-disclosure-without-pex');
+		});
+	});
+
 	it('reports every violation, not just the first', () => {
 		const broken = scenario({
 			memberships: [{ profile: 'data-integrity-cryptosuites', level: 'required' }],

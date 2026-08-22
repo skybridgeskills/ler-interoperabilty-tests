@@ -30,7 +30,17 @@ const CreateExchangeRequest = ZodFactory(
 			intent: z.object({ cryptosuite: z.string(), didMethod: z.string() }).optional(),
 			exchangeIdPrefix: z.string().min(1).optional()
 		}),
-		z.object({ kind: z.literal('request-presentation'), request: z.string().min(1) })
+		// The three conduct fields mirror `ScenarioAction`'s. They are NOT
+		// cross-validated here: `limitDisclosure` needing `queryLanguage: 'pex'` is
+		// an AUTHORING error, caught once at catalog load, not a per-request one
+		// worth a 400 on every run.
+		z.object({
+			kind: z.literal('request-presentation'),
+			request: z.string().min(1),
+			queryLanguage: z.enum(['dcql', 'pex']).optional(),
+			limitDisclosure: z.enum(['required', 'preferred']).optional(),
+			advertiseCryptosuites: z.array(z.string()).optional()
+		})
 	])
 );
 
@@ -76,7 +86,14 @@ export const POST = async ({ request }: RequestEvent) => {
 					...(presentationRequest.trustedIssuers
 						? { trustedIssuers: presentationRequest.trustedIssuers }
 						: {}),
-					...(presentationRequest.vprClaims ? { vprClaims: presentationRequest.vprClaims } : {})
+					...(presentationRequest.vprClaims ? { vprClaims: presentationRequest.vprClaims } : {}),
+					// Conduct, forwarded from the action. The registry above held the
+					// payload; these three say how the asking is done.
+					...(action.queryLanguage ? { queryLanguage: action.queryLanguage } : {}),
+					...(action.limitDisclosure ? { limitDisclosure: action.limitDisclosure } : {}),
+					...(action.advertiseCryptosuites
+						? { advertiseCryptosuites: action.advertiseCryptosuites }
+						: {})
 				})
 			);
 		}

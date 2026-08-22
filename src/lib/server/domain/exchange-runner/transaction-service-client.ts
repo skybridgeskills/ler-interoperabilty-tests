@@ -88,7 +88,30 @@ export const ExchangeRecord = ZodFactory(
 		workflowId: z.string().optional(),
 		state: ExchangeState.schema,
 		variables: z.record(z.string(), z.unknown()).optional(),
-		expires: z.string().optional()
+		expires: z.string().optional(),
+		/**
+		 * Which well-known constructions a client actually fetched metadata under,
+		 * in the order it first tried them. A **sibling of `variables`**, not one
+		 * of them: the transaction service records it directly onto the exchange
+		 * record and the poll route returns the record wholesale.
+		 *
+		 * It has to be named here or Zod strips it — this schema being a closed
+		 * `z.object` is the only reason the field was ever invisible to the suite.
+		 *
+		 * Ordered and de-duplicated upstream on purpose: "tried both" and "took the
+		 * concatenated form" are different observations about a client, and a
+		 * last-write-wins field would erase the difference. So the discovery check
+		 * scores the array, never a value.
+		 */
+		discoveryElections: z
+			.array(
+				z.object({
+					construction: z.enum(['rfc8414-path-suffix', 'oidc-concat']),
+					doc: z.string(),
+					at: z.string()
+				})
+			)
+			.optional()
 	})
 );
 export type ExchangeRecord = ReturnType<typeof ExchangeRecord>;
@@ -123,12 +146,26 @@ export type CreateIssuanceExchangeRequest = {
 	tenantToken?: string;
 };
 
-/** Inputs the suite passes when initiating a verification (`verify`) exchange. */
+/**
+ * Inputs the suite passes when initiating a verification (`verify`) exchange.
+ *
+ * The first four describe the **payload** — what is asked for, resolved from the
+ * server-side presentation-request registry. The last three describe the
+ * **conduct** — how the asking is done — and come from the scenario action.
+ * `verificationExchangeBody` maps them onto the transaction service's own wire
+ * names, which keep their prefixes because that service names them, not us.
+ */
 export type CreateVerificationExchangeRequest = {
 	vprCredentialType: string[];
 	vprContext: string[];
 	trustedIssuers?: string[];
 	vprClaims?: DcqlClaim[];
+	/** OID4VP query language to ask in. Absent means the service's default. */
+	queryLanguage?: 'dcql' | 'pex';
+	/** DIF PE `constraints.limit_disclosure`. PEX arm only. */
+	limitDisclosure?: 'required' | 'preferred';
+	/** Extra cryptosuite names unioned into the advertised `cryptosuite_values`. */
+	advertiseCryptosuites?: string[];
 };
 
 /** Result returned to suite callers. */

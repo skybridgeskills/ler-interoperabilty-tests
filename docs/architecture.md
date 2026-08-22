@@ -459,7 +459,8 @@ carried none, were deleted outright instead. The legacy page components and the
 exchange settles.
 
 The body is `{ kind: 'issue', credential, tamper?, intent?, exchangeIdPrefix? }`
-or `{ kind: 'request-presentation', request }`. (`deliver-direct` and
+or
+`{ kind: 'request-presentation', request, queryLanguage?, limitDisclosure?, advertiseCryptosuites? }`. (`deliver-direct` and
 `present-to-verifier` mint no suite exchange and never reach here — the first
 signs a file locally, the second joins an exchange the operator's verifier
 hosts, each via its own `scenario-runner` route.) There is no default action: an
@@ -483,7 +484,8 @@ tenancy live here.
   credential id, so the route mints a fresh one per exchange.
 - **`presentation-requests.ts`** (+ `requests/`) — `RequestId` → the
   `vprCredentialType` / `vprContext` / `vprClaims` / `trustedIssuers` a verify
-  exchange is minted with.
+  exchange is minted with. **The payload only** — how the asking is _conducted_
+  lives on the action; see below.
 - **`resolve-issuing-context.ts`** — the seam between a scenario's
   `IssuingIntent` and what the deployment can actually serve. **Absent intent
   means elective** (the transaction service already ranks issuer instances by
@@ -498,6 +500,33 @@ the only way to get a proof and payload that genuinely disagree.
 **`exchangeIdPrefix`** is a **sibling of `variables`, not a member of it** — it
 rides into the minted `exchangeId` and so appears in the exchange journal, which
 outlives the exchange itself (`EXCHANGE_TTL`).
+
+**Where a variation is named: the registry holds the payload, the action holds
+the conduct.** `RecipeId` and `RequestId` say _what_ is issued or asked for,
+opaque behind a server-side registry; everything describing _how the exchange is
+conducted_ lives on the action. That rule already explained `tamper`, `intent`,
+`transport` and `keyProofSuite`, and it places the three verify variations:
+`request-presentation` carries `queryLanguage` (`'dcql' | 'pex'`),
+`limitDisclosure` (`'required' | 'preferred'`, the DIF PE constraint) and
+`advertiseCryptosuites` (extra suite names unioned into the advertised
+`cryptosuite_values`, to coax a wallet into deriving a selective-disclosure proof
+so it can be observed). `verificationExchangeBody` maps them onto the transaction
+service's own wire names — `oid4vpQueryLanguage`, `vprLimitDisclosure`,
+`vprAdvertiseCryptosuites` — and **spreads them conditionally, never as an
+explicit `undefined`**, because presence in the stored `exchange.variables` is
+exactly what the `*-recorded` automatic checks read.
+
+The rule is load-bearing rather than tidy: `limitDisclosure` is meaningless
+without `queryLanguage: 'pex'`, and a catalog rule can only enforce that because
+both halves are in one place. Split across the action and the registry, nothing
+would see both. See
+[`adr/2026-08-22-payload-in-the-registry-conduct-on-the-action.md`](adr/2026-08-22-payload-in-the-registry-conduct-on-the-action.md).
+
+Three axes are **wallet-borne**: the service serves every option and the wallet's
+choice _is_ the measurement. Metadata discovery is one — the transaction service
+answers both well-known constructions and discriminates on neither, recording
+each election on the exchange as `discoveryElections`, which
+`discovery-construction-rfc8414` scores as a SHOULD.
 
 Cryptosuite and DID method are **deployment configuration**, not request
 variables: they ride the tenant (`TENANT_CRYPTOSUITE_<T>` on the signing
@@ -541,8 +570,10 @@ asymmetry it absorbs: the transaction service's `POST …/exchanges` returns the
 protocols object bare, while `GET …/protocols` wraps it in `{ protocols }`.
 Callers see the one shape.
 
-> **During a probe sitting, point `TRANSACTION_SERVICE_URL` at the host dev
-> transaction service, not the pinned compose image** — see
+> **During a probe sitting, `TRANSACTION_SERVICE_URL` must point at the service
+> that actually minted the exchange** — with `pnpm dev:services:local` that is
+> the composed branch build; with `pnpm dev:services` it is the pinned image,
+> which mints none of the harness fields. See
 > [`docker/README.md`](../docker/README.md#attach-mode-and-probe-sittings).
 
 ## Theme system

@@ -84,4 +84,45 @@ describe('verificationExchangeBody', () => {
 			verificationExchangeBody(config, { ...base, trustedIssuers: ['did:key:z6M'] }).variables
 		).toHaveProperty('trustedIssuers', ['did:key:z6M']);
 	});
+
+	it('maps the three conduct fields onto the service’s own wire names', () => {
+		const body = verificationExchangeBody(config, {
+			vprCredentialType: ['OpenBadgeCredential'],
+			vprContext: ['https://x.test'],
+			queryLanguage: 'pex',
+			limitDisclosure: 'required',
+			advertiseCryptosuites: ['ecdsa-sd-2023']
+		});
+
+		expect(body.variables).toMatchObject({
+			oid4vpQueryLanguage: 'pex',
+			vprLimitDisclosure: 'required',
+			vprAdvertiseCryptosuites: ['ecdsa-sd-2023']
+		});
+	});
+
+	it('omits each conduct variable entirely rather than sending undefined', () => {
+		// Presence in the stored exchange.variables is the whole proof the
+		// `*-recorded` checks read, so an absent field must be absent, not null.
+		const { variables } = verificationExchangeBody(config, {
+			vprCredentialType: ['OpenBadgeCredential'],
+			vprContext: ['https://x.test']
+		});
+
+		expect(variables).not.toHaveProperty('oid4vpQueryLanguage');
+		expect(variables).not.toHaveProperty('vprLimitDisclosure');
+		expect(variables).not.toHaveProperty('vprAdvertiseCryptosuites');
+	});
+
+	it('sends only the conduct fields it was given', () => {
+		const { variables } = verificationExchangeBody(config, {
+			vprCredentialType: ['OpenBadgeCredential'],
+			vprContext: ['https://x.test'],
+			queryLanguage: 'dcql'
+		});
+
+		expect(variables).toHaveProperty('oid4vpQueryLanguage', 'dcql');
+		expect(variables).not.toHaveProperty('vprLimitDisclosure');
+		expect(variables).not.toHaveProperty('vprAdvertiseCryptosuites');
+	});
 });

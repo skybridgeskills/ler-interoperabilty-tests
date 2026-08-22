@@ -57,3 +57,68 @@ describe('ScenarioAction — receive-from-issuer', () => {
 		expect(parsed).not.toHaveProperty('intent');
 	});
 });
+
+describe('ScenarioAction — request-presentation', () => {
+	it('parses with the request alone', () => {
+		expect(ScenarioAction({ kind: 'request-presentation', request: 'ob3-any' })).toEqual({
+			kind: 'request-presentation',
+			request: 'ob3-any'
+		});
+	});
+
+	it('parses with some of the conduct fields', () => {
+		expect(
+			ScenarioAction({
+				kind: 'request-presentation',
+				request: 'ob3-any',
+				queryLanguage: 'pex'
+			})
+		).toMatchObject({ queryLanguage: 'pex' });
+	});
+
+	it('parses with all three conduct fields', () => {
+		expect(
+			ScenarioAction({
+				kind: 'request-presentation',
+				request: 'ob3-any',
+				queryLanguage: 'pex',
+				limitDisclosure: 'required',
+				advertiseCryptosuites: ['ecdsa-sd-2023', 'bbs-2023']
+			})
+		).toMatchObject({
+			queryLanguage: 'pex',
+			limitDisclosure: 'required',
+			advertiseCryptosuites: ['ecdsa-sd-2023', 'bbs-2023']
+		});
+	});
+
+	it('rejects an unknown query language', () => {
+		expect(
+			ScenarioAction.schema.safeParse({
+				kind: 'request-presentation',
+				request: 'ob3-any',
+				queryLanguage: 'sparql'
+			}).success
+		).toBe(false);
+	});
+
+	it('rejects an unknown limitDisclosure value', () => {
+		expect(
+			ScenarioAction.schema.safeParse({
+				kind: 'request-presentation',
+				request: 'ob3-any',
+				limitDisclosure: 'optional'
+			}).success
+		).toBe(false);
+	});
+
+	it('takes advertiseCryptosuites as open strings — the bait names a suite we cannot verify', () => {
+		expect(
+			ScenarioAction({
+				kind: 'request-presentation',
+				request: 'ob3-any',
+				advertiseCryptosuites: ['a-suite-nobody-implements']
+			})
+		).toMatchObject({ advertiseCryptosuites: ['a-suite-nobody-implements'] });
+	});
+});

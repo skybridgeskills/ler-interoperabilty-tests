@@ -150,10 +150,13 @@ async function createExchange(
 
 	// `exchangeIdPrefix` is the scenario slug, so a run is findable in the
 	// exchange journal without cross-referencing anything.
+	//
+	// A verify action forwards its conduct fields too — spread from the action
+	// rather than listed, so an optional one absent on the action stays absent on
+	// the wire. Presence in the stored `exchange.variables` is what the
+	// `*-recorded` checks read, so an explicit `undefined` would muddy it.
 	const body =
-		action.kind === 'issue'
-			? { ...action, exchangeIdPrefix: scenario.slug }
-			: { kind: action.kind, request: action.request };
+		action.kind === 'issue' ? { ...action, exchangeIdPrefix: scenario.slug } : { ...action };
 
 	try {
 		const res = await fetch('/api/exchange-runner/create', {

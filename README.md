@@ -123,9 +123,11 @@ mode**), theme system, and test harness.
 
 The runnable wallet pages can adopt an exchange minted outside the suite
 with `?exchangeId=…&workflow=claim|verify`. During a probe sitting,
-`TRANSACTION_SERVICE_URL` must point at the **host** transaction service
-rather than the digest-pinned compose image — see
-[`docker/README.md`](docker/README.md#attach-mode-and-probe-sittings).
+`TRANSACTION_SERVICE_URL` must point at the transaction service that **actually
+minted** the exchange. `pnpm dev:services:local` builds it from the sibling
+checkout, so the composed service is the branch build; `pnpm dev:services` runs
+digest-pinned images that predate the harness work. See
+[`docker/README.md`](docker/README.md#two-stacks).
 
 A **scenario** is the suite's runnable unit — a small measurement authored as
 data and run at the one generic route `/scenarios/[slug]`, with no bespoke page.

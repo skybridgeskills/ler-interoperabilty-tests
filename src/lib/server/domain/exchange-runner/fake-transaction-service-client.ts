@@ -112,6 +112,10 @@ export function FakeTransactionServiceClient({
 		req: CreateVerificationExchangeRequest
 	): Promise<CreateExchangeResult> {
 		const exchangeId = newUuid();
+		// The three conduct variables are stored under the REAL service's wire
+		// names, matching `verificationExchangeBody`, because that is what the
+		// `*-recorded` automatic checks read off `exchange.variables`. Spread
+		// conditionally: presence is the proof, so an absent one must be absent.
 		store.set(exchangeId, {
 			exchangeId,
 			workflowId: 'verify',
@@ -120,7 +124,12 @@ export function FakeTransactionServiceClient({
 				vprCredentialType: req.vprCredentialType,
 				vprContext: req.vprContext,
 				...(req.trustedIssuers ? { trustedIssuers: req.trustedIssuers } : {}),
-				...(req.vprClaims ? { vprClaims: req.vprClaims } : {})
+				...(req.vprClaims ? { vprClaims: req.vprClaims } : {}),
+				...(req.queryLanguage ? { oid4vpQueryLanguage: req.queryLanguage } : {}),
+				...(req.limitDisclosure ? { vprLimitDisclosure: req.limitDisclosure } : {}),
+				...(req.advertiseCryptosuites
+					? { vprAdvertiseCryptosuites: req.advertiseCryptosuites }
+					: {})
 			}
 		});
 		return {

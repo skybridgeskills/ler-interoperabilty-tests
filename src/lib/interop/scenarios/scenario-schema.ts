@@ -81,8 +81,44 @@ export const ScenarioAction = ZodFactory(
 			tamper: z.enum(['proof', 'claim']).optional(),
 			intent: IssuingIntent.schema.optional()
 		}),
-		/** Mint a `verify` exchange and poll for the presentation. */
-		z.object({ kind: z.literal('request-presentation'), request: RequestId.schema }),
+		/**
+		 * Mint a `verify` exchange and poll for the presentation.
+		 *
+		 * **The registry holds the payload; the action holds the conduct.**
+		 * `request` names *what* is asked for — opaque behind a server-side registry
+		 * — and the three optional fields say *how* the asking is conducted. They do
+		 * not change what is asked for, which is why they are here and not in the
+		 * request registry: split across two places, nothing sees both halves and
+		 * the `limitDisclosure`/`queryLanguage` constraint below is unenforceable.
+		 */
+		z.object({
+			kind: z.literal('request-presentation'),
+			request: RequestId.schema,
+			/**
+			 * Which OID4VP query language to ask in. Absent means the service's
+			 * default (`dcql`). Conduct, not payload — the same credential is asked
+			 * for either way; only the shape of the asking differs, and a wallet may
+			 * understand one and not the other.
+			 */
+			queryLanguage: z.enum(['dcql', 'pex']).optional(),
+			/**
+			 * DIF Presentation Exchange `constraints.limit_disclosure`. PEX arm only —
+			 * the catalog rejects it without `queryLanguage: 'pex'`, because DCQL has
+			 * no such constraint and a scenario that set both would silently measure
+			 * nothing. Conduct: it varies how much of the credential the verifier
+			 * insists on, not which credential.
+			 */
+			limitDisclosure: z.enum(['required', 'preferred']).optional(),
+			/**
+			 * ADVERTISE-TO-OBSERVE bait: extra cryptosuite names unioned into the
+			 * advertised `cryptosuite_values`, to coax a conformant wallet into
+			 * DERIVING a selective-disclosure proof so it can be observed. Our own
+			 * verification of the derived proof is expected to fail and is not relied
+			 * upon — the observation is the measurement. Conduct: it changes what the
+			 * verifier says it accepts, never what it asks for.
+			 */
+			advertiseCryptosuites: z.array(z.string()).optional()
+		}),
 		/** File download / copy-paste. No exchange is minted. */
 		z.object({
 			kind: z.literal('deliver-direct'),

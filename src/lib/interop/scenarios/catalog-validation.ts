@@ -11,7 +11,8 @@ export type CatalogViolationCode =
 	| 'one-of-requirement-mismatch'
 	| 'choose-correct-not-an-option'
 	| 'discontiguous-shuffle'
-	| 'missing-shuffle-label';
+	| 'missing-shuffle-label'
+	| 'limit-disclosure-without-pex';
 
 /** One authoring error found in the catalog. */
 export type CatalogViolation = {
@@ -40,6 +41,7 @@ export function validateCatalog(scenarios: Scenario[]): CatalogViolation[] {
 		...scenarios.flatMap(chooseCorrectIsAnOption),
 		...scenarios.flatMap(contiguousShuffle),
 		...scenarios.flatMap(shuffledScenarioDeclaresLabel),
+		...scenarios.flatMap(limitDisclosureNeedsPex),
 		...oneOfGroupsAgree(scenarios)
 	];
 }
@@ -152,6 +154,34 @@ function additiveOnlyIsClaimedByAnAdditive(scenario: Scenario): CatalogViolation
 		});
 	}
 
+	return violations;
+}
+
+/**
+ * Rule 9 — `limitDisclosure` is set only alongside `queryLanguage: 'pex'`.
+ *
+ * `limit_disclosure` is a DIF Presentation Exchange constraint; DCQL has no
+ * equivalent. Asking in DCQL while setting it produces a request the service
+ * honours in neither language, so the scenario measures nothing while looking
+ * like it measured selective disclosure — the worst kind of quiet pass.
+ *
+ * This rule is why both fields live on the action rather than one of them in
+ * the request registry: split across two places, nothing sees both halves and
+ * the constraint could not be checked at all.
+ */
+function limitDisclosureNeedsPex(scenario: Scenario): CatalogViolation[] {
+	const violations: CatalogViolation[] = [];
+	for (const step of scenario.steps) {
+		const { action } = step;
+		if (!action || action.kind !== 'request-presentation') continue;
+		if (action.limitDisclosure === undefined) continue;
+		if (action.queryLanguage === 'pex') continue;
+		violations.push({
+			code: 'limit-disclosure-without-pex',
+			subject: scenario.slug,
+			message: `step "${step.id}" sets limitDisclosure="${action.limitDisclosure}" but queryLanguage is ${action.queryLanguage === undefined ? 'unset (the service defaults to dcql)' : `"${action.queryLanguage}"`}; limit_disclosure is a Presentation Exchange constraint and needs queryLanguage: "pex"`
+		});
+	}
 	return violations;
 }
 

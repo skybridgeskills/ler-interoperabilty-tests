@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Run from the repo root so the relative compose path + .env resolve correctly,
+# Run from the repo root so the relative compose path resolves correctly,
 # regardless of the cwd turbo invokes us from.
 cd "$(dirname "$0")/.."
 
-COMPOSE=(docker compose -f docker/compose.dev.yml --env-file .env)
+COMPOSE=(docker compose -f docker/compose.dev.yml)
 
 cleanup() {
 	# Stop (not down) so containers can restart fast; state under

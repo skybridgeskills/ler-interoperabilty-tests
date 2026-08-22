@@ -1,23 +1,24 @@
 name: ler-interoperability-test-suite-dev
 
+# The PINNED stack: published images at fixed digests, the end state a merged
+# branch restores. It is deliberately behind — see docker/README.md for what it
+# cannot run today, and `pnpm dev:services:local` for the stack that can.
+#
+# No `${...}` interpolation and no tenant name appears in this file. All
+# container configuration lives in `docker/env/*.env`, read directly by
+# `env_file:`, so adding a tenant is editing one file per service. `.local.env`
+# overlays are gitignored and read second, and later files win.
+
 services:
   signing-service:
     image: skybridgeskills/dcc-signing-service@sha256:ea486bc5c71f78cb93057fafad95885a1a33fd911aee348faee111283f158050
     container_name: lits-signing-service
     ports:
       - '4006:4006'
-    environment:
-      PORT: 4006
-      # The seeds this service signs with. `TENANT_SEED_<T>` is what makes a
-      # tenant exist at all — there is no fallback, so a signing tenant with no
-      # seed answers 404 "Tenant doesn't exist".
-      TENANT_SEED_DEFAULT: ${TENANT_SEED_DEFAULT:-generate}
-      # A SECOND tenant that signs ECDSA P-256, so a scenario can PIN a
-      # cryptosuite. `TENANT_CRYPTOSUITE_<T>` is the signing service's own knob —
-      # configuration, not a code change. Without it every pinned-ECDSA scenario
-      # renders disabled (which is correct, and still worth seeing once).
-      TENANT_SEED_ECDSA: ${TENANT_SEED_ECDSA:-generate}
-      TENANT_CRYPTOSUITE_ECDSA: ecdsa-rdfc-2019
+    env_file:
+      - env/signing.env
+      - path: env/signing.local.env
+        required: false
     volumes:
       - ./.data/signing-service:/data
 
@@ -28,23 +29,9 @@ services:
       - signing-service
     ports:
       - '4004:4004'
-    environment:
-      PORT: 4004
-      DEFAULT_EXCHANGE_HOST: ${DEFAULT_EXCHANGE_HOST:-http://localhost:4004}
-      SIGNING_SERVICE: http://signing-service:4006
-      PERSIST_TO_FILE: /data/exchanges.kv
-      TENANT_TOKEN_DEFAULT: ${TENANT_TOKEN_DEFAULT:?must be set in .env}
-      ACCESS_JWT_SECRET: ${ACCESS_JWT_SECRET:?must be set in .env}
-      # The ECDSA tenant, and the issuer instance that makes it mean something.
-      #
-      # A tenant's issuer instance is chosen at CLAIM time by ranking the
-      # tenant's instances against the cryptosuites the wallet advertised — the
-      # exchange creator has no say — so a tenant whose only instance is ECDSA is
-      # the one and only way to force an ECDSA-signed credential. That is why
-      # pinning is a tenant swap and not a request field.
-      TENANT_TOKEN_ECDSA: ${TENANT_TOKEN_ECDSA:-}
-      TENANT_ISSUER_1_ID_ECDSA: ecdsa
-      TENANT_ISSUER_1_CRYPTOSUITE_ECDSA: ecdsa-rdfc-2019
-      TENANT_ISSUER_1_SIGNING_TENANT_ECDSA: ecdsa
+    env_file:
+      - env/transaction.env
+      - path: env/transaction.local.env
+        required: false
     volumes:
       - ./.data/transaction-service:/data
