@@ -51,6 +51,11 @@
 <!--
 	Every story reserves space below the bar: the panel is absolutely positioned
 	against it, so a story with no room under the bar renders the panel off-canvas.
+
+	The panel's entry animation runs on mount, so a screenshot taken the instant a
+	story loads can catch it mid-flight — scaled by 0.98 and partly transparent.
+	Measurements taken then are skewed by exactly that; wait for it to settle, or
+	call `element.getAnimations().forEach((a) => a.finish())` first.
 -->
 <Story name="Unfiltered" asChild>
 	<div class="min-h-[36rem] bg-background px-4 py-6">

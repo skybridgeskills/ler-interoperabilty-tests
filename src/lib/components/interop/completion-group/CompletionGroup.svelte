@@ -97,16 +97,23 @@
 		return [...slice.result.obligations, ...slice.result.optional.obligations];
 	}
 
+	/**
+	 * The three requirement layers, in the cool progression the design system
+	 * documents: Essential blue → Expanded violet → Add-ons teal. The add-on tier
+	 * used the warm `live` flame until 2026-08-21; `live` means "talking to a real
+	 * service right now", which an additive profile is not, and it failed AA as
+	 * text on light surfaces. See ADR 2026-08-21.
+	 */
 	const dotClass = (tone: Tone) =>
-		tone === 'essential' ? 'bg-primary' : tone === 'complete' ? 'bg-accent' : 'bg-live';
+		tone === 'essential' ? 'bg-primary' : tone === 'complete' ? 'bg-accent' : 'bg-additive';
 	const textClass = (tone: Tone) =>
-		tone === 'essential' ? 'text-primary' : tone === 'complete' ? 'text-accent' : 'text-live';
+		tone === 'essential' ? 'text-primary' : tone === 'complete' ? 'text-accent' : 'text-additive';
 	const ruleClass = (tone: Tone) =>
 		tone === 'essential'
 			? 'border-l-primary/30'
 			: tone === 'complete'
 				? 'border-l-accent/30'
-				: 'border-l-live/40';
+				: 'border-l-additive-border';
 </script>
 
 {#snippet obligationList(obligations: ObligationProgress[])}

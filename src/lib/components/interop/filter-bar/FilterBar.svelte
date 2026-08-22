@@ -1,22 +1,24 @@
 <script lang="ts">
 	import {
-		additiveProfileHref,
-		allAdditiveProfiles,
-		type AdditiveProfile,
-		type AdditiveProfileSlug,
 		additiveProfilesForRoles,
 		allProfiles,
 		allRoles,
-		type Profile,
+		type AdditiveProfileSlug,
 		type ProfileSlug,
-		profileHref,
-		roleHref,
-		type RoleSlug,
-		rolesOfAdditiveProfile
+		type RoleSlug
 	} from '$lib/interop/index.js';
 
-	import type { FilterPanelItem } from './filter-panel-item.js';
+	import { anchorX } from './anchor-x.svelte.js';
+	import { type Dimension, toneClasses, toneFor } from './filter-bar-tone.js';
+	import {
+		additiveItems,
+		profileItems,
+		roleItems,
+		shortProfileName,
+		unofferedAdditiveNote
+	} from './filter-panel-items.js';
 	import FilterPanel from './FilterPanel.svelte';
+	import { panelMotion } from './panel-motion.js';
 
 	import { resolve } from '$app/paths';
 
@@ -41,6 +43,13 @@
 	 *    hides the rest behind an escape hatch rather than reordering them — which
 	 *    is what made the old selectors read as broken when a selection matched
 	 *    nothing.
+	 *
+	 * **The colour marks the requirement layer, not the dimension.** Roles and
+	 * Profiles select base-profile requirements and speak the same `requirement`
+	 * blue the Essential tier uses on the cards below; Add-ons layers a different
+	 * kind of requirement and speaks `additive` teal. A **closed** dimension that is
+	 * filtering keeps its colour, so the bar states its own filter at rest and not
+	 * only while open. See `filter-bar-tone.ts`.
 	 *
 	 * State is owned by the caller, as with every selector this replaces.
 	 */
@@ -71,10 +80,9 @@
 		open?: Dimension | null;
 	} = $props();
 
-	type Dimension = 'roles' | 'profiles' | 'additives';
-
 	const triggers: Partial<Record<Dimension, HTMLButtonElement>> = $state({});
 	let panel = $state<HTMLDivElement | undefined>(undefined);
+	let wrapper = $state<HTMLDivElement | undefined>(undefined);
 
 	const offeredAdditives = $derived(additiveProfilesForRoles(roles));
 	const showAdditives = $derived(offeredAdditives.length > 0);
@@ -149,14 +157,6 @@
 	}
 
 	/**
-	 * A profile's name without the trailing "Profile" — the bar has one line and
-	 * "VCALM Profile, OID4 Profile" spends most of it saying "Profile" twice.
-	 */
-	function shortProfileName(profile: Profile | AdditiveProfile): string {
-		return profile.name.replace(/\s+Profile$/, '');
-	}
-
-	/**
 	 * What a trigger says about its dimension. Never blank: an unfiltered
 	 * dimension reads "Any", because a filter bar that shows nothing where a
 	 * selection would go looks broken rather than open.
@@ -167,7 +167,10 @@
 		emptyLabel: 'Any' | 'None'
 	): string {
 		if (selected.size === 0) return emptyLabel;
-		if (selected.size === all.length) return 'All';
+		// "All" is a summary, and a summary of one item is just that item's name. With
+		// a single add-on offered, `Add-ons · All` reads as a claim about a set the
+		// reader cannot see; `Add-ons · Data Integrity` reads as what it is.
+		if (selected.size === all.length) return all.length === 1 ? all[0].label : 'All';
 		const labels = all.filter((x) => selected.has(x.slug)).map((x) => x.label);
 		return labels.length <= 2 ? labels.join(', ') : `${labels[0]}, +${labels.length - 1} more`;
 	}
@@ -180,18 +183,35 @@
 		offeredAdditives.map((a) => ({ slug: a.slug as string, label: shortProfileName(a) }))
 	);
 
-	const dimensions = $derived<{ key: Dimension; label: string; summary: string }[]>([
+	const dimensions = $derived<
+		{ key: Dimension; label: string; summary: string; active: boolean }[]
+	>([
 		// "Any" for the two filtering dimensions — an empty one admits everything.
 		// "None" for add-ons, because an empty add-on selection layers nothing on;
 		// it is not a wildcard, and saying "Any" there would claim it was.
-		{ key: 'roles', label: 'Roles', summary: summarise(roles, roleLabels, 'Any') },
-		{ key: 'profiles', label: 'Profiles', summary: summarise(profiles, profileLabels, 'Any') },
+		//
+		// `active` is what lets a **closed** dimension state its own colour: a bar
+		// that only shows its filter while a panel is open is a bar that looks
+		// unfiltered at rest.
+		{
+			key: 'roles',
+			label: 'Roles',
+			summary: summarise(roles, roleLabels, 'Any'),
+			active: roles.size > 0
+		},
+		{
+			key: 'profiles',
+			label: 'Profiles',
+			summary: summarise(profiles, profileLabels, 'Any'),
+			active: profiles.size > 0
+		},
 		...(showAdditives
 			? [
 					{
 						key: 'additives' as const,
 						label: 'Add-ons',
-						summary: summarise(additives, additiveLabels, 'None')
+						summary: summarise(additives, additiveLabels, 'None'),
+						active: additives.size > 0
 					}
 				]
 			: [])
@@ -199,58 +219,32 @@
 
 	const anySelected = $derived(roles.size > 0 || profiles.size > 0 || additives.size > 0);
 
-	const roleItems = $derived<FilterPanelItem[]>(
-		allRoles.map((role) => ({
-			slug: role.slug,
-			title: role.plural,
-			body: role.blurb,
-			docHref: roleHref(role.slug),
-			docLabel: `About ${role.plural.toLowerCase()}`,
-			selected: roles.has(role.slug)
-		}))
-	);
-
-	const profileItems = $derived<FilterPanelItem[]>(
-		allProfiles.map((profile) => ({
-			slug: profile.slug,
-			title: profile.name,
-			body: profile.description,
-			docHref: profileHref(profile.slug),
-			docLabel: 'Read the profile',
-			selected: profiles.has(profile.slug)
-		}))
-	);
+	const panelItems = $derived({
+		roles: roleItems(roles),
+		profiles: profileItems(profiles),
+		additives: additiveItems(offeredAdditives, additives)
+	});
+	const additiveNote = $derived(unofferedAdditiveNote(offeredAdditives));
 
 	/** Where each panel's "read more" goes. Static route ids, resolved once. */
 	const profilesOverviewHref = resolve('/profiles');
 	const rolesOverviewHref = resolve('/about');
 
+	const openTone = $derived(open ? toneFor(open) : 'requirement');
+	const tone = $derived(toneClasses(openTone));
+
 	/**
-	 * Named rather than silently omitted: an add-on the reader has heard of and
-	 * cannot see here is absent for a reason, and the reason is their role
-	 * selection.
+	 * Where the panel grows from, and where its notch points. Measured live because
+	 * a trigger's label is its own summary and therefore changes width underneath an
+	 * open panel — see `anchor-x.svelte.ts` for the full failure mode.
 	 */
-	const unofferedAdditiveNote = $derived.by(() => {
-		const missing = allAdditiveProfiles.length - offeredAdditives.length;
-		if (missing <= 0) return undefined;
-		return missing === 1
-			? '1 more add-on applies to roles you have not selected.'
-			: `${missing} more add-ons apply to roles you have not selected.`;
+	const anchor = anchorX({
+		trigger: () => (open ? triggers[open] : undefined),
+		wrapper: () => wrapper,
+		track: () => dimensions
 	});
 
-	const additiveItems = $derived<FilterPanelItem[]>(
-		offeredAdditives.map((additive) => ({
-			slug: additive.slug,
-			title: additive.name,
-			body: additive.description,
-			docHref: additiveProfileHref(additive.slug),
-			docLabel: 'Read the add-on',
-			meta: `For ${rolesOfAdditiveProfile(additive).join(', ')} · layers on ${
-				additive.appliesToBaseProfiles.length
-			} base profiles`,
-			selected: additives.has(additive.slug)
-		}))
-	);
+	const { reveal, fade } = panelMotion(() => anchor.current);
 </script>
 
 <svelte:window onkeydown={onWindowKeydown} />
@@ -260,29 +254,40 @@
 	than on the panel alone, so a focus move *between* the two (the trigger, a
 	sibling trigger, Clear) is one event this handler can judge as a whole.
 -->
-<div class="relative" onfocusout={onFocusOut}>
+<div class="relative" bind:this={wrapper} onfocusout={onFocusOut}>
 	<div
 		class="sticky top-14 z-30 -mx-4 border-b border-border bg-background/95 px-4 py-2.5 backdrop-blur"
 	>
 		<div class="flex flex-wrap items-center gap-x-2 gap-y-1">
 			{#each dimensions as dimension (dimension.key)}
+				{@const isOpen = open === dimension.key}
+				{@const dimensionTone = toneClasses(toneFor(dimension.key))}
+				<!--
+					`relative z-40` puts the trigger above the panel's own top rail, so the
+					underline and the rail read as one line the notch detours around rather
+					than as two lines stacked.
+				-->
 				<button
 					bind:this={triggers[dimension.key]}
 					type="button"
 					aria-haspopup="dialog"
-					aria-expanded={open === dimension.key}
+					aria-expanded={isOpen}
 					aria-controls="filter-panel"
-					onclick={() => (open === dimension.key ? close(false) : (open = dimension.key))}
-					class={`flex max-w-full items-center gap-1.5 rounded-md px-2 py-1 text-label-md transition ${
-						open === dimension.key
-							? 'bg-secondary text-foreground'
-							: 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
+					onclick={() => (isOpen ? close(false) : (open = dimension.key))}
+					class={`relative z-40 flex max-w-full items-center gap-1.5 rounded-md px-2 py-1 text-label-md transition-all duration-150 ${
+						isOpen
+							? `rounded-b-none border-b-2 bg-transparent ${dimensionTone.text} ${dimensionTone.underline}`
+							: `${dimension.active ? dimensionTone.text : 'text-muted-foreground'} ${dimensionTone.softHover}`
 					}`}
 				>
 					<span>{dimension.label}</span>
 					<span aria-hidden="true" class="opacity-50">·</span>
 					<span class="min-w-0 truncate text-foreground">{dimension.summary}</span>
-					<span aria-hidden="true" class="text-xs opacity-70">▾</span>
+					<span
+						aria-hidden="true"
+						class={`text-xs opacity-70 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+						>▾</span
+					>
 				</button>
 			{/each}
 
@@ -319,6 +324,7 @@
 			aria-label="Close filter panel"
 			class="fixed inset-0 z-20 cursor-default"
 			onclick={() => close(false)}
+			in:fade
 		></button>
 		<!--
 			`tabindex="-1"` makes the container programmatically focusable without
@@ -331,45 +337,73 @@
 			tabindex="-1"
 			role="group"
 			aria-label={`${dimensions.find((d) => d.key === open)?.label} filter`}
-			class="absolute inset-x-0 top-full z-30 -mx-4 border-b border-border bg-popover px-4 py-6 shadow-lg focus:outline-none"
+			class={`absolute inset-x-0 top-full z-30 -mx-4 border-t-2 border-b border-border bg-popover px-4 py-6 shadow-lg focus:outline-none ${tone.rail}`}
+			in:reveal
 		>
+			<!--
+				Points the panel back at the trigger that opened it. Two stacked triangles
+				drawn with the transparent-side border trick: an outer 18×9 in the rail's
+				colour, and a second 16×8 offset 3px down in whatever the panel paints under
+				the rail, leaving an even ~2px stroke that reads as the rail detouring up
+				around the trigger. The inner triangle is deliberately 1px taller than the
+				offset so its base swallows the 2px rail underneath — otherwise a line is
+				drawn straight across the notch's mouth.
+
+				The inner fill has to follow the panel's own surface or the notch reads as a
+				floating bracket: the soft header band below `sm:`, `bg-popover` above it.
+			-->
+			<span
+				aria-hidden="true"
+				class="pointer-events-none absolute -top-[9px] block"
+				style={`left: ${anchor.current}px; transform: translateX(-50%);`}
+			>
+				<span
+					class={`block size-0 border-x-[9px] border-b-[9px] border-x-transparent ${tone.notchStroke}`}
+				></span>
+				<span
+					class={`absolute top-[3px] left-1/2 block size-0 -translate-x-1/2 border-x-[8px] border-b-[8px] border-x-transparent sm:border-b-popover ${tone.notchFill}`}
+				></span>
+			</span>
 			{#if open === 'roles'}
 				<FilterPanel
 					heading="Roles"
 					description="A role is the part a product plays in a credential exchange. Wallets play the holder role; the label stays “Wallet.”"
-					items={roleItems}
+					items={panelItems.roles}
 					builderNote="Pick the role(s) your product plays: issuer, wallet, verifier, or some combination."
 					evaluatorNote="Pick the role(s) you need a platform, vendor, or implementation to demonstrate."
 					overviewHref={rolesOverviewHref}
 					overviewLabel="How roles fit together"
 					onToggle={(slug) => onToggleRole(slug as RoleSlug)}
-					onClose={close}
+					onClose={() => close()}
+					{tone}
 				/>
 			{:else if open === 'profiles'}
 				<FilterPanel
 					heading="Interoperability profiles"
 					description="A profile is a set of standards and options — every parameter you need to do one thing with credentials."
-					items={profileItems}
+					items={panelItems.profiles}
 					builderNote="Cover the profiles your product needs to interoperate with."
 					evaluatorNote="Pick the profiles your ecosystem requires, then ask the platform or implementation to demonstrate them."
 					overviewHref={profilesOverviewHref}
 					overviewLabel="All profiles"
 					onToggle={(slug) => onToggleProfile(slug as ProfileSlug)}
-					onClose={close}
+					onClose={() => close()}
+					{tone}
 				/>
 			{:else}
 				<FilterPanel
 					heading="Add-on profiles"
 					description="Additive profiles layer extra requirements on top of a base profile. They are never run alone — selecting one adds its requirements to every scenario set it applies to."
-					items={additiveItems}
+					items={panelItems.additives}
 					columns={2}
-					footnote={unofferedAdditiveNote}
+					footnote={additiveNote}
 					builderNote="Layer the add-ons your ecosystem mandates on top of the base profiles you already cover."
 					evaluatorNote="Add the data or crypto requirements your procurement asks for, and see them inside each scenario set."
 					overviewHref={profilesOverviewHref}
 					overviewLabel="All add-on profiles"
 					onToggle={(slug) => onToggleAdditive(slug as AdditiveProfileSlug)}
-					onClose={close}
+					onClose={() => close()}
+					{tone}
 				/>
 			{/if}
 		</div>

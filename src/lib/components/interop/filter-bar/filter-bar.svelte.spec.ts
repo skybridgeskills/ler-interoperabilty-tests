@@ -36,6 +36,8 @@ function props(overrides: Record<string, unknown> = {}) {
 
 const panel = () => document.getElementById('filter-panel');
 const rolesTrigger = () => page.getByRole('button', { name: /^Roles/ });
+/** Exact name: the backdrop's label is "Close filter panel", and must not match. */
+const closeControl = () => page.getByRole('button', { name: 'Close', exact: true });
 const profilesTrigger = () => page.getByRole('button', { name: /^Profiles/ });
 
 /**
@@ -145,6 +147,77 @@ describe('FilterBar panel focus', UNDER_LOAD, () => {
 
 		await expect.poll(() => panel()).toBeNull();
 		await expect.poll(() => document.activeElement).toBe(await rolesTrigger().element());
+	});
+
+	it('gives the panel a close control big enough to hit', async () => {
+		render(FilterBar, props());
+		await rolesTrigger().click();
+		await expect.poll(() => document.activeElement).toBe(panel());
+
+		// The glyph this replaced measured 7.8 × 16.8px. WCAG 2.2 §2.5.8 asks for
+		// 24 × 24; the control ships at 40 × 40. The floor is asserted rather than the
+		// exact size, so a later size tweak does not fail spuriously — and so a read
+		// taken mid-entry-animation, scaled by 0.98, still passes.
+		const close = await closeControl().element();
+		const box = close.getBoundingClientRect();
+		expect(box.width).toBeGreaterThanOrEqual(36);
+		expect(box.height).toBeGreaterThanOrEqual(36);
+	});
+
+	it('closes from the panel’s own control and returns focus to the trigger', async () => {
+		render(FilterBar, props());
+		await rolesTrigger().click();
+		await expect.poll(() => document.activeElement).toBe(panel());
+
+		await closeControl().click();
+
+		// Focus return here used to work only because `onclick={onClose}` handed
+		// `close()` a MouseEvent, and a MouseEvent is truthy where a boolean was
+		// expected. This is the guard on that.
+		await expect.poll(() => panel()).toBeNull();
+		await expect.poll(() => document.activeElement).toBe(await rolesTrigger().element());
+	});
+
+	it('keeps the notch centred on its trigger when the bar re-wraps', async () => {
+		// The notch is positioned from a measured `getBoundingClientRect()`, which is
+		// not reactive. Two mechanisms keep it honest, and this covers the one no label
+		// change can reach: a `ResizeObserver` on the widget, for viewport resizes and
+		// the bar re-wrapping onto another row.
+		//
+		// It has to be the **last** trigger: wrapping moves a left-aligned trigger's
+		// `top`, not its `left`, unless the trigger is the one that jumps to the start
+		// of the next row. Add-ons is that trigger, and it only exists once a role that
+		// offers one is selected.
+		render(FilterBar, props({ roles: new Set<RoleSlug>(['wallet']) }));
+
+		await page.getByRole('button', { name: /^Add-ons/ }).click();
+		await expect.poll(() => document.activeElement).toBe(panel());
+
+		const openTrigger = () => document.querySelector('button[aria-expanded="true"]') as HTMLElement;
+		const offset = () => {
+			const notch = panel()!.querySelector('span[aria-hidden="true"][style*="left"]');
+			const n = (notch!.firstElementChild as HTMLElement).getBoundingClientRect();
+			const t = openTrigger().getBoundingClientRect();
+			return Math.abs(n.left + n.width / 2 - (t.left + t.width / 2));
+		};
+
+		// The runner's iframe is narrower than the bar's one-row width, so widen the
+		// container the component was rendered into before measuring anything: the
+		// point of the test is the transition from one row to two.
+		const container = panel()!.parentElement!.parentElement as HTMLElement;
+		container.style.width = '1000px';
+		await expect.poll(offset).toBeLessThan(1);
+		const before = openTrigger().getBoundingClientRect().left;
+
+		container.style.width = '320px';
+
+		// Guard against a vacuous pass: if the trigger never moved horizontally, a
+		// stale anchor would still be centred and this test would prove nothing.
+		await expect
+			.poll(() => Math.abs(openTrigger().getBoundingClientRect().left - before))
+			.toBeGreaterThan(1);
+		await expect.poll(offset).toBeLessThan(1);
+		container.style.width = '';
 	});
 
 	it('hands focus to the next panel when a different dimension is opened', async () => {

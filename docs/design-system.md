@@ -32,6 +32,8 @@ Tailwind utilities (`bg-background`, `text-foreground`, etc.).
 | `--live-soft`          | `hsl(20 90% 92%)`         |
 | `--requirement`        | `hsl(217 87% 45%)`        |
 | `--requirement-soft`   | `hsl(217 80% 92%)`        |
+| `--additive`           | `hsl(188 72% 28%)`        |
+| `--additive-soft`      | `hsl(188 55% 90%)`        |
 | `--result-pass`        | `hsl(142 60% 33%)`        |
 | `--result-pass-soft`   | `hsl(142 48% 90%)`        |
 | `--result-fail`        | `var(--destructive)`      |
@@ -63,6 +65,8 @@ Tailwind utilities (`bg-background`, `text-foreground`, etc.).
 | `--live-soft`          | `hsl(20 50% 18%)`  |
 | `--requirement`        | `hsl(217 87% 73%)` |
 | `--requirement-soft`   | `hsl(217 42% 22%)` |
+| `--additive`           | `hsl(188 62% 66%)` |
+| `--additive-soft`      | `hsl(188 32% 18%)` |
 | `--result-pass`        | `hsl(142 52% 62%)` |
 | `--result-pass-soft`   | `hsl(142 28% 18%)` |
 | `--result-fail-soft`   | `hsl(350 38% 22%)` |
@@ -77,6 +81,12 @@ on a runner page, the QR code surface, exchange-status indicators,
 delivered-credential summaries. The rest of the app stays cool — reserve
 warm hues for surfaces and elements that are talking to a real service
 right now.
+
+The completion group's **add-on sections used to bend this rule**, and no
+longer do: they render in the cool [`additive`](#additive--the-add-on-requirement-layer)
+family as of 2026-08-21. An additive profile is a requirement layer, not a
+runtime state. The reserve rule now holds without exceptions — do not
+reintroduce one. (See [ADR 2026-08-21](adr/2026-08-21-additive-requirement-layer-colour.md).)
 
 | Class                  | Where to use                                               |
 | ---------------------- | ---------------------------------------------------------- |
@@ -109,6 +119,25 @@ encodes the level.
 | `bg-requirement-soft`       | Soft requirement surfaces (SHOULD chip, callouts). |
 | `text-requirement`          | Requirement label text on soft/outline chips.      |
 | `border-requirement-border` | Edge of soft/outline requirement chips.            |
+
+### Additive — the add-on requirement layer
+
+The `additive` family (cyan-teal, h188) renders the **add-on requirement
+layer**: the Add-ons sections of a completion card, and the Add-ons dimension
+of the homepage filter bar. Named for the domain term (`AdditiveProfile`), not
+for the UI label "Add-ons".
+
+| Class                      | Where to use                                                    |
+| -------------------------- | --------------------------------------------------------------- |
+| `text-additive`            | Add-on tier labels, the filter bar's Add-ons trigger + heading. |
+| `bg-additive`              | Solid add-on chips (a selected card's check pip).               |
+| `text-additive-foreground` | Foreground on `bg-additive`.                                    |
+| `bg-additive-soft`         | Soft add-on surfaces — selected cards, the panel header band.   |
+| `border-additive-border`   | Edge of soft add-on surfaces, and the add-on tier's left rule.  |
+
+Measured **4.93:1** light and **8.42:1** dark as text on `popover` — the bar
+the warm flame failed (2.96:1 in light), and the reason the add-on layer got a
+token of its own rather than continuing to borrow `live`.
 
 ### Success, run result + progress
 
@@ -153,16 +182,34 @@ review. Do not "fix" it to red for consistency, and do not soften it to a pass.
 `text-warning`. `--warning-soft` and `--warning-border` exist for exactly this,
 and are reused by the completion group.
 
-#### Two-tier bundle cue
+#### The three requirement layers
 
-The completion group's **two-tier bundle** (M14) distinguishes its tiers with the
-**existing** `primary` (Core) and `accent` (Complete) tokens — a coloured dot and
-label in each header row, echoed by a matching left rule on each body section. No
-new token: the Complete tier borrows `--accent` (the same violet the palette
-already defines), so Core reads as the everyday bar and Complete as the stretch
-one without inventing a colour. The header meters use `CompletionMeter`'s dense
-`showPercent` readout (`met/total · pct%`) because each tier's own label already
-says "Core" / "Complete", making the word "requirements" redundant there.
+The completion group distinguishes its tiers with a coloured dot and label in each
+header row, echoed by a matching left rule on each body section:
+
+| Tier                | Token      | Hue             |
+| ------------------- | ---------- | --------------- |
+| Essential           | `primary`  | blue, h217      |
+| Complete / Expanded | `accent`   | violet, h261    |
+| Add-ons             | `additive` | cyan-teal, h188 |
+
+All three sit at the **cool** end, and that is the constraint, not a preference:
+warm `progress`/`live` is spoken for by in-flight runtime, green `success` by
+finished success, red by failures, and amber `warning` by "can't tell". A tier
+label is a _chooser_, not an outcome, so the cool end is the only part of the
+palette it can safely claim.
+
+The two base tiers (M14) reused `primary` and `accent` — the Complete tier borrows
+the violet the palette already defined, so Core reads as the everyday bar and
+Complete as the stretch one. The **Add-ons tier is the one that needed a new
+token**; it rendered in the warm `live` flame until 2026-08-21, which contradicted
+that family's meaning and failed AA in light mode.
+[ADR 2026-08-21](adr/2026-08-21-additive-requirement-layer-colour.md) has the
+reasoning and the rejected alternatives.
+
+The header meters use `CompletionMeter`'s dense `showPercent` readout
+(`met/total · pct%`) because each tier's own label already says
+"Core" / "Complete", making the word "requirements" redundant there.
 
 Each of `success`, `result-pass`, `result-fail`, `result-incomplete`, and
 `progress` has `-soft` (surface) and `-border` companions for chip styling;

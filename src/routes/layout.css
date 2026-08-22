@@ -39,6 +39,13 @@
 	--requirement-foreground: hsl(0 0% 100%);
 	--requirement-soft: hsl(217 80% 92%);
 	--requirement-border: hsl(217 55% 72%);
+	/* Additive (cyan-teal) — the add-on requirement layer. Cool, so it reads as a requirement
+	   tier beside `requirement` blue and `accent` violet, and clear of `success` green so a
+	   filled add-on chip never reads as "passed". See ADR 2026-08-21. */
+	--additive: hsl(188 72% 28%);
+	--additive-foreground: hsl(0 0% 100%);
+	--additive-soft: hsl(188 55% 90%);
+	--additive-border: hsl(188 45% 55%);
 	/* Success (green) — a completed/passed outcome. Reused for run-result "pass". */
 	--success: hsl(142 60% 33%);
 	--success-foreground: hsl(0 0% 100%);
@@ -110,6 +117,11 @@
 		--requirement-foreground: hsl(234 16% 13%);
 		--requirement-soft: hsl(217 42% 22%);
 		--requirement-border: hsl(217 48% 45%);
+		/* Additive (cyan-teal) — dark surface. */
+		--additive: hsl(188 62% 66%);
+		--additive-foreground: hsl(234 16% 13%);
+		--additive-soft: hsl(188 32% 18%);
+		--additive-border: hsl(188 42% 40%);
 		/* Success (green) — dark surface. result-pass aliases resolve per-scope. */
 		--success: hsl(142 52% 62%);
 		--success-foreground: hsl(234 16% 13%);
@@ -163,6 +175,10 @@
 	--color-requirement-foreground: var(--requirement-foreground);
 	--color-requirement-soft: var(--requirement-soft);
 	--color-requirement-border: var(--requirement-border);
+	--color-additive: var(--additive);
+	--color-additive-foreground: var(--additive-foreground);
+	--color-additive-soft: var(--additive-soft);
+	--color-additive-border: var(--additive-border);
 	--color-success: var(--success);
 	--color-success-foreground: var(--success-foreground);
 	--color-success-soft: var(--success-soft);
