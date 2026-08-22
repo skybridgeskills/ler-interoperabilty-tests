@@ -34,8 +34,19 @@
 		type ChecklistCombination
 	} from '$lib/interop/index.js';
 	import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
+	import type { CannotServe } from '$lib/interop/scenarios/index.js';
 
 	import { resolve } from '$app/paths';
+
+	/**
+	 * Which scenarios this deployment cannot serve, keyed by slug — resolved by the
+	 * route's server load, never read from config here.
+	 *
+	 * Defaulted to `{}` so Storybook and the component's own specs can render the
+	 * page without a server: a deployment that pins nothing blocks nothing, which
+	 * is the honest default rather than a convenience.
+	 */
+	let { blocked = {} }: { blocked?: Record<string, CannotServe> } = $props();
 
 	// Static set of rows — pure, SSR-safe.
 	const combos = allCombinations();
@@ -62,11 +73,12 @@
 	const sortedCombos = $derived(sortCombinations(combos, selection));
 	const selectedAdditives = $derived(new SvelteSet(selectionStore.additiveProfiles));
 
-	// Completion groups — one per (profile, role) that has scenarios. Blocked-ness
-	// is not wired here: every current scenario is elective, so nothing is blocked;
-	// the first pinned scenario adds a server load to resolve it.
+	// Completion groups — one per (profile, role) that has scenarios. A blocked
+	// scenario renders as a disabled row and keeps its requirements in the
+	// denominator; `evaluateCompletion` owns that arithmetic and this page only
+	// forwards what the server resolved.
 	const groups = $derived(
-		completionGroups({ runs, additives: [...selectionStore.additiveProfiles] })
+		completionGroups({ runs, blocked, additives: [...selectionStore.additiveProfiles] })
 	);
 
 	/**

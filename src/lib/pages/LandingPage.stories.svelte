@@ -22,6 +22,23 @@
 		);
 	}
 
+	/**
+	 * What a scenario this deployment cannot serve looks like on the console.
+	 *
+	 * Blocked-ness is per-deployment and slug-keyed, so a story can only fake it —
+	 * the real map comes from `+page.server.ts` reading the tenant configuration.
+	 * The row goes dim and reads "Unavailable here" with the reason underneath, and
+	 * the meter beside it **does not move**: a blocked scenario keeps its
+	 * requirements in the denominator and blocks the badge instead.
+	 */
+	const blocked = {
+		'oid4-wallet-acceptance': {
+			kind: 'cryptosuite-unavailable' as const,
+			requested: 'ecdsa-rdfc-2019',
+			available: ['eddsa-rdfc-2022']
+		}
+	};
+
 	const { Story } = defineMeta({
 		title: 'Pages/LandingPage',
 		component: LandingPage
@@ -31,5 +48,11 @@
 <Story name="Default" asChild>
 	<div class="min-h-screen bg-background p-12">
 		<LandingPage />
+	</div>
+</Story>
+
+<Story name="With a blocked scenario" asChild>
+	<div class="min-h-screen bg-background p-12">
+		<LandingPage {blocked} />
 	</div>
 </Story>

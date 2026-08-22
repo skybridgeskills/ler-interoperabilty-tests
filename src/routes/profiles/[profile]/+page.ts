@@ -1,25 +1,36 @@
 import { error } from '@sveltejs/kit';
 
-import {
-	additiveProfileBySlug,
-	allAdditiveProfiles,
-	allProfiles,
-	profileBySlug
-} from '$lib/interop/index.js';
+import { additiveProfileBySlug, profileBySlug } from '$lib/interop/index.js';
+import type { CannotServe } from '$lib/interop/scenarios/index.js';
 
-export const prerender = true;
+// Blocked-ness is DEPLOYMENT configuration — which cryptosuites this instance's
+// tenants can actually issue — so it cannot be baked into a prerendered build.
+// Two deployments of the same commit legitimately disagree about it. `+page.server.ts`
+// resolves it per request and `adapter-node` renders this on demand, so the flip
+// from `true` costs nothing at deploy time; it is not the regression it looks like.
+// The `entries()` list that enumerated every profile slug for the prerenderer went
+// with it — nothing else read it.
+export const prerender = false;
 
-export const entries = () => [
-	...allProfiles.map((p) => ({ profile: p.slug as string })),
-	...allAdditiveProfiles.map((p) => ({ profile: p.slug as string }))
-];
-
-export function load({ params }: { params: { profile: string } }) {
+/**
+ * Resolve the profile, and carry the server load's `blocked` map through.
+ *
+ * A universal load's return value **replaces** the server load's data rather
+ * than merging with it, so forwarding `data.blocked` here is what makes it reach
+ * the page at all — the same shape `/scenarios/[slug]` uses.
+ */
+export function load({
+	params,
+	data
+}: {
+	params: { profile: string };
+	data: { blocked: Record<string, CannotServe> };
+}) {
 	const base = profileBySlug(params.profile);
-	if (base) return { kind: 'base' as const, profile: base };
+	if (base) return { kind: 'base' as const, profile: base, blocked: data.blocked };
 
 	const additive = additiveProfileBySlug(params.profile);
-	if (additive) return { kind: 'additive' as const, profile: additive };
+	if (additive) return { kind: 'additive' as const, profile: additive, blocked: data.blocked };
 
 	error(404, 'Unknown profile.');
 }

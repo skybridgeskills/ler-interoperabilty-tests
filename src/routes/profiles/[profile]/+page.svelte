@@ -27,9 +27,13 @@
 
 	let { data } = $props();
 
-	// Runs and selection are localStorage-backed, so browser-only: the page
-	// prerenders a zeroed meter and fills it in on mount. Selection only orders
+	// Runs and selection are localStorage-backed, so browser-only: the page renders
+	// a zeroed meter server-side and fills it in on mount. Selection only orders
 	// the groups (selected roles first), so its absence during SSR is harmless.
+	//
+	// `data.blocked` is the exception, and the reason this route is no longer
+	// prerendered: which cryptosuites this deployment's tenants can issue is server
+	// knowledge, resolved in `+page.server.ts` before anything renders.
 	let runs = $state<Record<string, ScenarioRunRecord>>({});
 	let claims = $state<BadgeClaimSnapshot[]>([]);
 
@@ -47,6 +51,7 @@
 			profileSlug: data.profile.slug,
 			profileName: data.profile.name,
 			runs,
+			blocked: data.blocked,
 			// Honoured for a base profile only — see `completionGroupsForProfile`.
 			additives: [...selectionStore.additiveProfiles]
 		});

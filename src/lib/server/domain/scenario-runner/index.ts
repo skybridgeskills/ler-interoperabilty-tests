@@ -1,3 +1,4 @@
+export * from './blocked-scenarios.js';
 export * from './credential-recipes.js';
 export * from './presentation-requests.js';
 export * from './provide-scenario-runner.js';
