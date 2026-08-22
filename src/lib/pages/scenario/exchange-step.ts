@@ -1,6 +1,6 @@
 import { attachExchange, pollExchange } from '$lib/client/exchange-runner/index.js';
 import type { ExchangeProtocolId } from '$lib/components/interop/exchange-runner/index.js';
-import type { RunnerWorkflowId } from '$lib/interop/runner-state.js';
+import type { RunnerExchangeView, RunnerWorkflowId } from '$lib/interop/runner-state.js';
 import type { StepEvidence } from '$lib/interop/scenario-run/index.js';
 import { baseProfileOf, type Scenario, type ScenarioStep } from '$lib/interop/scenarios/index.js';
 
@@ -13,7 +13,11 @@ export type StepLink = { exchangeId: string; interactionUrl: string };
 export type ExchangeStepCallbacks = {
 	/** The one protocol link this step presents, as soon as it exists. */
 	onLink: (link: StepLink) => void;
-	/** The step reached `complete`; its evidence is ready for `settleStep`. */
+	/**
+	 * The step's exchange reached a **terminal** state — `complete` or `invalid`.
+	 * Its evidence is ready for `settleStep`; the checks decide what the state
+	 * means.
+	 */
 	onSettled: (evidence: StepEvidence) => void;
 	/** The harness failed. The run becomes unrecordable — see D2. */
 	onFailed: (error: RunnerError) => void;
@@ -182,12 +186,21 @@ function poll(
 		exchangeId,
 		{
 			onUpdate: ({ exchange, derived }) => {
-				if (derived.run === 'complete') callbacks.onSettled({ stepId, exchange });
-				else if (derived.run === 'error') {
-					callbacks.onFailed({
-						message: 'The exchange ended in an invalid state.',
-						hint: LOGS_HINT
-					});
+				// A TERMINAL exchange is evidence, not a harness failure. `invalid` is a
+				// real observation — a presentation whose proof did not verify, a claim
+				// the service refused — and the checks are what decide what it means;
+				// `exchange-reached-complete` already fails on a non-`complete` state.
+				// Treating it as a harness failure made the run unrecordable and lost
+				// the measurement, which is the opposite of what the scenario is for.
+				// The legacy pages never did this: the wallet-presentation scorer's
+				// settled set is `{complete, invalid}` deliberately (see the black-box
+				// scoring ADR, "Settle-gated scoring").
+				//
+				// `onFailed` keeps the failures of the HARNESS — create failed, the poll
+				// errored, the window timed out — because those leave nothing honest to
+				// record.
+				if (derived.run === 'complete' || derived.run === 'error') {
+					callbacks.onSettled(stepEvidenceFrom(stepId, exchange));
 				}
 			},
 			onError: (e) =>
@@ -204,4 +217,41 @@ function poll(
 		},
 		{ stepCount: 1, workflow }
 	);
+}
+
+/**
+ * The evidence a settled exchange step produced.
+ *
+ * `artifact` is "what actually moved". On a **claim** exchange that is the
+ * issued credential, which the transaction service persists to
+ * `variables.results.default.verifiableCredential[0]`; putting it here is what
+ * lets the transport-independent `credential-*` checks — written for the issuer
+ * scenarios, which read the credential off `artifact` — serve a wallet
+ * acceptance scenario unchanged.
+ *
+ * A **verify** exchange moves a presentation instead, and the presentation
+ * checks read `results.default` off the exchange record directly. Nothing is
+ * written here for it on purpose: two places to look for one fact is the
+ * duplication the issuer migration merged away.
+ */
+function stepEvidenceFrom(stepId: string, exchange: RunnerExchangeView): StepEvidence {
+	const issued = issuedCredentialOf(exchange);
+	return { stepId, exchange, ...(issued !== undefined ? { artifact: issued } : {}) };
+}
+
+/**
+ * The credential a claim exchange delivered, or `undefined`.
+ *
+ * Narrows at every hop and **never throws**: a half-populated exchange is a
+ * normal state (a verify exchange has no `verifiableCredential` at all, and an
+ * `invalid` claim may have settled before signing), not an error.
+ */
+function issuedCredentialOf(exchange: RunnerExchangeView): unknown {
+	const results = exchange.variables?.results;
+	if (!results || typeof results !== 'object') return undefined;
+	const settled = (results as { default?: unknown }).default;
+	if (!settled || typeof settled !== 'object') return undefined;
+	const delivered = (settled as { verifiableCredential?: unknown }).verifiableCredential;
+	const first: unknown = Array.isArray(delivered) ? delivered[0] : delivered;
+	return first && typeof first === 'object' ? first : undefined;
 }

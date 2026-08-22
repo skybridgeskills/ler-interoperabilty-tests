@@ -46,6 +46,16 @@ import { vcalmResponseEndpoint } from './checks/vcalm-response-endpoint.js';
 import { vcalmResponseTls } from './checks/vcalm-response-tls.js';
 import { vcalmVprDidauth } from './checks/vcalm-vpr-didauth.js';
 import { vcalmVprQuery } from './checks/vcalm-vpr-query.js';
+import { walletHolderDidMethod } from './checks/wallet-holder-did-method.js';
+import { walletHolderKeyTypeEcdsa } from './checks/wallet-holder-key-type-ecdsa.js';
+import { walletHolderKeyTypeEddsa } from './checks/wallet-holder-key-type-eddsa.js';
+import { walletVpCryptosuiteEcdsa } from './checks/wallet-vp-cryptosuite-ecdsa.js';
+import { walletVpCryptosuiteEddsa } from './checks/wallet-vp-cryptosuite-eddsa.js';
+import { walletVpDelivered } from './checks/wallet-vp-delivered.js';
+import { walletVpDiNotJwt } from './checks/wallet-vp-di-not-jwt.js';
+import { walletVpPreservesVcProofs } from './checks/wallet-vp-preserves-vc-proofs.js';
+import { walletVpProofBinding } from './checks/wallet-vp-proof-binding.js';
+import { walletVpSignatureValid } from './checks/wallet-vp-signature-valid.js';
 import type { RunEvidence } from './evidence.js';
 
 /** What a check decided, and why — the `detail` is shown beside the requirement. */
@@ -154,7 +164,29 @@ export const automaticChecks: Record<string, AutomaticCheck> = {
 	[osaResultPresent.id]: osaResultPresent,
 	[osaResultLinksDescription.id]: osaResultLinksDescription,
 	[osaNumericValueInRange.id]: osaNumericValueInRange,
-	[osaAchievedLevelMatches.id]: osaAchievedLevelMatches
+	[osaAchievedLevelMatches.id]: osaAchievedLevelMatches,
+	// The wallet presentation family, ported from `wallet-runner`'s black-box
+	// scorer. The cheapest of the four migrations, because here the suite is the
+	// **verifier**: the transaction service folds verifier-core's result into
+	// `variables.results.default` and the poll route already returns it, so these
+	// read `StepEvidence.exchange` directly — no server leaf, no new evidence slot.
+	// The engine's `n/a` branches resolve to fails (the step's job was to elicit a
+	// presentation) and its `warn` on a challenge without a domain resolves to a
+	// fail (a replayable binding is a failed requirement, not a caveat). The one
+	// vacuous pass is `key-type` on a non-`did:key` holder.
+	[walletVpDelivered.id]: walletVpDelivered,
+	[walletVpDiNotJwt.id]: walletVpDiNotJwt,
+	[walletVpSignatureValid.id]: walletVpSignatureValid,
+	[walletVpProofBinding.id]: walletVpProofBinding,
+	[walletVpPreservesVcProofs.id]: walletVpPreservesVcProofs,
+	// The `data-integrity-cryptosuites` wallet **producer** axis, split by suite so
+	// the meter can say which one a wallet actually proved. Observed, never pinned:
+	// the suite plays verifier here and cannot choose a wallet's key.
+	[walletVpCryptosuiteEddsa.id]: walletVpCryptosuiteEddsa,
+	[walletVpCryptosuiteEcdsa.id]: walletVpCryptosuiteEcdsa,
+	[walletHolderDidMethod.id]: walletHolderDidMethod,
+	[walletHolderKeyTypeEddsa.id]: walletHolderKeyTypeEddsa,
+	[walletHolderKeyTypeEcdsa.id]: walletHolderKeyTypeEcdsa
 };
 
 /**

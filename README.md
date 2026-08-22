@@ -133,9 +133,10 @@ Two prove the architecture on `credential-acceptance × oid4`:
 `oid4-wallet-acceptance` (the migrated happy path) and
 `oid4-wallet-refusal-discrimination` (three shuffled passes — valid, expired,
 tampered — that ask the operator to tell a good credential from a bad one).
-`/wallet/credential-acceptance/oid4` now **redirects** to the first, preserving
-any `?exchangeId=…&workflow=claim` so attach mode keeps working. The vcalm
-sibling still runs the old page.
+All four runnable wallet routes now **redirect** to their scenario, preserving
+any `?exchangeId=…&workflow=` so attach mode keeps working — `claim` for the
+acceptance pair, `verify` for the presentation pair. No runnable page route in
+the suite is reachable any more.
 
 A **badge** is what a full completion set earns: a self-attested Open Badges 3.0
 recognition credential you claim into your own wallet when a `(profile, role)`

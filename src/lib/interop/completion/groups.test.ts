@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { allCombinations } from '$lib/interop/accessors.js';
 import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
 import { scenarioBySlug, scenarioFingerprint } from '$lib/interop/scenarios/index.js';
 
@@ -39,11 +40,13 @@ function fullRun(slug: string): ScenarioRunRecord {
 describe('completionGroups', () => {
 	it('emits a group only for a (profile, role) that has scenarios', () => {
 		const groups = completionGroups({ runs: {} });
-		// The migrated families: verifier (M10/M10a/M10b), wallet (PoC) and now
-		// issuer (M11) — profile-major, in allProfiles order, role-minor in
-		// allRoles order.
+		// Every family is migrated now: verifier (M10/M10a/M10b), issuer (M11) and
+		// wallet (the PoC pair plus M12's VCALM acceptance and both presentation
+		// scenarios) — profile-major, in allProfiles order, role-minor in allRoles
+		// order.
 		expect(groups.map((g) => `${g.profileSlug}:${g.roleSlug}`)).toEqual([
 			'vcalm:issuer',
+			'vcalm:wallet',
 			'vcalm:verifier',
 			'oid4:issuer',
 			'oid4:wallet',
@@ -98,7 +101,10 @@ describe('completionGroups', () => {
 	it('fills the meter when every requirement is passed', () => {
 		const runs = {
 			'oid4-wallet-acceptance': fullRun('oid4-wallet-acceptance'),
-			'oid4-wallet-refusal-discrimination': fullRun('oid4-wallet-refusal-discrimination')
+			'oid4-wallet-refusal-discrimination': fullRun('oid4-wallet-refusal-discrimination'),
+			// The oid4 wallet role spans two workflows since M12 — acceptance and
+			// presentation — so filling its meter means passing both.
+			'oid4-wallet-presentation': fullRun('oid4-wallet-presentation')
 		};
 		const oid4 = completionGroups({ runs }).find(
 			(g) => g.profileSlug === 'oid4' && g.roleSlug === 'wallet'
@@ -124,7 +130,7 @@ describe('completionGroupsForProfile', () => {
 			profileName: 'VCALM',
 			runs: {}
 		});
-		expect(groups.map((g) => g.roleSlug)).toEqual(['issuer', 'verifier']);
+		expect(groups.map((g) => g.roleSlug)).toEqual(['issuer', 'wallet', 'verifier']);
 	});
 
 	it('omits a role the profile has no scenarios for', () => {
@@ -147,14 +153,17 @@ describe('combinationHasScenario', () => {
 		).toBe(true);
 	});
 
-	it('is false for a combination with no scenario yet', () => {
-		expect(
-			combinationHasScenario({
-				role: 'wallet',
-				workflow: 'credential-acceptance',
-				profile: 'vcalm'
-			})
-		).toBe(false);
+	it('is true for every combination the catalog actually has', () => {
+		// M12 migrated the last three wallet pages, so NO real combination answers
+		// false any more and the homepage's "Not yet migrated" section renders
+		// nothing. That emptiness is what unblocks deleting `profile.checklists`,
+		// so it is asserted here rather than left to be noticed.
+		expect(allCombinations().filter((c) => !combinationHasScenario(c))).toEqual([]);
+	});
+
+	it('is false for a (role, workflow, profile) triple that is not a combination', () => {
+		// There is no wallet × credential-request-and-verification checklist; the
+		// function answers for any triple, and an unknown one has no scenario.
 		expect(
 			combinationHasScenario({
 				role: 'wallet',
@@ -171,8 +180,12 @@ describe('obligationsByWorkflow', () => {
 			(g) => g.profileSlug === 'oid4' && g.roleSlug === 'wallet'
 		)!;
 		const byWorkflow = obligationsByWorkflow(oid4.result.obligations);
-		expect(byWorkflow).toHaveLength(1);
-		expect(byWorkflow[0].workflow).toBe('credential-acceptance');
-		expect(byWorkflow[0].obligations.length).toBe(oid4.result.obligations.length);
+		// Two workflows since M12 gave the wallet role a presentation scenario, in
+		// first-seen order — which is what the sub-headings render.
+		expect(byWorkflow.map((w) => w.workflow)).toEqual([
+			'credential-acceptance',
+			'credential-presentation'
+		]);
+		expect(byWorkflow.flatMap((w) => w.obligations).length).toBe(oid4.result.obligations.length);
 	});
 });

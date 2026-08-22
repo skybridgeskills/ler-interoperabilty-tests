@@ -1,14 +1,27 @@
-import { attachParamsFromUrl } from '$lib/client/exchange-runner/attach-params.js';
+import { redirect } from '@sveltejs/kit';
 
-// Live OID4VP presentation runner — depends on a live verifier/wallet client,
-// so it cannot be prerendered. SvelteKit's route specificity automatically
-// prefers this nested route over the dynamic `/wallet/[workflow]/[profile]/`.
-export const prerender = false;
+import { resolve } from '$app/paths';
 
-// Attach mode: `?exchangeId=…&workflow=claim|verify` makes the page adopt an
-// externally-minted exchange instead of minting one. URL reading stays here at
-// the route boundary; the page component takes the values as props.
+/**
+ * `/wallet/credential-presentation/oid4` is now a scenario — `oid4-wallet-presentation` says in data
+ * everything this bespoke page used to say in code — so this route is a
+ * permanent redirect to it.
+ *
+ * **The query string is preserved**, because this route carries attach links:
+ * a presentation attach link carries `?exchangeId=…&workflow=verify` — note `verify`, not `claim`. The scenario route parses them with the same
+ * `attachParamsFromUrl` the page used to, and adopts the exchange into step 1.
+ *
+ * That is the rule the whole migration followed, stated once: **redirect iff the
+ * route carries documented attach links; otherwise delete outright.** The
+ * verifier and issuer routes carried none, so they were deleted; these three and
+ * the oid4 acceptance route carried them, so they redirect.
+ *
+ * `resolve()` keeps the target base-path aware, matching the house pattern in
+ * `checklist-href.ts`.
+ */
 export function load({ url }: { url: URL }) {
-	const attach = attachParamsFromUrl(url);
-	return { attachExchangeId: attach.exchangeId, attachWorkflow: attach.workflow };
+	redirect(
+		308,
+		`${resolve('/scenarios/[slug]', { slug: 'oid4-wallet-presentation' })}${url.search}`
+	);
 }

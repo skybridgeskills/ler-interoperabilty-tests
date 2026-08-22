@@ -17,7 +17,7 @@ import { Scenario } from './scenario-schema.js';
  */
 export const oid4WalletAcceptance = Scenario({
 	slug: 'oid4-wallet-acceptance',
-	name: 'Accept a well-formed credential',
+	name: 'Accept a well-formed credential over OID4VCI',
 	blurb:
 		'Offer your wallet a well-formed Open Badges credential over OID4VCI, and confirm it took it.',
 	role: 'wallet',

@@ -24,13 +24,16 @@ describe('/+page.svelte', () => {
 		// The catalog renders as completion groups: a scenario row linking to the
 		// generic runner (not a bespoke page).
 		await expect
-			.element(page.getByRole('link', { name: 'Accept a well-formed credential' }))
+			.element(page.getByRole('link', { name: 'Accept a well-formed credential over OID4VCI' }))
 			.toHaveAttribute('href', '/scenarios/oid4-wallet-acceptance');
 
-		// The parallel surface is held in a clearly-labelled "Not yet migrated"
-		// section (a collapsible <summary> label, not a heading element) rather
-		// than mixed into the meters.
-		await expect.element(page.getByText('Not yet migrated')).toBeInTheDocument();
+		// The "Not yet migrated" section is GONE. It held the parallel surface —
+		// combinations with no scenario yet, counting toward no meter — and it
+		// shrank with each migration; the wallet pages were the last three, so it
+		// now renders nothing. The section markup is M13's to delete along with
+		// `profile.checklists`; this asserts it is already empty, which is the
+		// signal that M13 is unblocked.
+		await expect.element(page.getByText('Not yet migrated')).not.toBeInTheDocument();
 	});
 
 	it('opens the roles panel with the role toggles and their docs links', async () => {

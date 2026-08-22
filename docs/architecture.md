@@ -248,9 +248,15 @@ so Storybook drives the same component.
   warning family — amber, so it is visibly a failure yet distinguishable from a
   wrong answer.
 - **A run records only when every requirement is answered.** Finish is disabled
-  with a count until then, never hidden. A step that errors therefore makes a run
-  **unrecordable** — its automatic requirements stay unresolved — and the page
-  offers only "Start over". Navigating away records nothing.
+  with a count until then, never hidden. A step whose **harness** fails therefore
+  makes a run **unrecordable** — its automatic requirements stay unresolved — and
+  the page offers only "Start over". Navigating away records nothing.
+- **A terminal exchange is evidence, not a harness failure.** `complete` and
+  `invalid` both settle the step, and the checks decide what the state means: a
+  presentation whose proof did not verify fails `vp-signature-valid` rather than
+  losing the measurement. Only failures of the harness itself — create failed,
+  the poll errored, the window timed out — make a run unrecordable, because only
+  those leave nothing honest to record.
 - **Attach mode** adopts an externally-minted exchange into step 1, and **only
   for a single-action-step scenario**: in a shuffled scenario step 1 is random,
   so adopting into it is both meaningless and a leak of which pass the operator
@@ -270,8 +276,9 @@ are the worked example of authoring one as data — no code, no bespoke page:
   holder proved a DID), one attested MUST the wire cannot see (the credential
   landed in the list), and a SHOULD characterising what the wallet drew.
   `/wallet/credential-acceptance/oid4` is a query-preserving `308` redirect to
-  it, so attach links keep working; the vcalm sibling keeps its old page until
-  M12.
+  it, so attach links keep working. Its VCALM sibling
+  (`vcalm-wallet-acceptance`) and the two presentation scenarios
+  (`{oid4,vcalm}-wallet-presentation`) redirect the same way.
 - **`oid4-wallet-refusal-discrimination`** — three `shuffle: true` passes (valid
   control, `ob3-expired`, `minimal-ob3` + `tamper: 'proof'`) that permute
   together. Every pass carries an **identical** requirement shape — a weak
@@ -434,10 +441,16 @@ returns the package + git info from `appVersion()`. A third endpoint,
 
 ## Exchange runner — minting, and attach mode
 
-The four runnable wallet routes
-(`/wallet/credential-{acceptance,presentation}/{vcalm,oid4}`) drive a real
+A scenario step whose action is `issue` or `request-presentation` drives a real
 exchange against the DCC transaction service. There are two ways in, and the
-page's read path is identical afterwards.
+read path is identical afterwards.
+
+(The four `/wallet/credential-{acceptance,presentation}/{vcalm,oid4}` routes used
+to be where this happened. They are now query-preserving `308` redirects to their
+scenarios — **redirect iff the route carries documented attach links** is the rule
+the whole migration followed, which is why the verifier and issuer routes, which
+carried none, were deleted outright instead. The legacy page components and the
+`wallet-runner` engine still stand, unreachable, until the cutover sweep.)
 
 **Mint** (the default). The page `POST`s **a scenario action** to
 `/api/exchange-runner/create`, takes the one protocol link its profile speaks
