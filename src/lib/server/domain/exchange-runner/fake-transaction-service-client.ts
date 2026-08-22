@@ -92,7 +92,13 @@ export function FakeTransactionServiceClient({
 				retrievalId: req.retrievalId,
 				vc: JSON.stringify(req.credential),
 				...(req.tamper ? { tamper: req.tamper } : {}),
-				...(req.exchangeIdPrefix ? { exchangeIdPrefix: req.exchangeIdPrefix } : {})
+				...(req.exchangeIdPrefix ? { exchangeIdPrefix: req.exchangeIdPrefix } : {}),
+				// Not a real exchange variable — the real service carries the tenant in
+				// the Bearer token and never echoes it. Recorded here so a route test
+				// can assert WHICH tenant an exchange was minted under, which for a
+				// pinned scenario is the entire difference between issuing the
+				// cryptosuite it claims and issuing the default one under a false label.
+				...(req.tenantToken ? { mintedWithTenantToken: req.tenantToken } : {})
 			}
 		});
 		return {

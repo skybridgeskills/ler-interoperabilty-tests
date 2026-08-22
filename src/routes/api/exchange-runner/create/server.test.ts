@@ -40,6 +40,18 @@ function mintedCredential(exchangeId: string): Record<string, unknown> {
 	return JSON.parse(String(stored?.variables?.vc)) as Record<string, unknown>;
 }
 
+/**
+ * Which tenant token the exchange was minted with.
+ *
+ * The real service carries the tenant in the Bearer header and never echoes it;
+ * the fake records it so a route test can assert the resolved tenant reached the
+ * client. See `fake-transaction-service-client.ts`.
+ */
+function mintedWithTenantToken(exchangeId: string): unknown {
+	return asFakeTransactionServiceClient(transactionServiceClient()).getStored(exchangeId)?.variables
+		?.mintedWithTenantToken;
+}
+
 // `buildAppContext` dynamically imports the whole test context (wallet crypto
 // included), which is slow enough to trip the 5s default when the three Vitest
 // projects run in parallel. Same allowance as the sibling runner route tests.
@@ -137,6 +149,18 @@ describe('POST /api/exchange-runner/create', { timeout: 20_000 }, () => {
 			await withCtx(async () => {
 				const { status } = await callPost({ kind: 'issue', credential: 'minimal-ob3' });
 				expect(status).toBe(200);
+			});
+		});
+
+		it('mints under the tenant the seam resolved, not a token baked into the client', async () => {
+			// The wiring the tenant map exists for. `resolveIssuingContext` picks the
+			// tenant; the route must actually USE it. If the client kept minting under
+			// its construction-time token, a pinned scenario would quietly issue the
+			// default cryptosuite under a label claiming otherwise — a recorded lie,
+			// and one no test above this line would catch.
+			await withCtx(async () => {
+				const { payload } = await callPost({ kind: 'issue', credential: 'minimal-ob3' });
+				expect(mintedWithTenantToken(payload.exchangeId!)).toBe('fake-token');
 			});
 		});
 

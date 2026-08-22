@@ -101,10 +101,18 @@ export const POST = async ({ request }: RequestEvent) => {
 
 		// A fresh credential id per exchange: the status service's allocate is
 		// idempotency-guarded per credential id, so a reused one 500s the claim.
+		//
+		// `issuing.tenantToken` is what makes a pinned scenario real. The
+		// transaction service picks its issuer instance at claim time from the
+		// cryptosuites the WALLET advertised, so there is no per-exchange way to
+		// request a suite — minting under the tenant the seam resolved is the whole
+		// mechanism. For an elective scenario that is the default tenant, exactly as
+		// before.
 		return json(
 			await transactionServiceClient.createIssuanceExchange({
 				retrievalId: idService.uuid(),
 				credential: recipe.build({ credentialId: `urn:uuid:${idService.uuid()}` }),
+				tenantToken: issuing.tenantToken,
 				...(action.tamper ? { tamper: action.tamper } : {}),
 				...(action.exchangeIdPrefix ? { exchangeIdPrefix: action.exchangeIdPrefix } : {})
 			})

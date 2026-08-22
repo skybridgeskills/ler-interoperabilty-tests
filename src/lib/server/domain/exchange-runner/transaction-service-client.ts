@@ -109,6 +109,18 @@ export type CreateIssuanceExchangeRequest = {
 	 * journal. A sibling of `variables` on the wire, not one of them.
 	 */
 	exchangeIdPrefix?: string;
+	/**
+	 * Which tenant to mint under, defaulting to the configured one.
+	 *
+	 * **This is how a scenario pins a cryptosuite.** The transaction service
+	 * chooses its issuer instance at claim time by ranking the tenant's instances
+	 * against the cryptosuites the *wallet* advertised, so the exchange creator
+	 * cannot request a suite — it can only choose a tenant that offers the one it
+	 * wants. `resolveIssuingContext` makes that choice; this carries it. The
+	 * tenant travels entirely in the Bearer token, which is why nothing else on
+	 * the request changes.
+	 */
+	tenantToken?: string;
 };
 
 /** Inputs the suite passes when initiating a verification (`verify`) exchange. */
@@ -160,32 +172,41 @@ export class TransactionServiceError extends Error {
 export function RealTransactionServiceClient(
 	config: ExchangeRunnerConfig
 ): TransactionServiceClient {
-	const baseHeaders = {
-		Authorization: `Bearer ${config.tenantToken}`,
+	/**
+	 * Headers for one call. The tenant is carried **entirely** by the Bearer
+	 * token — `config.tenantName` never appears in a transaction-service URL — so
+	 * minting under a different tenant is a different token and nothing else.
+	 * Built per request rather than once at construction for exactly that reason.
+	 */
+	const headers = (tenantToken: string = config.tenantToken) => ({
+		Authorization: `Bearer ${tenantToken}`,
 		'Content-Type': 'application/json',
 		Accept: 'application/json'
-	};
+	});
 
 	async function createIssuanceExchange(
 		req: CreateIssuanceExchangeRequest
 	): Promise<CreateExchangeResult> {
-		return postExchange('claim', issuanceExchangeBody(config, req));
+		return postExchange('claim', issuanceExchangeBody(config, req), req.tenantToken);
 	}
 
 	async function createVerificationExchange(
 		req: CreateVerificationExchangeRequest
 	): Promise<CreateExchangeResult> {
+		// No tenant override: a verify exchange mints no credential, so it has no
+		// cryptosuite to pin and nothing to choose a tenant for.
 		return postExchange('verify', verificationExchangeBody(config, req));
 	}
 
 	async function postExchange(
 		workflowId: WorkflowId,
-		body: unknown
+		body: unknown,
+		tenantToken?: string
 	): Promise<CreateExchangeResult> {
 		const url = `${config.transactionServiceUrl}/workflows/${workflowId}/exchanges`;
 		const res = await fetch(url, {
 			method: 'POST',
-			headers: baseHeaders,
+			headers: headers(tenantToken),
 			body: JSON.stringify(body)
 		});
 		if (!res.ok) throw new TransactionServiceError(res.status, await res.text());
@@ -195,15 +216,15 @@ export function RealTransactionServiceClient(
 
 	async function getExchange(workflowId: WorkflowId, exchangeId: string): Promise<ExchangeRecord> {
 		const url = `${config.transactionServiceUrl}/workflows/${workflowId}/exchanges/${exchangeId}`;
-		const res = await fetch(url, { headers: baseHeaders });
+		const res = await fetch(url, { headers: headers() });
 		if (!res.ok) throw new TransactionServiceError(res.status, await res.text());
 		return ExchangeRecord(await res.json());
 	}
 
 	/**
 	 * The service leaves this route unauthenticated (the wallet's own entry
-	 * points read it), but we send `baseHeaders` anyway to keep the client
-	 * uniform. The `exchangeId` echoed back is the caller's — this endpoint is
+	 * points read it), but we send the default tenant's headers anyway to keep the
+	 * client uniform. The `exchangeId` echoed back is the caller's — this endpoint is
 	 * addressed by id, so there is nothing to extract from `iu`.
 	 */
 	async function getProtocols(
@@ -211,7 +232,7 @@ export function RealTransactionServiceClient(
 		exchangeId: string
 	): Promise<CreateExchangeResult> {
 		const url = `${config.transactionServiceUrl}/workflows/${workflowId}/exchanges/${exchangeId}/protocols`;
-		const res = await fetch(url, { headers: baseHeaders });
+		const res = await fetch(url, { headers: headers() });
 		if (!res.ok) throw new TransactionServiceError(res.status, await res.text());
 		const { protocols } = ExchangeProtocolsEnvelope(await res.json());
 		return { exchangeId, protocols, workflowId };

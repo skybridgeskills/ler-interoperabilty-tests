@@ -29,6 +29,55 @@ resolve from the file's own directory).
    The compose file fails fast if `TENANT_TOKEN_DEFAULT` or
    `ACCESS_JWT_SECRET` are missing.
 
+   `TENANT_SEED_DEFAULT` is what makes the tenant exist on the **signing**
+   service, which has no fallback: a signing tenant with no seed answers
+   `404 Tenant doesn't exist` and every claim fails at the signing step.
+   `generate` is fine to start with, but it makes a fresh key at container
+   start, so the issuer DID changes on every restart — set a fixed seed once
+   you care that previously-issued credentials keep verifying.
+
+## Pinned cryptosuites, and the second tenant
+
+Some scenarios **pin** a `(cryptosuite, didMethod)` pair — the
+`data-integrity-cryptosuites` wallet scenarios ask whether your wallet can
+verify an ECDSA-signed credential, which only means something if we really
+issue one.
+
+**Pinning can only be a tenant swap.** The transaction service chooses its
+issuer instance at _claim_ time, ranking the tenant's instances against the
+cryptosuites the **wallet** advertised; nothing the suite sends when creating an
+exchange can request a suite. So the only way to force ECDSA is to mint under a
+tenant whose sole issuer instance is ECDSA. `resolveIssuingContext` makes that
+choice and the create route carries it in the Bearer token — the tenant never
+appears in a URL.
+
+Running single-tenant is fully supported. A pinned scenario this deployment
+cannot serve renders **disabled** with a typed reason and **keeps its
+requirements in the completion denominator**, so the badge is blocked rather
+than quietly made easier to earn.
+
+To turn the ECDSA tenant on, set both halves of the pair in `.env`:
+
+```sh
+# what the SUITE presents (read by the SvelteKit app)
+TRANSACTION_SERVICE_TENANT_2_NAME=ecdsa
+TRANSACTION_SERVICE_TENANT_2_TOKEN=<a long random string>
+TRANSACTION_SERVICE_TENANT_2_CRYPTOSUITE=ecdsa-rdfc-2019
+
+# what the CONTAINERS accept (must match the token above)
+TENANT_TOKEN_ECDSA=<the same string>
+TENANT_SEED_ECDSA=generate
+```
+
+`compose.dev.yml` already declares the matching
+`TENANT_ISSUER_1_{ID,CRYPTOSUITE,SIGNING_TENANT}_ECDSA` and
+`TENANT_CRYPTOSUITE_ECDSA`, so nothing else is needed.
+
+Confirm it works by running a pinned scenario and reading `proof.cryptosuite`
+off the delivered credential — it must be `ecdsa-rdfc-2019`. If it comes back
+`eddsa-rdfc-2022` the exchange was minted under the default tenant, which means
+the suite-side token and the container-side token disagree.
+
 2. Pull the images once (optional — `up` will pull on demand):
 
    ```sh

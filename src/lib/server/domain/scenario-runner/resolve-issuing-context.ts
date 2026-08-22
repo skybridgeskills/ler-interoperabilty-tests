@@ -1,6 +1,9 @@
 import type { CannotServe, IssuingIntent } from '$lib/interop/scenarios/index.js';
 
-import type { ExchangeRunnerConfig } from '../exchange-runner/exchange-runner-config.js';
+import type {
+	ExchangeRunnerConfig,
+	IssuingTenant
+} from '../exchange-runner/exchange-runner-config.js';
 
 export type { CannotServe };
 
@@ -26,48 +29,92 @@ export type IssuingContext =
  * **Present intent means pinned**, and resolves only if this deployment's
  * advertised pair matches.
  *
- * This function is the seam, and it is deliberately the *whole* seam. Today it
- * answers from one tenant, because cryptosuite and DID method are deployment
- * configuration — they ride the tenant, and this suite holds exactly one token.
- * When the suite grows a `(cryptosuite, didMethod) → tenant` map, or when a
- * transaction-service API takes over the choice, only this function changes;
- * **no scenario is touched**. That is the entire reason it exists rather than
- * the caller reading config directly.
+ * This function is the seam, and it is deliberately the *whole* seam. It answers
+ * from the deployment's **tenant map**, because a cryptosuite is not something a
+ * caller can request: the transaction service picks its issuer instance at claim
+ * time by ranking the tenant's instances against the cryptosuites the *wallet*
+ * advertised, so the only way to pin one is to mint under a tenant that offers
+ * that suite and no other. If a transaction-service API ever takes over the
+ * choice, only this function changes; **no scenario is touched**. That is the
+ * entire reason it exists rather than the caller reading config directly.
+ *
+ * A deployment that configures one tenant is the ordinary case and is fully
+ * supported: its elective scenarios all run, and its pinned ones render disabled
+ * rather than silently minting the wrong suite.
  */
 export function resolveIssuingContext(
 	config: ExchangeRunnerConfig,
 	intent?: IssuingIntent
 ): IssuingContext {
-	const served = {
-		tenantName: config.tenantName,
-		tenantToken: config.tenantToken,
-		cryptosuite: config.cryptosuite,
-		didMethod: config.didMethod
-	};
+	const tenants = tenantsOf(config);
 
-	if (!intent) return { ok: true, ...served };
+	// Absent intent is elective: the deployment's own default tenant answers, and
+	// it always can. Election already exists upstream — the transaction service
+	// ranks issuer instances by the wallet's advertised suites.
+	if (!intent) return served(tenants[0]);
 
-	if (intent.cryptosuite !== served.cryptosuite) {
+	const match = tenants.find(
+		(t) => t.cryptosuite === intent.cryptosuite && t.didMethod === intent.didMethod
+	);
+	if (match) return served(match);
+
+	// Which axis to blame. A deployment may serve the requested cryptosuite under
+	// a different DID method, and naming the wrong axis would send an operator
+	// looking at the wrong piece of configuration.
+	if (!tenants.some((t) => t.cryptosuite === intent.cryptosuite)) {
 		return {
 			ok: false,
 			reason: {
 				kind: 'cryptosuite-unavailable',
 				requested: intent.cryptosuite,
-				available: [served.cryptosuite]
+				available: unique(tenants.map((t) => t.cryptosuite))
 			}
 		};
 	}
 
-	if (intent.didMethod !== served.didMethod) {
-		return {
-			ok: false,
-			reason: {
-				kind: 'did-method-unavailable',
-				requested: intent.didMethod,
-				available: [served.didMethod]
-			}
-		};
-	}
+	return {
+		ok: false,
+		reason: {
+			kind: 'did-method-unavailable',
+			requested: intent.didMethod,
+			available: unique(
+				tenants.filter((t) => t.cryptosuite === intent.cryptosuite).map((t) => t.didMethod)
+			)
+		}
+	};
+}
 
-	return { ok: true, ...served };
+/**
+ * The deployment's tenant list, always non-empty.
+ *
+ * `config.tenants` is optional so a hand-built config — every fake and test
+ * context — need not restate what the top-level fields already say. Absent means
+ * one tenant: this one. Reading it in exactly one place is what keeps that
+ * fallback from becoming a second source of truth.
+ */
+function tenantsOf(config: ExchangeRunnerConfig): IssuingTenant[] {
+	if (config.tenants?.length) return config.tenants;
+	return [
+		{
+			name: config.tenantName,
+			token: config.tenantToken,
+			cryptosuite: config.cryptosuite,
+			didMethod: config.didMethod
+		}
+	];
+}
+
+function served(tenant: IssuingTenant): IssuingContext {
+	return {
+		ok: true,
+		tenantName: tenant.name,
+		tenantToken: tenant.token,
+		cryptosuite: tenant.cryptosuite,
+		didMethod: tenant.didMethod
+	};
+}
+
+/** Distinct values, in configuration order — the list a `CannotServe` reason renders. */
+function unique(values: string[]): string[] {
+	return [...new Set(values)];
 }
