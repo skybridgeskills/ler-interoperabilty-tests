@@ -4,7 +4,8 @@
 
 	/**
 	 * One obligation row inside a completion group: a leading status marker, the
-	 * scenario name as a link, and a trailing detail.
+	 * scenario name as a link, a trailing detail, and an arrow that is a second
+	 * link to the same scenario.
 	 *
 	 * Purely presentational. `met`/`total` come from M4's `ObligationProgress` and
 	 * are only displayed — this row counts nothing. Status comes from the record's
@@ -86,7 +87,22 @@
 		>
 			{detail}
 		</span>
-		<span aria-hidden="true" class="shrink-0 text-muted-foreground">→</span>
+		<!--
+			A second link to the same place as the title, because the arrow at the end
+			of a row reads as clickable and people click it. `tabindex="-1"` plus
+			`aria-hidden` keep it a mouse affordance only: one destination should be
+			one tab stop and one accessible name, and the title above already carries
+			both. The `aria-hidden` is legitimate here precisely because the element
+			is not keyboard-focusable.
+		-->
+		<a
+			{href}
+			tabindex="-1"
+			aria-hidden="true"
+			class="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+		>
+			→
+		</a>
 	</div>
 
 	{#if blocked}

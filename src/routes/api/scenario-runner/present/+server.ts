@@ -79,7 +79,11 @@ export const POST = async ({ request }: { request: Request }) => {
 	}
 
 	try {
-		const { request: verifierRequest, present } = await scenarioRunner.present({
+		const {
+			request: verifierRequest,
+			present,
+			trace
+		} = await scenarioRunner.present({
 			// A fresh credential id per present, matching the issue/deliver-direct discipline.
 			doc: recipe.build({ credentialId: `urn:uuid:${idService.uuid()}` }),
 			cryptosuite: issuing.cryptosuite,
@@ -87,7 +91,10 @@ export const POST = async ({ request }: { request: Request }) => {
 			transport: action.transport,
 			interactionUrl: action.interactionUrl
 		});
-		return json({ request: verifierRequest, present });
+		// `trace` goes back whether or not the presentation landed — a present that
+		// never submitted is exactly when the operator needs to see what the wire
+		// did. It is display-only and scores nothing.
+		return json({ request: verifierRequest, present, trace });
 	} catch (e) {
 		if (e instanceof PresentInputError) {
 			return json({ code: 400, message: e.message }, { status: 400 });

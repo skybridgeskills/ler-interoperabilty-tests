@@ -24,8 +24,8 @@ import {
 	type StepLink
 } from './exchange-step.js';
 import { nowIso } from './now-iso.js';
-import { startPresentStep } from './present-step.js';
-import { startReceiveStep } from './receive-step.js';
+import { type PresentMissEvidence, startPresentStep } from './present-step.js';
+import { type ReceiveMissEvidence, startReceiveStep } from './receive-step.js';
 
 /**
  * Drives one scenario run: the M3 engine, the exchange lifecycle, and when a
@@ -82,6 +82,16 @@ export function createScenarioRunController(
 	let receiveRetry = $state(false);
 	/** The active receive step's transport, so the field can pick its copy. */
 	let receiveTransport = $state<'direct' | 'vcalm' | 'oid4vci' | undefined>(undefined);
+	/**
+	 * Evidence from a step that has **not** settled — a delivery or present miss.
+	 *
+	 * Held beside the run rather than in `ScenarioRunState.evidence` because
+	 * settling is what resolves a step's automatic requirements, and a miss
+	 * resolves nothing: routing it through `settleStep` would score fifteen rows
+	 * against a flow that delivered no credential. Nothing reads this but the
+	 * Details panel. The latest attempt on a step replaces the previous one.
+	 */
+	let missEvidence = $state<Record<string, StepEvidence>>({});
 
 	const runSteps = $derived(current ? stepsInRunOrder(scenario, current) : scenario.steps);
 	const outcomes = $derived<Record<string, RequirementOutcome>>(
@@ -129,6 +139,7 @@ export function createScenarioRunController(
 		stepError = undefined;
 		recorded = false;
 		discovered = undefined;
+		missEvidence = {};
 		// `now` and `shuffleSeed` are injected, never read ambiently — the engine
 		// is deterministic by design and this is the one place with a clock.
 		current = startRun(scenario, {
@@ -182,10 +193,11 @@ export function createScenarioRunController(
 			presentTransport = step.action.transport;
 			presentDriver = startPresentStep(step, {
 				onSettled: (evidence: StepEvidence) => settle(evidence),
-				onMiss: (note: string) => {
+				onMiss: (note: string, observed: PresentMissEvidence) => {
 					presentBusy = false;
 					presentRetry = true;
 					presentNote = note;
+					missEvidence = { ...missEvidence, [step.id]: { stepId: step.id, ...observed } };
 				},
 				onFailed: (error: RunnerError) => fail(step.id, error)
 			});
@@ -204,10 +216,11 @@ export function createScenarioRunController(
 			receiveTransport = step.action.transport;
 			receiveDriver = startReceiveStep(step, {
 				onSettled: (evidence: StepEvidence) => settle(evidence),
-				onMiss: (note: string) => {
+				onMiss: (note: string, observed: ReceiveMissEvidence) => {
 					receiveBusy = false;
 					receiveRetry = true;
 					receiveNote = note;
+					missEvidence = { ...missEvidence, [step.id]: { stepId: step.id, ...observed } };
 				},
 				onFailed: (error: RunnerError) => fail(step.id, error)
 			});
@@ -234,6 +247,12 @@ export function createScenarioRunController(
 		handle = undefined;
 		presentDriver = undefined;
 		receiveDriver = undefined;
+		// The step settled, so its own evidence supersedes anything a prior miss on
+		// it observed.
+		if (missEvidence[evidence.stepId]) {
+			const { [evidence.stepId]: _settled, ...rest } = missEvidence;
+			missEvidence = rest;
+		}
 		current = settleStep(scenario, state, evidence.stepId, evidence);
 		advanceIfAnswered();
 	}
@@ -375,6 +394,13 @@ export function createScenarioRunController(
 		get receiveTransport() {
 			return receiveTransport;
 		},
+		/**
+		 * The evidence for a step: what it settled with, or — while it is still in
+		 * flight after a miss — what that miss observed. Read only by the Details
+		 * panel; a stored run has no evidence and resolves to `undefined`.
+		 */
+		evidenceOf: (stepId: string): StepEvidence | undefined =>
+			current?.evidence.steps[stepId] ?? missEvidence[stepId],
 		engineStateOf,
 		answerableNow,
 		labelFor,

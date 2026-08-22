@@ -54,6 +54,33 @@ describe('recordFromRunState', () => {
 		expect(record.fingerprint).toBe(scenarioFingerprint(scenario));
 	});
 
+	it('persists no evidence — not the trace, not the artifact, not the summary', () => {
+		let state = startRun(scenario, { now: AT, shuffleSeed: 'seed' });
+		state = settleStep(scenario, state, 'offer', {
+			...completeExchange,
+			artifact: { type: ['VerifiableCredential'] },
+			trace: {
+				stages: [{ name: 'credential', label: 'Credential request', status: 500, ok: false }]
+			}
+		});
+		state = answerRequirement(scenario, state, 'stored', { kind: 'affirm', value: true });
+
+		// A stored run is a list of outcomes. The trace is live-only, exactly as
+		// the checklist era's `raw` was — reopening a run shows no packet capture.
+		const record = recordFromRunState(scenario, state, AT);
+		const serialised = JSON.stringify(record);
+		expect(serialised).not.toContain('trace');
+		expect(serialised).not.toContain('Credential request');
+		expect(Object.keys(record)).toEqual([
+			'scenarioSlug',
+			'ranAt',
+			'fingerprint',
+			'status',
+			'outcomes',
+			'attempts'
+		]);
+	});
+
 	it('rolls the run up to a status', () => {
 		expect(recordFromRunState(scenario, finishedRun(true), AT).status).toBe('passed');
 		expect(recordFromRunState(scenario, finishedRun(false), AT).status).toBe('failed');

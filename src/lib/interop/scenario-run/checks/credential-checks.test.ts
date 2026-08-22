@@ -18,7 +18,20 @@ function goodCredential(): Record<string, unknown> {
 		type: ['VerifiableCredential', 'OpenBadgeCredential'],
 		issuer: { id: 'did:web:issuer.example' },
 		validUntil: '2027-01-01T00:00:00Z',
-		credentialSubject: { id: 'mailto:learner@example.edu' },
+		credentialSubject: {
+			// `id` stays a `mailto:` URI deliberately: the identifier check ignores it
+			// entirely, and leaving it here is what proves that.
+			id: 'mailto:learner@example.edu',
+			type: ['AchievementSubject'],
+			identifier: [
+				{
+					type: 'IdentityObject',
+					identityType: 'emailAddress',
+					hashed: false,
+					identityHash: 'learner@example.edu'
+				}
+			]
+		},
 		credentialStatus: {
 			type: 'BitstringStatusListEntry',
 			statusListCredential: 'https://issuer.example/status/1',
@@ -60,7 +73,7 @@ function run(id: string, ev: RunEvidence) {
 const ALL = [
 	'credential-vcdm2',
 	'credential-ob3-type',
-	'credential-subject-email',
+	'credential-subject-identifier-email',
 	'credential-di-proof-eddsa',
 	'credential-di-proof-ecdsa',
 	'credential-di-proof-bundle',
@@ -115,28 +128,106 @@ describe('credential-ob3-type', () => {
 	});
 });
 
-describe('credential-subject-email', () => {
-	it('passes on a mailto: URI', () => {
-		expect(run('credential-subject-email', evidence(goodCredential())).met).toBe(true);
+describe('credential-subject-identifier-email', () => {
+	/** A conforming credential whose subject is replaced wholesale. */
+	function withSubject(subject: unknown) {
+		return { ...goodCredential(), credentialSubject: subject };
+	}
+	const emailIdentifier = {
+		type: 'IdentityObject',
+		identityType: 'emailAddress',
+		hashed: false,
+		identityHash: 'learner@example.edu'
+	};
+	const check = 'credential-subject-identifier-email';
+
+	it('passes on an unhashed emailAddress IdentityObject', () => {
+		expect(run(check, evidence(goodCredential())).met).toBe(true);
 	});
 
-	it('FAILS on a bare email — the engine’s `warn` branch, resolved (M11)', () => {
-		const cred = { ...goodCredential(), credentialSubject: { id: 'learner@example.edu' } };
-		const result = run('credential-subject-email', evidence(cred));
+	it('passes with NO credentialSubject.id at all — the whole point of the M11 reversal', () => {
+		const cred = withSubject({ type: ['AchievementSubject'], identifier: [emailIdentifier] });
+		expect(run(check, evidence(cred)).met).toBe(true);
+	});
+
+	it('does not accept a mailto: credentialSubject.id on its own', () => {
+		const cred = withSubject({ id: 'mailto:learner@example.edu' });
+		expect(run(check, evidence(cred)).met).toBe(false);
+	});
+
+	it('passes when a conforming entry sits among non-matching ones', () => {
+		const cred = withSubject({
+			identifier: [
+				{ type: 'IdentityObject', identityType: 'sourcedId', hashed: false, identityHash: 'A-1' },
+				emailIdentifier
+			]
+		});
+		expect(run(check, evidence(cred)).met).toBe(true);
+	});
+
+	it('tolerates the single-object identifier form and the array type form', () => {
+		const cred = withSubject({ identifier: { ...emailIdentifier, type: ['IdentityObject'] } });
+		expect(run(check, evidence(cred)).met).toBe(true);
+	});
+
+	it('FAILS a hashed identifier, and says why the profile wants plaintext', () => {
+		const cred = withSubject({
+			identifier: [{ ...emailIdentifier, hashed: true, identityHash: 'a1b2c3', salt: 's' }]
+		});
+		const result = run(check, evidence(cred));
 		expect(result.met).toBe(false);
-		expect(result.detail).toMatch(/mailto:/);
+		expect(result.detail).toMatch(/not published/);
+		expect(result.detail).toMatch(/case-insensitive/);
 	});
 
-	it('fails on a non-email identifier and on a missing one', () => {
-		for (const subject of [{ id: 'did:key:zAbc' }, {}, { id: 42 }]) {
-			const cred = { ...goodCredential(), credentialSubject: subject };
-			expect(run('credential-subject-email', evidence(cred)).met).toBe(false);
+	it('fails when `hashed` is absent — it is required, and absent must not read as false', () => {
+		const cred = withSubject({
+			identifier: [{ type: 'IdentityObject', identityType: 'emailAddress', identityHash: 'a@b.co' }]
+		});
+		const result = run(check, evidence(cred));
+		expect(result.met).toBe(false);
+		expect(result.detail).toMatch(/hashed/);
+	});
+
+	it('fails on a non-emailAddress identityType, naming what was found instead', () => {
+		const cred = withSubject({
+			identifier: [
+				{ type: 'IdentityObject', identityType: 'sourcedId', hashed: false, identityHash: 'A-1' }
+			]
+		});
+		const result = run(check, evidence(cred));
+		expect(result.met).toBe(false);
+		expect(result.detail).toMatch(/sourcedId/);
+	});
+
+	it('fails when no entry declares type IdentityObject', () => {
+		const cred = withSubject({
+			identifier: [{ identityType: 'emailAddress', hashed: false, identityHash: 'a@b.co' }]
+		});
+		expect(run(check, evidence(cred)).met).toBe(false);
+	});
+
+	it('fails when the identityHash is not an address', () => {
+		for (const identityHash of ['learner', 42, undefined]) {
+			const cred = withSubject({ identifier: [{ ...emailIdentifier, identityHash }] });
+			expect(run(check, evidence(cred)).met, String(identityHash)).toBe(false);
 		}
 	});
 
+	it('fails on an absent, empty or unreadable identifier', () => {
+		for (const subject of [{}, { identifier: [] }, { identifier: ['learner@example.edu'] }]) {
+			expect(run(check, evidence(withSubject(subject))).met).toBe(false);
+		}
+		expect(run(check, evidence({ ...goodCredential(), credentialSubject: 42 })).met).toBe(false);
+	});
+
 	it('reads the first entry of an array-form credentialSubject', () => {
-		const cred = { ...goodCredential(), credentialSubject: [{ id: 'mailto:a@b.co' }] };
-		expect(run('credential-subject-email', evidence(cred)).met).toBe(true);
+		const cred = withSubject([{ identifier: [emailIdentifier] }]);
+		expect(run(check, evidence(cred)).met).toBe(true);
+	});
+
+	it('retires the old id rather than shadowing it', () => {
+		expect(checkById('credential-subject-email')).toBeUndefined();
 	});
 });
 

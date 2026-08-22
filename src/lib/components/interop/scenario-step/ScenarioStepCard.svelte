@@ -1,13 +1,18 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
-	import type { AttestedAnswerValue, RequirementOutcome } from '$lib/interop/scenario-run/index.js';
+	import type {
+		AttestedAnswerValue,
+		RequirementOutcome,
+		StepEvidence
+	} from '$lib/interop/scenario-run/index.js';
 	import type { StepState } from '$lib/interop/scenario-run/index.js';
 	import type { Requirement } from '$lib/interop/scenarios/index.js';
 
 	import { VERDICT_TONE } from './outcome-tone.js';
 	import RequirementRow from './RequirementRow.svelte';
 	import { summariseStep } from './step-summary.js';
+	import StepDetails from './StepDetails.svelte';
 
 	/**
 	 * One step of the spine: the collapsing shell around a setup callout, an
@@ -26,6 +31,10 @@
 	 * operator who does not know they were handed a tampered credential reads
 	 * "nothing was stored" as a broken harness. Only the *expected answer* is
 	 * concealed.
+	 *
+	 * A live or settled step also carries a collapsed {@link StepDetails} panel.
+	 * `pending` has nothing to show yet, and `errored` already renders the
+	 * harness's own failure callout.
 	 */
 	let {
 		index,
@@ -37,6 +46,7 @@
 		onAnswer,
 		action,
 		error,
+		evidence,
 		revealed = true
 	}: {
 		/** 1-based position in RUN order. */
@@ -54,6 +64,12 @@
 		action?: Snippet;
 		/** What went wrong, when the harness could not run this step at all. */
 		error?: string;
+		/**
+		 * What this step observed, for the Details panel — its settled evidence, or
+		 * what a delivery miss saw on the way to nothing. Absent for a stored run,
+		 * which persists outcomes and no evidence.
+		 */
+		evidence?: StepEvidence;
 		/**
 		 * Whether answered attested requirements show their reveals — a whole-run
 		 * gate the page threads down, true once the run is complete or read-only.
@@ -110,6 +126,7 @@
 			<div class="space-y-4 border-t border-border p-4">
 				{@render setupCallout()}
 				{@render rows(true)}
+				<StepDetails {evidence} />
 			</div>
 		</details>
 	</li>
@@ -146,6 +163,12 @@
 			{@render setupCallout()}
 			{#if action}{@render action()}{/if}
 			{@render rows(false)}
+			<!--
+				The panel is on the LIVE step too, and that is the case it exists for:
+				a delivery miss leaves the step in flight, and that is exactly when an
+				operator is staring at a 500 wanting to know why.
+			-->
+			<StepDetails {evidence} />
 		</div>
 	</li>
 {/if}

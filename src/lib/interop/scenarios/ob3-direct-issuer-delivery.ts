@@ -54,10 +54,11 @@ export const ob3DirectIssuerDelivery = Scenario({
 					check: { kind: 'automatic', checkId: 'credential-ob3-type' }
 				},
 				{
-					id: 'subject-email',
-					statement: 'Your credential identifies its subject with a `mailto:` URI.',
+					id: 'identifier-email',
+					statement:
+						'Your credential identifies its recipient with an unhashed `emailAddress` `IdentityObject`.',
 					level: 'MUST',
-					check: { kind: 'automatic', checkId: 'credential-subject-email' }
+					check: { kind: 'automatic', checkId: 'credential-subject-identifier-email' }
 				},
 				{
 					id: 'eddsa-proof',

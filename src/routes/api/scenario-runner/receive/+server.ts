@@ -10,7 +10,8 @@ import { ReceiveRequest } from './receive-schemas.js';
  * `receive-from-issuer` scenario step. The suite is the recipient: it takes the
  * operator's run-time input — a pasted credential, a VC-API interaction URL, or
  * an `openid-credential-offer://` URL — engages whatever the transport requires,
- * and returns the received credential plus a client-safe wire summary.
+ * and returns the received credential, a client-safe wire summary, and a
+ * display-only trace of what the transport did.
  *
  * An issuer that merely responds badly is honest evidence (`delivered: false`
  * with a reason), returned 200 so the operator can retry with fresh input; only
@@ -36,12 +37,15 @@ export const POST = async ({ request }: { request: Request }) => {
 	const action = parsed.data;
 
 	try {
-		const { flow, credential, delivered, error } = await scenarioRunner.receive({
+		const { flow, credential, delivered, error, trace } = await scenarioRunner.receive({
 			transport: action.transport,
 			keyProofSuite: action.keyProofSuite ?? 'eddsa-rdfc-2022',
 			input: action.input
 		});
-		return json({ flow, credential, delivered, error });
+		// `trace` goes back on both paths, and the miss is the one that matters:
+		// a step that received nothing is exactly when the operator needs to see
+		// what the wire did. It is display-only and scores nothing.
+		return json({ flow, credential, delivered, error, trace });
 	} catch (e) {
 		if (e instanceof ReceiveInputError) {
 			return json({ code: 400, message: e.message }, { status: 400 });

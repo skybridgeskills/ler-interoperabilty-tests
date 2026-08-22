@@ -75,6 +75,74 @@ export function stubExchangeApi(behaviour: StubBehaviour): () => void {
 			});
 		}
 
+		// A `receive-from-issuer` step engages the operator's issuer here. An input
+		// carrying `miss` returns an un-delivered intake WITH the wire trace that
+		// explains it — the 500 case the Details panel exists for — so the step
+		// stays in flight and the panel has something to show.
+		if (url.includes('/api/scenario-runner/receive')) {
+			if (behaviour.kind === 'create-fails') {
+				return jsonResponse(
+					{ code: 500, message: 'Could not receive a credential from the issuer.' },
+					500
+				);
+			}
+			const body = init?.body ? (JSON.parse(init.body as string) as { input?: string }) : {};
+			const miss = typeof body.input === 'string' && body.input.includes('miss');
+			const flow = {
+				transport: 'oid4vci',
+				verified: !miss,
+				metadataReachable: true,
+				diVpOffered: true,
+				proofTypesOffered: ['di_vp'],
+				diVpSigningAlgs: ['eddsa-rdfc-2022'],
+				diVpSigningAlgInBundle: true,
+				preAuthCodeRedeemed: true,
+				credentialDelivered: !miss,
+				credentialStatus: miss ? 500 : 200,
+				issuerTls: { atLeastTls12: true, protocol: 'TLSv1.3' }
+			};
+			const trace = {
+				stages: [
+					{
+						name: 'token',
+						label: 'Token request',
+						method: 'POST',
+						url: 'https://issuer.test/openid/token',
+						status: 200,
+						ok: true,
+						body: { token_type: 'Bearer' }
+					},
+					{
+						name: 'credential',
+						label: 'Credential request',
+						method: 'POST',
+						url: 'https://issuer.test/openid/credential',
+						status: miss ? 500 : 200,
+						ok: !miss,
+						...(miss
+							? {
+									body: { error: 'server_error', error_description: 'template render failed' },
+									error: 'credential request responded 500.'
+								}
+							: {})
+					}
+				]
+			};
+			return jsonResponse({
+				flow,
+				trace,
+				delivered: !miss,
+				...(miss
+					? { error: { message: 'Your issuer delivered no credential.' } }
+					: {
+							credential: {
+								type: ['VerifiableCredential', 'OpenBadgeCredential'],
+								credentialSubject: { id: 'did:key:zStubHolder' }
+							}
+						})
+			});
+		}
+
 		if (!url.includes('/api/exchange-runner/')) return real(input, init);
 
 		if (url.includes('/create')) {

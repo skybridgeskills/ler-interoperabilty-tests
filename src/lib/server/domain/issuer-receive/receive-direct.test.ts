@@ -18,6 +18,11 @@ describe('receiveDirect', () => {
 		expect(result.flow).toEqual({ transport: 'direct', verified: true });
 	});
 
+	it('emits no wire trace — a paste has no wire, and the credential is the evidence', async () => {
+		const result = await receiveDirect({ input: JSON.stringify(CREDENTIAL), verify: verifies });
+		expect(result.trace).toBeUndefined();
+	});
+
 	it('tolerates surrounding whitespace', async () => {
 		const result = await receiveDirect({
 			input: `\n  ${JSON.stringify(CREDENTIAL)}  \n`,

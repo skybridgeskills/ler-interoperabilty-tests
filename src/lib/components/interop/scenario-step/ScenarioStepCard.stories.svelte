@@ -7,9 +7,11 @@
 		answeredWrongly,
 		autoPass,
 		couldNotTell,
+		directEvidence,
 		displayed,
 		exchangeComplete,
 		handled,
+		oid4MissEvidence,
 		SETUP
 	} from './fixtures.js';
 	import ScenarioStepCard from './ScenarioStepCard.svelte';
@@ -174,6 +176,44 @@
 				{requirements}
 				outcomes={none}
 				error="The exchange could not be created. Is the transaction service running?"
+			/>
+		</ol>
+	</div>
+</Story>
+
+<!--
+	The end-to-end case: a delivery miss leaves the step IN FLIGHT, and the panel
+	is populated during the miss rather than only after a later success. That is
+	when an operator is staring at a 500 wanting to know why — open Details, then
+	the last stage's response body.
+-->
+<Story name="In flight after a miss — Details carries the 500" asChild>
+	<div class="max-w-2xl bg-background p-6">
+		<ol class="space-y-3">
+			<ScenarioStepCard
+				index={1}
+				label="Issue a credential over OID4VCI"
+				state="in-flight"
+				setup={SETUP}
+				{requirements}
+				outcomes={none}
+				evidence={oid4MissEvidence}
+			/>
+		</ol>
+	</div>
+</Story>
+
+<Story name="Settled — Details on a transport with no wire" asChild>
+	<div class="max-w-2xl bg-background p-6">
+		<ol class="space-y-3">
+			<ScenarioStepCard
+				index={1}
+				label="Credential 1"
+				state="settled"
+				setup={SETUP}
+				{requirements}
+				outcomes={settled}
+				evidence={directEvidence}
 			/>
 		</ol>
 	</div>

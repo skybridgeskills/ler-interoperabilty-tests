@@ -9,6 +9,7 @@ import {
 	demoScenario,
 	directDeliveryScenario,
 	presentScenario,
+	receiveScenario,
 	singleStepScenario,
 	storedRun
 } from './scenario-fixture.js';
@@ -290,6 +291,48 @@ describe('ScenarioPage — a deliver-direct step', UNDER_LOAD, () => {
 		render(ScenarioPage, { scenario: directDeliveryScenario });
 
 		await expect.element(page.getByText(/cannot be recorded/)).toBeInTheDocument();
+	});
+});
+
+describe('ScenarioPage — the step Details panel', UNDER_LOAD, () => {
+	/**
+	 * The end-to-end acceptance test for this feature.
+	 *
+	 * A delivery miss leaves the step IN FLIGHT — and that is exactly when the
+	 * operator is staring at a 500 wanting to know why. So the panel has to be
+	 * populated *during* the miss, not only after a later success, which is why
+	 * the controller holds miss evidence beside the run rather than settling it.
+	 */
+	it('explains a 500 while the step is still in flight after a miss', async () => {
+		withApi({ kind: 'settles' });
+		render(ScenarioPage, { scenario: receiveScenario });
+
+		const field = page.getByRole('textbox');
+		await field.fill('openid-credential-offer://?credential_offer_uri=miss');
+		await page.getByRole('button', { name: 'Receive', exact: true }).click();
+
+		// The step stayed in flight: the amber note, and a retry rather than a dead end.
+		await expect.element(page.getByText(/delivered no credential/)).toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+
+		// And the panel explains it, without a server log or devtools.
+		await page.getByText('Details').click();
+		await expect.element(page.getByText('Credential request', { exact: true })).toBeInTheDocument();
+		const bodies = page.getByText('Response body').elements();
+		await page
+			.getByText('Response body')
+			.nth(bodies.length - 1)
+			.click();
+		await expect.element(page.getByText(/template render failed/)).toBeInTheDocument();
+	});
+
+	it('shows no panel for a stored run — evidence is live-only and never persisted', async () => {
+		withApi({ kind: 'settles' });
+		render(ScenarioPage, { scenario: demoScenario, storedRun });
+
+		// Same anchor the read-only stored-run test above uses.
+		await expect.element(page.getByRole('button', { name: 'Run it again' })).toBeInTheDocument();
+		expect(page.getByText('Details').elements()).toHaveLength(0);
 	});
 });
 

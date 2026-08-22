@@ -32,6 +32,25 @@ export function subjectOf(
 	return typeof subject === 'object' ? (subject as Record<string, unknown>) : undefined;
 }
 
+/**
+ * `credentialSubject.identifier` as a list of objects, tolerating the
+ * single-object form as {@link subjectOf} tolerates both forms of
+ * `credentialSubject`.
+ *
+ * A plain reader: it makes no judgement about whether an entry is a conforming
+ * `IdentityObject` — that is the check's job, and keeping it out of here is what
+ * lets a future identifier check (a `sourcedId`, say) reuse the same reader.
+ */
+export function identifiersOf(subject: Record<string, unknown>): Record<string, unknown>[] {
+	const identifier = subject.identifier;
+	if (!identifier) return [];
+	const entries: unknown[] = Array.isArray(identifier) ? identifier : [identifier];
+	return entries.filter(
+		(entry): entry is Record<string, unknown> =>
+			!!entry && typeof entry === 'object' && !Array.isArray(entry)
+	);
+}
+
 /** The `proof` object, or `undefined` when there is none. */
 export function proofOf(credential: Record<string, unknown>): Record<string, unknown> | undefined {
 	const proof = credential.proof;

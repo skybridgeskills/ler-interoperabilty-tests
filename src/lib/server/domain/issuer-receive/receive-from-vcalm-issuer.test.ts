@@ -204,3 +204,72 @@ describe('receiveFromVcalmIssuer', () => {
 		expect(JSON.parse(serialised)).toEqual(result.flow);
 	});
 });
+
+describe('receiveFromVcalmIssuer — the display trace', () => {
+	it('synthesises three stages in flow order from the driver’s facts', async () => {
+		const result = await receive(happyPath);
+		expect(result.trace?.stages.map((s) => s.name)).toEqual(['interaction', 'didauth', 'delivery']);
+		expect(result.trace?.stages[0]).toMatchObject({
+			label: 'Interaction URL',
+			method: 'GET',
+			url: 'https://issuer.test/interactions/1',
+			status: 200,
+			ok: true,
+			body: { vcapi: 'https://issuer.test/exchanges/1' }
+		});
+		// The VPR is the artifact worth reading on the DIDAuth leg.
+		expect(result.trace?.stages[1].body).toMatchObject({
+			query: { type: 'DIDAuthentication' }
+		});
+		expect(result.trace?.stages[2]).toMatchObject({
+			label: 'Credential delivery',
+			method: 'POST',
+			url: 'https://issuer.test/exchanges/1',
+			ok: true
+		});
+	});
+
+	it('keeps only the legs the flow reached', async () => {
+		const result = await receive({
+			blocked: true,
+			observations: {
+				interaction: {
+					ok: false,
+					status: 0,
+					rawBody: undefined,
+					error: 'fetch failed'
+				}
+			}
+		});
+		expect(result.trace?.stages).toHaveLength(1);
+		expect(result.trace?.stages[0]).toMatchObject({
+			name: 'interaction',
+			ok: false,
+			error: 'fetch failed'
+		});
+	});
+
+	it('marks the delivery leg failed when the exchange answered but delivered nothing', async () => {
+		const result = await receive({
+			blocked: true,
+			observations: {
+				...happyPath.observations,
+				delivery: { status: 500, error: 'The exchange responded 500.' },
+				verify: undefined
+			}
+		});
+		expect(result.delivered).toBe(false);
+		expect(result.trace?.stages.at(-1)).toMatchObject({
+			name: 'delivery',
+			status: 500,
+			ok: false,
+			error: 'The exchange responded 500.'
+		});
+	});
+
+	it('never carries the delivered credential — that rides the artifact slot', async () => {
+		const result = await receive(happyPath);
+		expect(result.credential).toEqual(CREDENTIAL);
+		expect(JSON.stringify(result.trace)).not.toContain('OpenBadgeCredential');
+	});
+});

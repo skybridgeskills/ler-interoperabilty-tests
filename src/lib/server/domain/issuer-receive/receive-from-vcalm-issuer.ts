@@ -1,7 +1,8 @@
-import type { VcalmIssuerSummary } from '$lib/interop/scenario-run/index.js';
+import type { TraceStage, VcalmIssuerSummary, WireTrace } from '$lib/interop/scenario-run/index.js';
 
-import type { VcalmIssuerFlow } from '../wallet-client/index.js';
+import type { IssuerFlowObservations, VcalmIssuerFlow } from '../wallet-client/index.js';
 import type { WalletCryptosuite } from '../wallet-crypto/index.js';
+import { traceBody } from '../wire-trace/index.js';
 
 import { ReceiveInputError } from './receive-input-error.js';
 import { subjectIdOf, summariseTls } from './summary-helpers.js';
@@ -84,8 +85,70 @@ export async function receiveFromVcalmIssuer(args: {
 		flow: flowSummary,
 		...(delivered ? { credential } : {}),
 		delivered,
+		trace: traceOf(url, observations),
 		...(delivered ? {} : { error: { message: failureReason(observations) } })
 	};
+}
+
+/**
+ * Project the flow's observations into the display trace.
+ *
+ * Unlike OID4VCI, this driver keeps no transcript — it keeps the *facts* each
+ * leg produced. So the three stages are synthesised from those facts in flow
+ * order, and a leg the flow never reached simply has no stage: the last stage
+ * present is where it stopped, which is the same contract the OID4 trace has.
+ *
+ * The delivered credential is **not** here. It rides `StepEvidence.artifact`,
+ * and duplicating it would give the operator two places to look for one thing.
+ * The presentation is carried instead, because that is what this leg actually
+ * exchanged.
+ */
+function traceOf(interactionUrl: string, observations: IssuerFlowObservations): WireTrace {
+	const { interaction, didAuth, delivery } = observations;
+	const stages: TraceStage[] = [];
+
+	if (interaction) {
+		stages.push({
+			name: 'interaction',
+			label: 'Interaction URL',
+			method: 'GET',
+			url: interactionUrl,
+			status: interaction.status,
+			ok: interaction.ok,
+			...traceBody(interaction.protocols ?? interaction.rawBody),
+			...(interaction.error !== undefined ? { error: interaction.error } : {})
+		});
+	}
+
+	if (didAuth) {
+		stages.push({
+			name: 'didauth',
+			label: 'DIDAuth request',
+			status: didAuth.status,
+			// A challenge is what this leg exists to obtain; without one the
+			// exchange cannot continue, whatever the status said.
+			ok: !!didAuth.challenge && didAuth.error === undefined,
+			// The VPR is the artifact worth reading here — it is what the issuer
+			// asked the holder for.
+			...traceBody(didAuth.vpr),
+			...(didAuth.error !== undefined ? { error: didAuth.error } : {})
+		});
+	}
+
+	if (delivery) {
+		stages.push({
+			name: 'delivery',
+			label: 'Credential delivery',
+			method: 'POST',
+			...(interaction?.vcapiUrl !== undefined ? { url: interaction.vcapiUrl } : {}),
+			status: delivery.status,
+			ok: delivery.credential !== undefined,
+			...traceBody(delivery.presentation),
+			...(delivery.error !== undefined ? { error: delivery.error } : {})
+		});
+	}
+
+	return { stages };
 }
 
 /** Whether a VPR's `query` (object or array) declares a DIDAuthentication query. */

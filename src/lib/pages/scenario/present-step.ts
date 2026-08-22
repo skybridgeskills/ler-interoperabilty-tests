@@ -1,11 +1,18 @@
 import type {
 	StepEvidence,
 	VerifierPresentResult,
-	VerifierRequestSummary
+	VerifierRequestSummary,
+	WireTrace
 } from '$lib/interop/scenario-run/index.js';
 import type { ScenarioStep } from '$lib/interop/scenarios/index.js';
 
 import type { RunnerError } from './exchange-step.js';
+
+/** What a miss observed: the request floor, the delivery result, and the trace. */
+export type PresentMissEvidence = Pick<
+	StepEvidence,
+	'verifierRequest' | 'verifierPresent' | 'trace'
+>;
 
 export type PresentStepCallbacks = {
 	/** The credential was submitted; the step's evidence is ready for `settleStep`. */
@@ -13,8 +20,13 @@ export type PresentStepCallbacks = {
 	/**
 	 * The submission did not land (a transport miss) — not an error. The step
 	 * stays in-flight so the operator can paste a fresh URL and re-present.
+	 *
+	 * The evidence observed on the way is passed through with the note, exactly as
+	 * the receive step's miss does: nothing scores against it (the step has not
+	 * settled), but it is what the Details panel shows while the operator works
+	 * out why the submission bounced.
 	 */
-	onMiss: (note: string) => void;
+	onMiss: (note: string, observed: PresentMissEvidence) => void;
 	/** The present route failed outright. The run becomes unrecordable — see D2. */
 	onFailed: (error: RunnerError) => void;
 };
@@ -73,27 +85,35 @@ export function startPresentStep(
 					return;
 				}
 
-				const { request, present } = (await res.json()) as {
+				const { request, present, trace } = (await res.json()) as {
 					request: VerifierRequestSummary;
 					present: VerifierPresentResult;
+					trace?: WireTrace;
 				};
 				if (stopped) return;
 
 				if (!present.submitted) {
 					callbacks.onMiss(
 						present.error?.message ??
-							'The verifier did not accept the submission. Paste a fresh interaction URL and try again.'
+							'The verifier did not accept the submission. Paste a fresh interaction URL and try again.',
+						{
+							verifierRequest: request,
+							verifierPresent: present,
+							...(trace ? { trace } : {})
+						}
 					);
 					return;
 				}
 
 				// No `artifact`: the presented credential is signed and dropped
 				// server-side (holder key never leaves the server), so the request +
-				// present summaries are the whole of this step's client-side evidence.
+				// present summaries plus the trace are the whole of this step's
+				// client-side evidence.
 				callbacks.onSettled({
 					stepId: step.id,
 					verifierRequest: request,
-					verifierPresent: present
+					verifierPresent: present,
+					...(trace ? { trace } : {})
 				});
 			} catch (e) {
 				if (stopped) return;

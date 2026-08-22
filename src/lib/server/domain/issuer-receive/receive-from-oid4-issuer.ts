@@ -1,7 +1,12 @@
-import type { Oid4IssuerSummary } from '$lib/interop/scenario-run/index.js';
+import type { Oid4IssuerSummary, WireTrace } from '$lib/interop/scenario-run/index.js';
 
-import type { Oid4IssuerFlow, Oid4IssuerFlowObservations } from '../wallet-client/index.js';
+import type {
+	Oid4IssuerFlow,
+	Oid4IssuerFlowObservations,
+	Oid4StepObservation
+} from '../wallet-client/index.js';
 import type { WalletCryptosuite } from '../wallet-crypto/index.js';
+import { traceBody } from '../wire-trace/index.js';
 
 import { ReceiveInputError } from './receive-input-error.js';
 import { subjectIdOf, summariseTls } from './summary-helpers.js';
@@ -27,7 +32,9 @@ const CRYPTOSUITE_BUNDLE = ['eddsa-rdfc-2022', 'ecdsa-rdfc-2019'];
  *
  * **No access token ever enters the summary.** The driver already keeps its
  * token to `{ redeemed, cNonce }` and off its transcript; this summary carries
- * only whether one was redeemed, because it is serialised to the browser.
+ * only whether one was redeemed, because it is serialised to the browser. The
+ * same is true of the {@link WireTrace} this returns: it is projected from the
+ * driver's already-redacted transcript, and adds no header of its own.
  */
 export async function receiveFromOid4Issuer(args: {
 	/** The operator's `openid-credential-offer://` URL. */
@@ -76,7 +83,44 @@ export async function receiveFromOid4Issuer(args: {
 		flow: flowSummary,
 		...(delivered ? { credential } : {}),
 		delivered,
+		trace: traceOf(observations),
 		...(delivered ? {} : { error: { message: failureReason(observations) } })
+	};
+}
+
+/** What each transcript step is called in the operator's Details panel. */
+const STAGE_LABELS: Record<Oid4StepObservation['name'], string> = {
+	offer: 'Credential offer',
+	'issuer-metadata': 'Credential issuer metadata',
+	'as-metadata': 'Authorization server metadata',
+	token: 'Token request',
+	nonce: 'Nonce request',
+	credential: 'Credential request'
+};
+
+/**
+ * Project the driver's transcript into the display trace, one stage per observed
+ * request, in order.
+ *
+ * **Nothing is filtered.** A flow that stopped early is exactly what an operator
+ * needs to see, and the last stage present is where it stopped — a filtered
+ * trace would hide the answer to the only question being asked of it.
+ *
+ * The delivered credential is deliberately absent: it rides
+ * `StepEvidence.artifact`, so there is one place to look for what moved.
+ */
+function traceOf(observations: Oid4IssuerFlowObservations): WireTrace {
+	return {
+		stages: (observations.transcript ?? []).map((step) => ({
+			name: step.name,
+			label: STAGE_LABELS[step.name] ?? step.name,
+			method: step.method,
+			url: step.url,
+			status: step.status,
+			ok: step.ok,
+			...traceBody(step.responseBody),
+			...(step.error !== undefined ? { error: step.error } : {})
+		}))
 	};
 }
 

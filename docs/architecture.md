@@ -180,6 +180,27 @@ and an OID4VCI offer alike — which is why 58 engine rows collapsed to 33 check
 in M11. A summary is **plain data**: it is serialised to the browser, so no
 access token, key or server object may enter one.
 
+**`trace` is the one slot that is shown but never scored.** A `WireTrace` is the
+ordered list of requests a step's transport actually made — stage, method, URL,
+status, error, and the response body — projected by the receive/present leaves
+from observations the drivers already keep (OID4VCI's is already
+token-redacted). Three rules make it safe, and each has a test:
+
+- **No `automatic` check may read it.** Every check reads the summaries above,
+  which the leaf computes server-side from the **full** response before the
+  projection runs. `trace-is-not-scored.test.ts` resolves every registered check
+  over the same evidence with and without a loud trace and requires identical
+  verdicts.
+- **Bodies are capped for display** at 8 KB per stage (`server/domain/wire-trace/`),
+  and a truncated stage says so with its original size. Because nothing scores
+  off it, truncating costs detail and never a measurement.
+- **It is never persisted.** `ScenarioRunRecord` holds outcomes only, exactly as
+  the checklist era's `raw` did — a stored run is a list of outcomes, not a
+  packet capture.
+
+A step with no wire (`direct`, a pure question step) has no trace at all; its
+summary and its `artifact` are the evidence.
+
 A check that cannot be resolved (the catalog names an unregistered `checkId`)
 **fails** rather than throwing — authored data should surface an authoring error,
 not collapse a live run. A step that errored outright leaves its automatic
@@ -210,6 +231,18 @@ so Storybook drives the same component.
   verdict-strip treatment. Automatic requirements resolve when the step settles,
   **before** its attested questions are answerable, so the operator sees what the
   wire said before being asked what they saw.
+- **Details are step-level.** A live or settled step carries a collapsed
+  `StepDetails` panel showing that step's evidence: the wire trace, the summary
+  the requirements were checked against, and the received credential. It is
+  step-level rather than per-requirement (as the checklist pages were) because
+  checks are pure functions over one step's evidence and there are 40+ of them —
+  a check → slice registry would have to be maintained against every one — and
+  because the issuer scenarios are single-step, so `oid4-issuer-issuance` would
+  otherwise render fifteen identical panels. The panel is on the **live** step
+  too, which is the case it exists for: a delivery miss leaves the step in
+  flight, and that is when an operator needs to see the 500. Miss evidence is
+  held beside the run rather than settled, because settling is what resolves
+  requirements and a miss resolves nothing. A stored run shows no panel.
 - **`can't tell` is always offered** on every attested requirement, is appended
   by the component (never authored, never omittable), fails, and renders in the
   warning family — amber, so it is visibly a failure yet distinguishable from a

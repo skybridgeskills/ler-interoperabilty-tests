@@ -1,14 +1,19 @@
 import type {
 	TlsSummary,
 	VcalmRequestSummary,
-	VerifierPresentResult
+	VerifierPresentResult,
+	WireTrace
 } from '$lib/interop/scenario-run/index.js';
 
 import { tamperClaimValue, tamperProofValue } from '../credential-tamper/index.js';
 import type { HeldCredential } from '../wallet-client/drivers/vcalm-verifier-flow.js';
-import { VcalmVerifierFlowDriver } from '../wallet-client/drivers/vcalm-verifier-flow.js';
+import {
+	VcalmVerifierFlowDriver,
+	type VcalmVerifierFlowResult
+} from '../wallet-client/drivers/vcalm-verifier-flow.js';
 import type { ExchangeFlowTransport, TlsProbeResult } from '../wallet-client/index.js';
 import type { WalletCrypto, WalletCryptosuite } from '../wallet-crypto/index.js';
+import { traceBody } from '../wire-trace/index.js';
 
 import { PresentInputError } from './present-input-error.js';
 
@@ -16,6 +21,12 @@ import { PresentInputError } from './present-input-error.js';
 export type PresentToVcalmResult = {
 	request: VcalmRequestSummary;
 	present: VerifierPresentResult;
+	/**
+	 * What the present did, for the operator's Details panel. Display only — no
+	 * `automatic` check reads it. Three stages, and a leg the flow never reached
+	 * simply has none, so the last stage present is where it stopped.
+	 */
+	trace?: WireTrace;
 };
 
 /**
@@ -94,7 +105,60 @@ export async function presentToVcalmVerifier(args: {
 		...(result.submissionError !== undefined ? { error: { message: result.submissionError } } : {})
 	};
 
-	return { request, present };
+	return { request, present, trace: traceOf(url, result) };
+}
+
+/**
+ * Project the flow's observations into the display trace.
+ *
+ * Synthesised from the facts each leg produced rather than transcribed — the
+ * driver keeps no request log — and a leg the flow never reached gets no stage.
+ * The signed presentation is deliberately absent: it carries the ephemeral
+ * holder's proof and explains nothing an operator is debugging here.
+ */
+function traceOf(interactionUrl: string, result: VcalmVerifierFlowResult): WireTrace {
+	const stages: WireTrace['stages'] = [
+		{
+			name: 'interaction',
+			label: 'Interaction URL',
+			method: 'GET',
+			url: interactionUrl,
+			status: result.fetch.status,
+			ok: result.fetch.ok,
+			...traceBody(result.fetch.protocols ?? result.fetch.rawBody),
+			...(result.fetch.error !== undefined ? { error: result.fetch.error } : {})
+		}
+	];
+
+	// No `vcapi` endpoint means the flow never asked for a presentation request,
+	// so there is nothing honest to show for the remaining two legs.
+	if (!result.fetch.ok || !result.fetch.vcapiUrl) return { stages };
+
+	stages.push({
+		name: 'request',
+		label: 'Presentation request',
+		ok: result.vprReceived,
+		...traceBody(result.vprReceived ? result.vpr : undefined),
+		...(result.vprReceived && !result.matched && result.matchReason !== undefined
+			? { error: result.matchReason }
+			: {}),
+		...(result.vprReceived ? {} : { error: 'The exchange returned no presentation request.' })
+	});
+
+	if (!result.vprReceived) return { stages };
+
+	stages.push({
+		name: 'submission',
+		label: 'Presentation submission',
+		method: 'POST',
+		url: result.fetch.vcapiUrl,
+		...(result.submissionStatus !== undefined ? { status: result.submissionStatus } : {}),
+		ok: result.submitted,
+		...traceBody(result.submissionBody),
+		...(result.submissionError !== undefined ? { error: result.submissionError } : {})
+	});
+
+	return { stages };
 }
 
 /**

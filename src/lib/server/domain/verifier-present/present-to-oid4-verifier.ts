@@ -1,7 +1,8 @@
 import type {
 	Oid4RequestSummary,
 	TlsSummary,
-	VerifierPresentResult
+	VerifierPresentResult,
+	WireTrace
 } from '$lib/interop/scenario-run/index.js';
 
 import { tamperClaimValue, tamperProofValue } from '../credential-tamper/index.js';
@@ -20,6 +21,7 @@ import {
 	type HeldCredential
 } from '../wallet-client/oid4vp/index.js';
 import type { WalletCrypto, WalletCryptosuite } from '../wallet-crypto/index.js';
+import { traceBody } from '../wire-trace/index.js';
 
 import { PresentInputError } from './present-input-error.js';
 
@@ -27,6 +29,12 @@ import { PresentInputError } from './present-input-error.js';
 export type PresentToOid4Result = {
 	request: Oid4RequestSummary;
 	present: VerifierPresentResult;
+	/**
+	 * What the present did, for the operator's Details panel. Display only — no
+	 * `automatic` check reads it. Two stages: what the suite made of the pasted
+	 * request, and where the `vp_token` went.
+	 */
+	trace?: WireTrace;
 };
 
 /** A submit-transport factory that threads an `onStatus` observer so the HTTP status is captured. */
@@ -142,7 +150,43 @@ export async function presentToOid4Verifier(args: {
 		...(result.submissionError !== undefined ? { error: { message: result.submissionError } } : {})
 	};
 
-	return { request: requestSummary, present };
+	return {
+		request: requestSummary,
+		present,
+		trace: {
+			stages: [
+				resolvedRequestStage(
+					parsed.kind === 'by-reference' ? parsed.requestUri : undefined,
+					request
+				),
+				{
+					name: 'submission',
+					label: 'Presentation submission',
+					method: 'POST',
+					url: request.response_uri,
+					...(transportStatus !== undefined ? { status: transportStatus } : {}),
+					ok: result.submitted,
+					// No body: the direct-post transport observes a status, not a
+					// response document. The signed VP is deliberately absent too — it
+					// carries the ephemeral holder's proof and explains nothing here.
+					...(result.submissionError !== undefined ? { error: result.submissionError } : {})
+				}
+			]
+		}
+	};
+}
+
+/** The stage describing what the suite made of the operator's pasted request. */
+function resolvedRequestStage(requestUri: string | undefined, request: Oid4vpAuthorizationRequest) {
+	return {
+		name: 'request',
+		label: 'Authorization request',
+		...(requestUri !== undefined ? { method: 'GET' as const, url: requestUri } : {}),
+		ok: true,
+		// The `presentation_definition` is the artifact an operator debugging a
+		// non-match actually wants to read.
+		...traceBody(request)
+	};
 }
 
 /** The scored "the request did not resolve" result — the present is skipped. */
@@ -158,7 +202,20 @@ function unresolved(requestForm: 'inline' | 'by-reference', reason: string): Pre
 			requestTls: { atLeastTls12: false, error: 'not probed' },
 			responseTls: { atLeastTls12: false, error: 'not probed' }
 		},
-		present: { submitted: false, error: { message: reason } }
+		present: { submitted: false, error: { message: reason } },
+		// A paste that never resolved is exactly when the operator needs to see what
+		// the suite made of it — so the trace carries the one stage that happened,
+		// and no submission stage, because none was attempted.
+		trace: {
+			stages: [
+				{
+					name: 'request',
+					label: 'Authorization request',
+					ok: false,
+					error: reason
+				}
+			]
+		}
 	};
 }
 

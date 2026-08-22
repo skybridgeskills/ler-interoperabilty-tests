@@ -157,3 +157,78 @@ describe('presentToVcalmVerifier', () => {
 		).rejects.toBeInstanceOf(PresentInputError);
 	});
 });
+
+describe('presentToVcalmVerifier — the display trace', () => {
+	const url = 'https://verifier.test/interactions/ex-1';
+
+	async function present(over?: Parameters<typeof transport>[0]) {
+		return presentToVcalmVerifier({
+			...base,
+			doc: recipeDoc(),
+			interactionUrl: url,
+			transport: transport(over),
+			probe: okProbe
+		});
+	}
+
+	it('carries three stages in flow order on a complete present', async () => {
+		const { trace } = await present();
+
+		expect(trace?.stages.map((s) => s.name)).toEqual(['interaction', 'request', 'submission']);
+		expect(trace?.stages[0]).toMatchObject({
+			label: 'Interaction URL',
+			method: 'GET',
+			url,
+			status: 200,
+			ok: true
+		});
+		// The VPR is what the verifier asked the holder for.
+		expect(trace?.stages[1]).toMatchObject({ label: 'Presentation request', ok: true });
+		expect(trace?.stages[1].body).toMatchObject({ challenge: 'chal-1' });
+		expect(trace?.stages[2]).toMatchObject({
+			label: 'Presentation submission',
+			method: 'POST',
+			url: 'https://verifier.test/vcapi/ex-1',
+			status: 200,
+			ok: true
+		});
+	});
+
+	it('stops at the interaction stage when the fetch failed', async () => {
+		const { trace } = await present({
+			fetch: { ok: false, status: 0, vcapiUrl: undefined, error: 'fetch failed' }
+		});
+
+		expect(trace?.stages).toHaveLength(1);
+		expect(trace?.stages[0]).toMatchObject({ ok: false, error: 'fetch failed' });
+	});
+
+	it('stops at the interaction stage when no exchange endpoint was advertised', async () => {
+		const { trace } = await present({ fetch: { vcapiUrl: undefined } });
+
+		expect(trace?.stages).toHaveLength(1);
+	});
+
+	it('records a refused submission with its status and reason', async () => {
+		const { present: delivery, trace } = await present({
+			submit: { ok: false, status: 409, rawBody: { error: 'exchange already complete' } }
+		});
+
+		expect(delivery.submitted).toBe(false);
+		expect(trace?.stages.at(-1)).toMatchObject({
+			name: 'submission',
+			status: 409,
+			ok: false,
+			body: { error: 'exchange already complete' }
+		});
+	});
+
+	it('leaks neither the signed presentation nor the holder’s proof', async () => {
+		const { trace } = await present();
+
+		const serialised = JSON.stringify(trace);
+		expect(serialised).not.toContain('VerifiablePresentation');
+		expect(serialised).not.toContain('proofValue');
+		expect(serialised).not.toContain('did:key:zFake');
+	});
+});

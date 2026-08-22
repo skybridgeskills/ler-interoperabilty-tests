@@ -29,6 +29,11 @@
 	 *
 	 * Parameterised, never location-aware: the route reads the URL and passes
 	 * props, so Storybook drives the same component.
+	 *
+	 * Each step card is handed `run.evidenceOf(step.id)` for its Details panel.
+	 * A **stored** run resolves to `undefined` there and shows no panel: evidence
+	 * is live-only and never persisted, so there is nothing to render rather than
+	 * something missing.
 	 */
 	let {
 		scenario,
@@ -216,6 +221,7 @@
 					? actionPanel
 					: undefined}
 				error={run.engineStateOf(step.id) === 'errored' ? run.stepError?.message : undefined}
+				evidence={run.evidenceOf(step.id)}
 			/>
 		{/each}
 	</ol>

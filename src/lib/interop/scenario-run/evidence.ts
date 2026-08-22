@@ -185,6 +185,48 @@ export type Oid4IssuerSummary = IssuerFlowCommon & {
 export type IssuerFlowSummary = DirectIntakeSummary | VcalmIssuerSummary | Oid4IssuerSummary;
 
 /**
+ * One observed request/response on the wire, as shown to the operator.
+ *
+ * **Display only. No `automatic` check may read a trace.** Every check reads the
+ * transport summaries above, which the leaf computes server-side from the *full*
+ * response before this projection truncates anything. That separation is what
+ * makes the display cap safe: truncating a body changes what is shown and
+ * nothing that is scored.
+ *
+ * `method`, `url`, `status` and `body` are all optional because a synthesised
+ * stage — one reconstructed from a driver that kept the fact but not the
+ * exchange — legitimately has fewer of them than a transcribed one.
+ */
+export type TraceStage = {
+	/** Which leg of the flow this was, in the transport's own words (`token`, `didauth`). */
+	name: string;
+	/** What to call it in the panel (`Token request`). */
+	label: string;
+	method?: 'GET' | 'POST';
+	url?: string;
+	status?: number;
+	/** Whether this leg did what it was supposed to. Drives the panel's marker. */
+	ok: boolean;
+	/** The response body, possibly truncated — see {@link TraceStage.truncated}. */
+	body?: unknown;
+	/** Set when `body` was cut to the display cap; carries the original size. */
+	truncated?: { originalBytes: number };
+	/** Why this leg did not succeed, when it didn't. */
+	error?: string;
+};
+
+/**
+ * The ordered wire trace of one step, oldest first — what the transport actually
+ * did, for the operator to read when a result needs explaining.
+ *
+ * **Live-only.** It is never written to `ScenarioRunRecord`, exactly as the
+ * checklist era's `raw` never was: a stored run is a list of outcomes, not a
+ * packet capture. A step that stopped early carries only the stages it reached,
+ * and the last stage present is where it stopped — which is the point.
+ */
+export type WireTrace = { stages: TraceStage[] };
+
+/**
  * What one step produced, and the only thing an `automatic` check may read.
  *
  * Absent fields mean "this step did not produce that", not "false" — a pure
@@ -208,6 +250,12 @@ export type StepEvidence = {
 	verifierPresent?: VerifierPresentResult;
 	/** A `receive-from-issuer` step's observed wire facts. The issuer checks read this. */
 	issuerFlow?: IssuerFlowSummary;
+	/**
+	 * What the step's transport actually did, for the operator's Details panel.
+	 * Absent for a step with no wire — a `direct` intake, a pure question step.
+	 * Never scored and never persisted; see {@link TraceStage}.
+	 */
+	trace?: WireTrace;
 };
 
 /**
@@ -270,6 +318,11 @@ export function verifierPresentForStep(
 	stepId: string
 ): VerifierPresentResult | undefined {
 	return evidence.steps[stepId]?.verifierPresent;
+}
+
+/** The wire trace a step observed, or `undefined` for a step with no wire. */
+export function traceForStep(evidence: RunEvidence, stepId: string): WireTrace | undefined {
+	return evidence.steps[stepId]?.trace;
 }
 
 /** The wire facts a `receive-from-issuer` step observed, or `undefined`. */

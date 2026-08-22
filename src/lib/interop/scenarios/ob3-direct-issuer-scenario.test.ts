@@ -35,7 +35,7 @@ describe('ob3-direct-issuer-delivery', () => {
 		expect(step.requirements.map((r) => r.id)).toEqual([
 			'vcdm2',
 			'ob3-type',
-			'subject-email',
+			'identifier-email',
 			'eddsa-proof',
 			'status-list',
 			'issuer-did',
@@ -51,7 +51,7 @@ describe('ob3-direct-issuer-delivery', () => {
 		expect(automatic.map((r) => (r.check.kind === 'automatic' ? r.check.checkId : ''))).toEqual([
 			'credential-vcdm2',
 			'credential-ob3-type',
-			'credential-subject-email',
+			'credential-subject-identifier-email',
 			'credential-di-proof-eddsa',
 			'credential-status-list',
 			'credential-issuer-did',

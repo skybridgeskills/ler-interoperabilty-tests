@@ -13,13 +13,17 @@ import {
 	answeredWrongly,
 	autoPass,
 	couldNotTell,
+	directEvidence,
 	displayed,
 	exchangeComplete,
 	handled,
-	SETUP
+	oid4MissEvidence,
+	SETUP,
+	truncatedEvidence
 } from './fixtures.js';
 import RequirementRow from './RequirementRow.svelte';
 import ScenarioStepCard from './ScenarioStepCard.svelte';
+import StepDetails from './StepDetails.svelte';
 
 const requirements = [exchangeComplete, handled, displayed];
 const settled: Record<string, RequirementOutcome> = {
@@ -30,10 +34,22 @@ const settled: Record<string, RequirementOutcome> = {
 /** Elements whose own content legitimately scrolls, so they are not overflow. */
 const CONTENT_SCROLLS = new Set(['INPUT', 'TEXTAREA', 'PRE']);
 
+/**
+ * An element that is deliberately truncating (Tailwind's `truncate`) always
+ * reports `scrollWidth > clientWidth` — that is what clipping to an ellipsis
+ * *means*, not a layout break. A long URL in the Details panel is the case in
+ * point: it is clipped on purpose and pushes nothing wide.
+ */
+function truncatesOnPurpose(el: HTMLElement): boolean {
+	const style = getComputedStyle(el);
+	return style.textOverflow === 'ellipsis' && style.overflowX === 'hidden';
+}
+
 function overflowingIn(container: HTMLElement): string[] {
 	return [...container.querySelectorAll('*')]
 		.filter((el): el is HTMLElement => el instanceof HTMLElement)
 		.filter((el) => !CONTENT_SCROLLS.has(el.tagName))
+		.filter((el) => !truncatesOnPurpose(el))
 		.filter((el) => el.clientWidth > 0 && el.scrollWidth > el.clientWidth)
 		.map((el) => `${el.tagName.toLowerCase()} [${el.className}]`);
 }
@@ -86,6 +102,29 @@ describe('scenario-step components at 375px', () => {
 		});
 
 		await expect.element(page.getByText(/Missed/)).toBeInTheDocument();
+		expect(overflowingIn(container)).toEqual([]);
+	});
+
+	it('renders an open Details panel, long URLs and all, without overflowing', async () => {
+		await page.viewport(375, 812);
+		const { container } = render(ScenarioStepCard, {
+			index: 1,
+			label: 'Issue a credential',
+			state: 'in-flight',
+			setup: SETUP,
+			requirements,
+			outcomes: {},
+			evidence: oid4MissEvidence
+		});
+
+		// Open the panel and every stage body inside it — a collapsed disclosure
+		// cannot overflow, so measuring it closed would prove nothing. The stage
+		// URLs are the real risk here: they are long, and they must truncate rather
+		// than push the card wide.
+		for (const disclosure of container.querySelectorAll('details')) {
+			disclosure.open = true;
+		}
+		await expect.element(page.getByText('What happened on the wire')).toBeInTheDocument();
 		expect(overflowingIn(container)).toEqual([]);
 	});
 });
@@ -144,6 +183,109 @@ describe('ScenarioStepCard', UNDER_LOAD, () => {
 
 		await expect.element(page.getByText('Credential 3')).toBeInTheDocument();
 		await expect.element(page.getByText('Waiting')).toBeInTheDocument();
+	});
+
+	it('carries a Details panel on a step still IN FLIGHT after a miss', async () => {
+		render(ScenarioStepCard, {
+			index: 1,
+			label: 'Issue a credential',
+			state: 'in-flight',
+			setup: SETUP,
+			requirements,
+			outcomes: {},
+			evidence: oid4MissEvidence
+		});
+
+		await expect.element(page.getByText('Details')).toBeInTheDocument();
+	});
+
+	it('carries a Details panel on a settled step', async () => {
+		render(ScenarioStepCard, {
+			index: 1,
+			label: 'Credential 1',
+			state: 'settled',
+			setup: SETUP,
+			requirements,
+			outcomes: settled,
+			evidence: directEvidence
+		});
+
+		await expect.element(page.getByText('Details')).toBeInTheDocument();
+	});
+
+	it('shows no Details on a pending step, or on one with no evidence at all', async () => {
+		render(ScenarioStepCard, {
+			index: 3,
+			label: 'Credential 3',
+			state: 'pending',
+			setup: SETUP,
+			requirements,
+			outcomes: {},
+			evidence: oid4MissEvidence
+		});
+		expect(page.getByText('Details').elements()).toHaveLength(0);
+
+		render(ScenarioStepCard, {
+			index: 1,
+			label: 'Credential 1',
+			state: 'in-flight',
+			setup: SETUP,
+			requirements,
+			outcomes: {}
+		});
+		expect(page.getByText('Details').elements()).toHaveLength(0);
+	});
+});
+
+describe('StepDetails', UNDER_LOAD, () => {
+	it('renders nothing at all when the step observed nothing', async () => {
+		const { container } = render(StepDetails, {});
+		expect(container.querySelector('details')).toBeNull();
+	});
+
+	it('lists every wire stage in order, with its status', async () => {
+		render(StepDetails, { evidence: oid4MissEvidence });
+
+		await expect.element(page.getByText('What happened on the wire')).toBeInTheDocument();
+		await expect.element(page.getByText('Credential offer')).toBeInTheDocument();
+		// Exact: the stage LABEL, not the failure sentence below it that also
+		// contains the words.
+		await expect.element(page.getByText('Credential request', { exact: true })).toBeInTheDocument();
+		await expect.element(page.getByText('500', { exact: true })).toBeInTheDocument();
+	});
+
+	it('makes the failing stage’s response body reachable — the whole point', async () => {
+		render(StepDetails, { evidence: oid4MissEvidence });
+
+		// Two disclosures deep: the panel, then the stage's own body.
+		await page.getByText('Details').click();
+		const bodies = page.getByText('Response body').elements();
+		await page
+			.getByText('Response body')
+			.nth(bodies.length - 1)
+			.click();
+
+		await expect
+			.element(page.getByText(/Cannot read property id of undefined/))
+			.toBeInTheDocument();
+	});
+
+	it('says how much of a truncated body is missing, in readable units', async () => {
+		render(StepDetails, { evidence: truncatedEvidence });
+
+		await page.getByText('Details').click();
+		await page.getByText('Response body').click();
+
+		await expect.element(page.getByText(/Showing the first .* of 412 KB\./)).toBeInTheDocument();
+	});
+
+	it('shows the summary and the received credential for a transport with no wire', async () => {
+		render(StepDetails, { evidence: directEvidence });
+
+		await page.getByText('Details').click();
+		await expect.element(page.getByText('What this step observed')).toBeInTheDocument();
+		await expect.element(page.getByText('The credential we received')).toBeInTheDocument();
+		expect(page.getByText('What happened on the wire').elements()).toHaveLength(0);
 	});
 });
 

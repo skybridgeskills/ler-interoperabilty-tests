@@ -4,7 +4,7 @@ import type { StepEvidence } from '$lib/interop/scenario-run/index.js';
 import type { ScenarioStep } from '$lib/interop/scenarios/index.js';
 
 import type { RunnerError } from './exchange-step.js';
-import { startReceiveStep } from './receive-step.js';
+import { type ReceiveMissEvidence, startReceiveStep } from './receive-step.js';
 
 const step = {
 	id: 'receive',
@@ -30,16 +30,19 @@ afterEach(() => {
 /** Resolve once one of the callbacks fires, so the async receive can settle. */
 function drive(target: ScenarioStep = step): {
 	settled: Promise<StepEvidence>;
-	missed: Promise<string>;
+	missed: Promise<{ note: string; observed: ReceiveMissEvidence }>;
 	failed: Promise<RunnerError>;
 	handle: ReturnType<typeof startReceiveStep>;
 } {
 	let onSettled!: (e: StepEvidence) => void;
-	let onMiss!: (n: string) => void;
+	let resolveMiss!: (m: { note: string; observed: ReceiveMissEvidence }) => void;
 	let onFailed!: (e: RunnerError) => void;
 	const settled = new Promise<StepEvidence>((r) => (onSettled = r));
-	const missed = new Promise<string>((r) => (onMiss = r));
+	const missed = new Promise<{ note: string; observed: ReceiveMissEvidence }>(
+		(r) => (resolveMiss = r)
+	);
 	const failed = new Promise<RunnerError>((r) => (onFailed = r));
+	const onMiss = (note: string, observed: ReceiveMissEvidence) => resolveMiss({ note, observed });
 	const handle = startReceiveStep(target, { onSettled, onMiss, onFailed });
 	return { settled, missed, failed, handle };
 }
@@ -61,6 +64,22 @@ describe('startReceiveStep', () => {
 		expect(evidence.artifact).toEqual(CREDENTIAL);
 		expect(evidence.issuerFlow).toMatchObject({ transport: 'vcalm', verified: true });
 		expect(evidence.transport).toMatchObject({ delivered: true });
+		// Nothing arrived on the trace slot, because the route sent none.
+		expect(evidence.trace).toBeUndefined();
+	});
+
+	it('carries the trace onto the evidence when a delivery came with one', async () => {
+		const trace = {
+			stages: [{ name: 'delivery', label: 'Credential delivery', status: 200, ok: true }]
+		};
+		globalThis.fetch = vi.fn(async () =>
+			jsonResponse({ flow: FLOW, credential: CREDENTIAL, delivered: true, trace })
+		) as typeof fetch;
+
+		const { settled, handle } = drive();
+		handle.receive('https://issuer.test/exchanges/ex-1');
+
+		expect((await settled).trace).toEqual(trace);
 	});
 
 	it('posts the action’s transport and key-proof suite', async () => {
@@ -95,7 +114,43 @@ describe('startReceiveStep', () => {
 		const { missed, handle } = drive();
 		handle.receive('https://issuer.test/exchanges/miss');
 
-		expect(await missed).toMatch(/no credential/i);
+		expect((await missed).note).toMatch(/no credential/i);
+	});
+
+	it('hands a miss the evidence it observed, so the Details panel can explain it', async () => {
+		const trace = {
+			stages: [
+				{
+					name: 'delivery',
+					label: 'Credential delivery',
+					method: 'POST' as const,
+					url: 'https://issuer.test/exchanges/1',
+					status: 500,
+					ok: false,
+					body: { error: 'server_error' },
+					error: 'The exchange responded 500.'
+				}
+			]
+		};
+		globalThis.fetch = vi.fn(async () =>
+			jsonResponse({
+				flow: { transport: 'vcalm', verified: false, interactionFetched: true },
+				delivered: false,
+				error: { message: 'The exchange delivered no credential.' },
+				trace
+			})
+		) as typeof fetch;
+
+		const { missed, handle } = drive();
+		handle.receive('https://issuer.test/exchanges/miss');
+
+		const { observed } = await missed;
+		expect(observed.trace).toEqual(trace);
+		expect(observed.issuerFlow).toMatchObject({ transport: 'vcalm', interactionFetched: true });
+		expect(observed.transport).toMatchObject({
+			delivered: false,
+			error: { message: 'The exchange delivered no credential.' }
+		});
 	});
 
 	it('fails when the route responds non-2xx', async () => {

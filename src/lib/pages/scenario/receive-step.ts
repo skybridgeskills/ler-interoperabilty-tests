@@ -1,7 +1,14 @@
-import type { IssuerFlowSummary, StepEvidence } from '$lib/interop/scenario-run/index.js';
+import type {
+	IssuerFlowSummary,
+	StepEvidence,
+	WireTrace
+} from '$lib/interop/scenario-run/index.js';
 import type { ScenarioStep } from '$lib/interop/scenarios/index.js';
 
 import type { RunnerError } from './exchange-step.js';
+
+/** What a miss observed: the wire summary, the trace, and the delivery outcome. */
+export type ReceiveMissEvidence = Pick<StepEvidence, 'issuerFlow' | 'trace' | 'transport'>;
 
 export type ReceiveStepCallbacks = {
 	/** A credential arrived; the step's evidence is ready for `settleStep`. */
@@ -10,8 +17,13 @@ export type ReceiveStepCallbacks = {
 	 * Nothing arrived (the issuer refused, or the exchange never delivered) — not
 	 * an error. The step stays in-flight so the operator can supply fresh input
 	 * and try again.
+	 *
+	 * The evidence observed on the way to nothing is passed through with the
+	 * note. It is **not** scored — the step has not settled, so no requirement
+	 * resolves against it — but it is the whole reason the Details panel exists:
+	 * a miss is precisely when the operator needs to see what the wire did.
 	 */
-	onMiss: (note: string) => void;
+	onMiss: (note: string, observed: ReceiveMissEvidence) => void;
 	/** The receive route failed outright. The run becomes unrecordable — see D2. */
 	onFailed: (error: RunnerError) => void;
 };
@@ -73,17 +85,23 @@ export function startReceiveStep(
 					return;
 				}
 
-				const { flow, credential, delivered, error } = (await res.json()) as {
+				const { flow, credential, delivered, error, trace } = (await res.json()) as {
 					flow: IssuerFlowSummary;
 					credential?: unknown;
 					delivered: boolean;
 					error?: { message: string };
+					trace?: WireTrace;
 				};
 				if (stopped) return;
 
 				if (!delivered) {
 					callbacks.onMiss(
-						error?.message ?? 'Your issuer delivered no credential. Check the input and try again.'
+						error?.message ?? 'Your issuer delivered no credential. Check the input and try again.',
+						{
+							issuerFlow: flow,
+							...(trace ? { trace } : {}),
+							transport: { delivered, ...(error ? { error } : {}) }
+						}
 					);
 					return;
 				}
@@ -92,6 +110,7 @@ export function startReceiveStep(
 					stepId: step.id,
 					artifact: credential,
 					issuerFlow: flow,
+					...(trace ? { trace } : {}),
 					transport: { delivered, ...(error ? { error } : {}) }
 				});
 			} catch (e) {

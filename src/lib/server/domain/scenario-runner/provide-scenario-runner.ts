@@ -227,7 +227,7 @@ function fakeReceive(
 				: { atLeastTls12: true, protocol: 'TLSv1.3' },
 			...holder
 		};
-		return receiveResult(flow, delivered, input);
+		return receiveResult(flow, delivered, input, fakeTrace('vcalm', delivered));
 	}
 
 	if (transport === 'oid4vci') {
@@ -254,9 +254,10 @@ function fakeReceive(
 				: { atLeastTls12: true, protocol: 'TLSv1.3' },
 			...holder
 		};
-		return receiveResult(flow, delivered, input);
+		return receiveResult(flow, delivered, input, fakeTrace('oid4vci', delivered));
 	}
 
+	// The `direct` intake has no wire, so it gets no trace — the same as the real leaf.
 	return receiveResult({ transport: 'direct', ...common }, delivered, input);
 }
 
@@ -264,13 +265,102 @@ function fakeReceive(
 function receiveResult(
 	flow: ReceiveFromIssuerResult['flow'],
 	delivered: boolean,
-	input: string
+	input: string,
+	trace?: ReceiveFromIssuerResult['trace']
 ): ReceiveFromIssuerResult {
 	return {
 		flow,
 		...(delivered ? { credential: pastedCredential(input) ?? fakeReceivedCredential() } : {}),
 		delivered,
+		...(trace ? { trace } : {}),
 		...(delivered ? {} : { error: { message: 'The issuer delivered no credential.' } })
+	};
+}
+
+/**
+ * A plausible wire trace for the fake's two live transports, so the Details
+ * panel has something to render without a real issuer.
+ *
+ * It is a **shape** fixture, not a recording: the stages, their order, and the
+ * fact that a failed run's last stage is where it stopped are what the panel is
+ * exercised against. A miss ends on a failing final stage, which is the case the
+ * panel exists for.
+ */
+function fakeTrace(
+	transport: 'vcalm' | 'oid4vci',
+	delivered: boolean
+): ReceiveFromIssuerResult['trace'] {
+	const host = 'https://issuer.example';
+	if (transport === 'vcalm') {
+		return {
+			stages: [
+				{
+					name: 'interaction',
+					label: 'Interaction URL',
+					method: 'GET',
+					url: `${host}/exchanges/fake/interaction`,
+					status: 200,
+					ok: true,
+					body: { vcapi: { url: `${host}/exchanges/fake` } }
+				},
+				{
+					name: 'didauth',
+					label: 'DIDAuth request',
+					status: 200,
+					ok: true,
+					body: { query: [{ type: 'DIDAuthentication' }], challenge: 'fake-challenge' }
+				},
+				{
+					name: 'delivery',
+					label: 'Credential delivery',
+					method: 'POST',
+					url: `${host}/exchanges/fake`,
+					status: delivered ? 200 : 500,
+					ok: delivered,
+					...(delivered ? {} : { error: 'The exchange responded 500.' })
+				}
+			]
+		};
+	}
+	return {
+		stages: [
+			{
+				name: 'offer',
+				label: 'Credential offer',
+				method: 'GET',
+				url: `${host}/openid/credential-offer`,
+				status: 200,
+				ok: true,
+				body: { credential_issuer: host }
+			},
+			{
+				name: 'issuer-metadata',
+				label: 'Credential issuer metadata',
+				method: 'GET',
+				url: `${host}/.well-known/openid-credential-issuer`,
+				status: 200,
+				ok: true,
+				body: { credential_endpoint: `${host}/openid/credential` }
+			},
+			{
+				name: 'token',
+				label: 'Token request',
+				method: 'POST',
+				url: `${host}/openid/token`,
+				status: 200,
+				ok: true,
+				body: { token_type: 'Bearer', expires_in: 300 }
+			},
+			{
+				name: 'credential',
+				label: 'Credential request',
+				method: 'POST',
+				url: `${host}/openid/credential`,
+				status: delivered ? 200 : 500,
+				ok: delivered,
+				...(delivered ? {} : { error: 'The credential request responded 500.' })
+			}
+		]
 	};
 }
 
@@ -314,7 +404,8 @@ function fakeVcalmPresent(interactionUrl: string): PresentToVcalmResult {
 								error: { message: 'The exchange rejected the presentation.' }
 							}
 						: { error: { message: 'The interaction URL advertised no exchange endpoint.' } })
-				}
+				},
+		trace: fakePresentTrace('vcalm', { reached: advertised, submitted })
 	};
 }
 
@@ -337,7 +428,8 @@ function fakeOid4Present(input: string): PresentToOid4Result {
 				requestTls: { atLeastTls12: false, error: 'not probed' },
 				responseTls: { atLeastTls12: false, error: 'not probed' }
 			},
-			present: { submitted: false, error: { message: 'The request did not resolve.' } }
+			present: { submitted: false, error: { message: 'The request did not resolve.' } },
+			trace: fakePresentTrace('oid4vp', { reached: false, submitted: false })
 		};
 	}
 	const inline = input.includes('inline');
@@ -360,6 +452,80 @@ function fakeOid4Present(input: string): PresentToOid4Result {
 					submitted: false,
 					transportStatus: 400,
 					error: { message: 'The verifier rejected the presentation.' }
+				},
+		trace: fakePresentTrace('oid4vp', { reached: true, submitted })
+	};
+}
+
+/**
+ * A plausible present trace for the fake, so the Details panel has something to
+ * render without a real verifier.
+ *
+ * A shape fixture, not a recording — what it pins is the stage order and the
+ * contract that the last stage present is where the flow stopped. `reached`
+ * false means the request leg itself failed, so no submission stage exists.
+ */
+function fakePresentTrace(
+	transport: 'vcalm' | 'oid4vp',
+	{ reached, submitted }: { reached: boolean; submitted: boolean }
+): PresentToVcalmResult['trace'] {
+	const host = 'https://verifier.example';
+	if (transport === 'oid4vp') {
+		const request = {
+			name: 'request',
+			label: 'Authorization request',
+			ok: reached,
+			...(reached
+				? { body: { presentation_definition: { id: 'fake-pd' }, response_uri: `${host}/submit` } }
+				: { error: 'The request did not resolve.' })
+		};
+		if (!reached) return { stages: [request] };
+		return {
+			stages: [
+				request,
+				{
+					name: 'submission',
+					label: 'Presentation submission',
+					method: 'POST',
+					url: `${host}/submit`,
+					status: submitted ? 200 : 400,
+					ok: submitted,
+					...(submitted ? {} : { error: 'The verifier rejected the presentation.' })
 				}
+			]
+		};
+	}
+
+	const interaction = {
+		name: 'interaction',
+		label: 'Interaction URL',
+		method: 'GET' as const,
+		url: `${host}/interactions/fake`,
+		status: 200,
+		ok: true,
+		...(reached
+			? { body: { vcapi: { url: `${host}/exchanges/fake` } } }
+			: { body: {}, error: 'The interaction URL advertised no exchange endpoint.' })
+	};
+	if (!reached) return { stages: [interaction] };
+	return {
+		stages: [
+			interaction,
+			{
+				name: 'request',
+				label: 'Presentation request',
+				ok: true,
+				body: { challenge: 'fake-challenge', queries: [{ type: 'DIDAuthentication' }] }
+			},
+			{
+				name: 'submission',
+				label: 'Presentation submission',
+				method: 'POST',
+				url: `${host}/exchanges/fake`,
+				status: submitted ? 200 : 400,
+				ok: submitted,
+				...(submitted ? {} : { error: 'The exchange rejected the presentation.' })
+			}
+		]
 	};
 }

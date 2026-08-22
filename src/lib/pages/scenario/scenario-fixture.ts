@@ -215,6 +215,40 @@ export const presentScenario: Scenario = Scenario({
 	]
 });
 
+/**
+ * A live `receive-from-issuer` scenario, for the miss path: the operator pastes
+ * an offer URL, the issuer delivers nothing, the step stays in flight — and the
+ * Details panel has to explain why.
+ */
+export const receiveScenario: Scenario = Scenario({
+	slug: 'oid4-receive-fixture',
+	name: 'Issue a credential to us over OID4VCI',
+	blurb: 'Paste a pre-authorized-code credential offer and we will redeem it as a wallet would.',
+	role: 'issuer',
+	workflow: 'credential-issuance',
+	memberships: [{ profile: 'oid4', level: 'required' }],
+	steps: [
+		{
+			id: 'issue',
+			title: 'Issue a credential',
+			summary: 'We will redeem your credential offer as a wallet would.',
+			action: {
+				kind: 'receive-from-issuer',
+				transport: 'oid4vci',
+				keyProofSuite: 'eddsa-rdfc-2022'
+			},
+			requirements: [
+				{
+					id: 'credential-endpoint',
+					statement: 'Your credential endpoint delivered a credential.',
+					level: 'MUST',
+					check: { kind: 'automatic', checkId: 'oid4-issuer-credential-endpoint' }
+				}
+			]
+		}
+	]
+});
+
 /** A single-action-step scenario — the only shape attach mode accepts (D3). */
 export const singleStepScenario: Scenario = Scenario({
 	slug: 'oid4-wallet-acceptance',

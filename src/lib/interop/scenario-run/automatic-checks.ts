@@ -5,7 +5,7 @@ import { credentialIssuerDidMethod } from './checks/credential-issuer-did-method
 import { credentialIssuerDid } from './checks/credential-issuer-did.js';
 import { credentialOb3Type } from './checks/credential-ob3-type.js';
 import { credentialStatusList } from './checks/credential-status-list.js';
-import { credentialSubjectEmail } from './checks/credential-subject-email.js';
+import { credentialSubjectIdentifierEmail } from './checks/credential-subject-identifier-email.js';
 import { credentialValidUntil } from './checks/credential-valid-until.js';
 import { credentialVcdm2 } from './checks/credential-vcdm2.js';
 import { exchangeReachedComplete } from './checks/exchange-reached-complete.js';
@@ -107,7 +107,7 @@ export const automaticChecks: Record<string, AutomaticCheck> = {
 	// `n/a` branch the engines carried is resolved at authoring — see each check.
 	[credentialVcdm2.id]: credentialVcdm2,
 	[credentialOb3Type.id]: credentialOb3Type,
-	[credentialSubjectEmail.id]: credentialSubjectEmail,
+	[credentialSubjectIdentifierEmail.id]: credentialSubjectIdentifierEmail,
 	[credentialDiProofEddsa.id]: credentialDiProofEddsa,
 	[credentialDiProofEcdsa.id]: credentialDiProofEcdsa,
 	[credentialDiProofBundle.id]: credentialDiProofBundle,

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Oid4IssuerFlow, Oid4IssuerFlowRunResult } from '../wallet-client/index.js';
+import type {
+	Oid4IssuerFlow,
+	Oid4IssuerFlowObservations,
+	Oid4IssuerFlowRunResult
+} from '../wallet-client/index.js';
+import { TRACE_BODY_LIMIT } from '../wire-trace/index.js';
 
 import { receiveFromOid4Issuer } from './receive-from-oid4-issuer.js';
 import { ReceiveInputError } from './receive-input-error.js';
@@ -221,5 +226,160 @@ describe('receiveFromOid4Issuer', () => {
 		const serialised = JSON.stringify(result.flow);
 		expect(serialised).not.toMatch(/access_token|accessToken|Bearer/i);
 		expect(JSON.parse(serialised)).toEqual(result.flow);
+	});
+});
+
+describe('receiveFromOid4Issuer — the display trace', () => {
+	/** A transcript for a run that got all the way to the credential endpoint. */
+	const transcript: Oid4IssuerFlowObservations['transcript'] = [
+		{
+			name: 'offer',
+			method: 'GET',
+			url: 'https://issuer.test/openid/credential-offer',
+			ok: true,
+			status: 200,
+			responseBody: { credential_issuer: 'https://issuer.test' }
+		},
+		{
+			name: 'issuer-metadata',
+			method: 'GET',
+			url: 'https://issuer.test/.well-known/openid-credential-issuer',
+			ok: true,
+			status: 200,
+			responseBody: { credential_endpoint: 'https://issuer.test/credential' }
+		},
+		{
+			name: 'token',
+			method: 'POST',
+			url: 'https://issuer.test/token',
+			ok: true,
+			status: 200,
+			responseBody: { token_type: 'Bearer' }
+		}
+	];
+
+	it('projects one stage per transcript entry, in order, with a readable label', async () => {
+		const result = await receive({
+			...happyPath,
+			observations: { ...happyPath.observations, transcript }
+		});
+		expect(result.trace?.stages.map((s) => s.name)).toEqual(['offer', 'issuer-metadata', 'token']);
+		expect(result.trace?.stages.map((s) => s.label)).toEqual([
+			'Credential offer',
+			'Credential issuer metadata',
+			'Token request'
+		]);
+		expect(result.trace?.stages[1]).toMatchObject({
+			method: 'GET',
+			url: 'https://issuer.test/.well-known/openid-credential-issuer',
+			status: 200,
+			ok: true,
+			body: { credential_endpoint: 'https://issuer.test/credential' }
+		});
+	});
+
+	it('carries a 500 on the credential request WITH its body — the reason this trace exists', async () => {
+		const result = await receive({
+			blocked: true,
+			observations: {
+				...happyPath.observations,
+				delivery: { status: 500, error: 'credential request responded 500.' },
+				verify: undefined,
+				transcript: [
+					...transcript,
+					{
+						name: 'credential',
+						method: 'POST',
+						url: 'https://issuer.test/credential',
+						ok: false,
+						status: 500,
+						responseBody: { error: 'server_error', error_description: 'template render failed' },
+						error: 'credential request responded 500.'
+					}
+				]
+			}
+		});
+		expect(result.delivered).toBe(false);
+		const last = result.trace?.stages.at(-1);
+		expect(last).toMatchObject({
+			name: 'credential',
+			label: 'Credential request',
+			status: 500,
+			ok: false,
+			body: { error: 'server_error', error_description: 'template render failed' }
+		});
+		expect(last?.error).toMatch(/500/);
+	});
+
+	it('keeps only the stages the flow reached, so the last one is where it stopped', async () => {
+		const result = await receive({
+			blocked: true,
+			observations: {
+				offer: { credentialIssuer: 'https://issuer.test', preAuthCode: 'c' },
+				transcript: transcript
+					.slice(0, 2)
+					.map((step, i) =>
+						i === 1 ? { ...step, ok: false, status: 404, error: 'not found' } : step
+					)
+			}
+		});
+		expect(result.trace?.stages).toHaveLength(2);
+		expect(result.trace?.stages.at(-1)).toMatchObject({ name: 'issuer-metadata', ok: false });
+	});
+
+	it('truncates an oversized body and says by how much, without touching the summary', async () => {
+		const huge = { blob: 'x'.repeat(TRACE_BODY_LIMIT * 2) };
+		const result = await receive({
+			...happyPath,
+			observations: {
+				...happyPath.observations,
+				transcript: [{ ...transcript[0], responseBody: huge }]
+			}
+		});
+		const stage = result.trace?.stages[0];
+		expect(typeof stage?.body).toBe('string');
+		expect((stage?.body as string).length).toBe(TRACE_BODY_LIMIT);
+		expect(stage?.truncated?.originalBytes).toBeGreaterThan(TRACE_BODY_LIMIT);
+		// The measurement is unaffected — every check reads the summary, not the trace.
+		expect(result.flow).toMatchObject({ metadataReachable: true, diVpOffered: true });
+	});
+
+	it('leaks no access token or Authorization header into the serialised trace', async () => {
+		const result = await receive({
+			...happyPath,
+			observations: { ...happyPath.observations, transcript }
+		});
+		const serialised = JSON.stringify(result.trace);
+		expect(serialised).not.toMatch(/authorization/i);
+		expect(serialised).not.toMatch(/access_token/i);
+		expect(serialised).not.toMatch(/Bearer [A-Za-z0-9._-]+/);
+	});
+
+	it('emits an empty trace rather than nothing when the driver kept no transcript', async () => {
+		const result = await receive(happyPath);
+		expect(result.trace).toEqual({ stages: [] });
+	});
+
+	it('never carries the delivered credential — that rides the artifact slot', async () => {
+		const result = await receive({
+			...happyPath,
+			observations: {
+				...happyPath.observations,
+				transcript: [
+					...transcript,
+					{
+						name: 'credential',
+						method: 'POST',
+						url: 'https://issuer.test/credential',
+						ok: true,
+						status: 200,
+						responseBody: { credential: 'jwt-ish-opaque-string' }
+					}
+				]
+			}
+		});
+		// The transcript's own body is faithful — but nothing re-attaches the
+		// parsed credential object the artifact slot already carries.
+		expect(JSON.stringify(result.trace)).not.toContain('OpenBadgeCredential');
 	});
 });

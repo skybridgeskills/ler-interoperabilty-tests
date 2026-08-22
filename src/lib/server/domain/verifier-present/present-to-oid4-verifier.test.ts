@@ -217,3 +217,98 @@ describe('presentToOid4Verifier', () => {
 		}
 	});
 });
+
+describe('presentToOid4Verifier — the display trace', () => {
+	it('carries two stages: what we made of the request, and where the token went', async () => {
+		const { trace } = await presentToOid4Verifier({
+			...base,
+			doc: recipeDoc(),
+			input: 'https://v.test/request/1',
+			fetchImpl: fetchJson(validRequest()),
+			submitFactory: submitFactory('ok')
+		});
+
+		expect(trace?.stages.map((s) => s.name)).toEqual(['request', 'submission']);
+		expect(trace?.stages[0]).toMatchObject({
+			label: 'Authorization request',
+			method: 'GET',
+			url: 'https://v.test/request/1',
+			ok: true
+		});
+		// The presentation_definition is what an operator debugging a non-match reads.
+		expect(trace?.stages[0].body).toMatchObject({ presentation_definition: { id: 'pd-1' } });
+		expect(trace?.stages[1]).toMatchObject({
+			label: 'Presentation submission',
+			method: 'POST',
+			url: 'https://v.test/direct-post',
+			status: 200,
+			ok: true
+		});
+	});
+
+	it('omits the request URL for an inline paste — there was no endpoint', async () => {
+		const { trace } = await presentToOid4Verifier({
+			...base,
+			doc: recipeDoc(),
+			input: JSON.stringify(validRequest()),
+			fetchImpl: fetchJson(validRequest()),
+			submitFactory: submitFactory('ok')
+		});
+
+		expect(trace?.stages[0].url).toBeUndefined();
+		expect(trace?.stages[0].method).toBeUndefined();
+		expect(trace?.stages[0].ok).toBe(true);
+	});
+
+	it('records a rejected submission with its status and reason', async () => {
+		const { present, trace } = await presentToOid4Verifier({
+			...base,
+			doc: recipeDoc(),
+			input: 'https://v.test/request/1',
+			fetchImpl: fetchJson(validRequest()),
+			submitFactory: submitFactory('reject')
+		});
+
+		expect(present.submitted).toBe(false);
+		expect(trace?.stages.at(-1)).toMatchObject({
+			name: 'submission',
+			status: 422,
+			ok: false
+		});
+		expect(trace?.stages.at(-1)?.error).toMatch(/422/);
+	});
+
+	it('gives an unresolved paste one failing stage and no submission stage', async () => {
+		const { trace } = await presentToOid4Verifier({
+			...base,
+			doc: recipeDoc(),
+			input: 'https://v.test/request/1',
+			fetchImpl: fetchJson({ not: 'an authorization request' }),
+			submitFactory: submitFactory('ok')
+		});
+
+		expect(trace?.stages).toHaveLength(1);
+		expect(trace?.stages[0]).toMatchObject({ name: 'request', ok: false });
+		expect(trace?.stages[0].error).toMatch(/OID4VP/);
+	});
+
+	it('leaks neither the signed presentation nor the held credential', async () => {
+		const { trace } = await presentToOid4Verifier({
+			...base,
+			doc: recipeDoc(),
+			input: 'https://v.test/request/1',
+			fetchImpl: fetchJson(validRequest()),
+			submitFactory: submitFactory('ok')
+		});
+
+		// `OpenBadgeCredential` DOES appear — inside the verifier's own
+		// `presentation_definition` filter, which is exactly what an operator
+		// debugging a non-match needs to read. What must not appear is anything the
+		// suite signed: the VP, the holder's proof, or the credential we presented.
+		const serialised = JSON.stringify(trace);
+		expect(serialised).not.toContain('VerifiablePresentation');
+		expect(serialised).not.toContain('proofValue');
+		expect(serialised).not.toContain('did:key:zFake');
+		expect(serialised).not.toContain('credentialSubject');
+	});
+});
