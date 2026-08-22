@@ -132,3 +132,61 @@ prevent.
   parse error rather than a missing variable, and it would not resemble the
   upstream `TENANT_ISSUER_<n>_…_<TENANT>` configuration an operator is setting at
   the same time.
+
+## Amendment (2026-08-22 — two corrections from the exchange-variation map)
+
+The decision above stands unchanged: pinning is a tenant swap, and
+`resolveIssuingContext` is the whole seam. Two of its supporting claims were
+overstated, and a later reader should have them corrected in place rather than
+carrying the original wording forward.
+
+### 1 · Blocked-ness is legibility, not arithmetic
+
+Under **Decision**, this ADR argues that a pinned scenario on a single-tenant
+deployment "keeps its requirements in the completion denominator; the badge is
+blocked instead", and offers the shrinking denominator as the harm avoided. The
+arithmetic is right and the _reasoning_ is wrong, because it proves nothing:
+`evaluate.ts:52` keeps a blocked obligation's requirements in `total` — but so
+does a scenario nobody has run. Both contribute `0 met / N total`, and both
+leave the badge unclaimable. Doing nothing at all would produce the same
+numbers.
+
+What `blocked` actually buys is **legibility**: a row that says
+"Unavailable here — this deployment issues `eddsa-rdfc-2022`" instead of a row
+that looks like unfinished homework. That is worth the substrate on its own, and
+it is the honest justification. The denominator rule is still load-bearing —
+two deployments must not issue badges that look identical and mean different
+things — but it is a rule about _every_ unmet obligation, not something
+`blocked` establishes.
+
+### 2 · "Two tokens must agree" is a deliberate choice, not an unavoidable cost
+
+Under **Consequences**, the shared-secret duplication between the suite's
+`TRANSACTION_SERVICE_TENANT_2_TOKEN` and the container's `TENANT_TOKEN_*` is
+presented as a cost that simply comes with the design. It is in fact a choice,
+made against a live alternative: a **per-tenant capability endpoint** on
+`dcc-transaction-service`, authenticated by the Bearer token, answering "what
+will this tenant issue?".
+
+That alternative was considered at the charting of
+`2026-08-21-exchange-variation-provisioning` and rejected on the evidence:
+
+- A declaration in configuration cannot reach a _result_. The `issued-suite`
+  check reads `proof.cryptosuite` off the credential that actually arrived, so a
+  tenant declared ECDSA that silently issues EdDSA **fails the scenario**. A
+  wrong declaration can only mislabel a row _before_ a run, which the first run
+  corrects.
+- The upstream service already solves this problem the same way:
+  `PREFLIGHT_TENANT_SUITES` is a hand-maintained `<tag>=<suite>` list in `.env`,
+  asserted against observed behaviour.
+- The rule that separates this from the did:web-by-proxy case, where copying was
+  rejected: **copying a value nothing can verify is dangerous; copying a label
+  every run verifies is fine.** A cryptosuite label is the second kind.
+
+The principle that follows, and that the checks are built on: **verify what you
+got; do not ask what is available.** One mechanism covers a wrong tenant and a
+wrong service version alike, and it is the mechanism the suite already has.
+
+So the consequence stands exactly as written — the two tokens are one secret
+seen from two sides, they can drift, and `docker/README.md` says how to check —
+but it is the price of a rejected alternative, not an unexamined cost.

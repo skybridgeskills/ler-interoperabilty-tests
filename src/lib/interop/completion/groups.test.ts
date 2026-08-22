@@ -56,10 +56,13 @@ describe('completionGroups', () => {
 		]);
 	});
 
-	it('carries add-on slices on the issuer groups, which are the ones that claim an additive', () => {
-		// M11 is where selecting an add-on first changes a card: the issuer
+	it('carries add-on slices on exactly the groups whose scenarios claim an additive', () => {
+		// M11 is where selecting an add-on first changed a card — the issuer
 		// scenarios name `open-skill-alignment` and `data-integrity-cryptosuites`.
-		// Nothing else in the catalog does yet.
+		// M12 P7 added the DIC **wallet** axes, so the two live wallet groups now
+		// carry a slice too. `ob3-direct-delivery:wallet` does not exist (that
+		// profile has no wallet scenarios) and no verifier scenario names an
+		// additive, so the verifier groups stay empty.
 		const groups = completionGroups({
 			runs: {},
 			additives: ['data-integrity-cryptosuites', 'open-skill-alignment']
@@ -68,18 +71,21 @@ describe('completionGroups', () => {
 		const withSlices = groups.filter((g) => g.additives.length > 0);
 		expect(withSlices.map((g) => `${g.profileSlug}:${g.roleSlug}`)).toEqual([
 			'vcalm:issuer',
+			'vcalm:wallet',
 			'oid4:issuer',
+			'oid4:wallet',
 			'ob3-direct-delivery:issuer'
 		]);
 		expect(
-			groups.filter((g) => g.roleSlug !== 'issuer').every((g) => g.additives.length === 0)
+			groups.filter((g) => g.roleSlug === 'verifier').every((g) => g.additives.length === 0)
 		).toBe(true);
 	});
 
 	it('leaves the Essential meters untouched when an add-on is selected', () => {
 		// The regression that would silently make a base badge harder to earn:
-		// every additive scenario is `optional` in its base profile, so a
-		// selection may add a slice but must never move the base denominator.
+		// every additive scenario is `additive-only` in its base profile — the base
+		// names it because that protocol is what it runs over and claims none of it —
+		// so a selection may add a slice but must never move the base denominator.
 		const without = completionGroups({ runs: {} });
 		const with_ = completionGroups({
 			runs: {},

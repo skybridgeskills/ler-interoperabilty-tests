@@ -25,18 +25,24 @@
 	/**
 	 * What a scenario this deployment cannot serve looks like on the console.
 	 *
-	 * Blocked-ness is per-deployment and slug-keyed, so a story can only fake it —
-	 * the real map comes from `+page.server.ts` reading the tenant configuration.
-	 * The row goes dim and reads "Unavailable here" with the reason underneath, and
-	 * the meter beside it **does not move**: a blocked scenario keeps its
+	 * The two `dic-wallet-accept-ecdsa` members are the catalog's real pinned
+	 * scenarios, and this is exactly what a deployment with only an EdDSA tenant
+	 * shows for them. Blocked-ness is per-deployment, so a story can only stand it
+	 * in — the live map comes from `+page.server.ts` reading tenant configuration.
+	 *
+	 * The rows go dim and read "Unavailable here" with the reason underneath, and
+	 * the add-on meter beside them **does not move**: a blocked scenario keeps its
 	 * requirements in the denominator and blocks the badge instead.
 	 */
+	const cannotServeEcdsa = {
+		kind: 'cryptosuite-unavailable' as const,
+		requested: 'ecdsa-rdfc-2019',
+		available: ['eddsa-rdfc-2022']
+	};
+
 	const blocked = {
-		'oid4-wallet-acceptance': {
-			kind: 'cryptosuite-unavailable' as const,
-			requested: 'ecdsa-rdfc-2019',
-			available: ['eddsa-rdfc-2022']
-		}
+		'oid4-wallet-accept-ecdsa': cannotServeEcdsa,
+		'vcalm-wallet-accept-ecdsa': cannotServeEcdsa
 	};
 
 	const { Story } = defineMeta({

@@ -75,8 +75,11 @@ describe('/+page.svelte', () => {
 	 */
 	it('renders a blocked scenario disabled and shrinks no denominator', async () => {
 		// A blocked map is slug-keyed and says nothing about the catalog, so any
-		// registered scenario demonstrates the state. The reasons this deployment
-		// would actually give are `resolveIssuingContext`'s, tested there.
+		// registered scenario demonstrates the state. Deliberately NOT one of the
+		// pinned DIC accept scenarios: those are add-on rows, which render only once
+		// the reader has selected that add-on, so a spec using one would be asserting
+		// against the filter rather than against blocked-ness. The reasons this
+		// deployment would actually give are `resolveIssuingContext`'s, tested there.
 		const blocked = {
 			'oid4-wallet-acceptance': {
 				kind: 'cryptosuite-unavailable',

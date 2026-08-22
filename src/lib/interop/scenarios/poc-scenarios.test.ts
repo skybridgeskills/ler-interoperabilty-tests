@@ -34,7 +34,17 @@ describe('PoC scenario catalog', () => {
 			'oid4-issuer-eddsa',
 			'ob3-direct-issuer-ecdsa',
 			'vcalm-issuer-ecdsa',
-			'oid4-issuer-ecdsa'
+			'oid4-issuer-ecdsa',
+			// M12 P7 — the DIC wallet axes. The present four are observed (the wallet
+			// holds the key); the accept four are the catalog's first pinned scenarios.
+			'oid4-wallet-present-eddsa',
+			'vcalm-wallet-present-eddsa',
+			'oid4-wallet-present-ecdsa',
+			'vcalm-wallet-present-ecdsa',
+			'oid4-wallet-accept-eddsa',
+			'vcalm-wallet-accept-eddsa',
+			'oid4-wallet-accept-ecdsa',
+			'vcalm-wallet-accept-ecdsa'
 		]);
 		expect(validateCatalog(allScenarios)).toEqual([]);
 	});

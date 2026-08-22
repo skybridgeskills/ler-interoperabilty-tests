@@ -26,6 +26,18 @@ import { vcalmVerifierDelivery } from './vcalm-verifier-delivery.js';
 import { vcalmWalletAcceptance } from './vcalm-wallet-acceptance.js';
 import { vcalmWalletPresentation } from './vcalm-wallet-presentation.js';
 import { vcalmWalletRefusalDiscrimination } from './vcalm-wallet-refusal-discrimination.js';
+import {
+	oid4WalletAcceptEcdsa,
+	oid4WalletAcceptEddsa,
+	vcalmWalletAcceptEcdsa,
+	vcalmWalletAcceptEddsa
+} from './wallet-dic-accept.js';
+import {
+	oid4WalletPresentEcdsa,
+	oid4WalletPresentEddsa,
+	vcalmWalletPresentEcdsa,
+	vcalmWalletPresentEddsa
+} from './wallet-dic-present.js';
 
 /**
  * The scenario catalog — every runnable scenario in the suite, in display
@@ -66,7 +78,15 @@ export const allScenarios: Scenario[] = [
 	oid4IssuerEddsa,
 	ob3DirectIssuerEcdsa,
 	vcalmIssuerEcdsa,
-	oid4IssuerEcdsa
+	oid4IssuerEcdsa,
+	oid4WalletPresentEddsa,
+	vcalmWalletPresentEddsa,
+	oid4WalletPresentEcdsa,
+	vcalmWalletPresentEcdsa,
+	oid4WalletAcceptEddsa,
+	vcalmWalletAcceptEddsa,
+	oid4WalletAcceptEcdsa,
+	vcalmWalletAcceptEcdsa
 ];
 
 // Fail loudly at import rather than rendering a meter whose denominator is
