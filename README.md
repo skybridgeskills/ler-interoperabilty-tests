@@ -121,8 +121,9 @@ Full palette + semantic tokens: [`docs/design-system.md`](docs/design-system.md)
 system, request context, the exchange runner (minting **and attach
 mode**), theme system, and test harness.
 
-The runnable wallet pages can adopt an exchange minted outside the suite
-with `?exchangeId=…&workflow=claim|verify`. During a probe sitting,
+The four wallet routes redirect to their scenarios preserving the query, so an
+exchange minted outside the suite is still adopted by
+`?exchangeId=…&workflow=claim|verify` — the scenario page does the adopting now. During a probe sitting,
 `TRANSACTION_SERVICE_URL` must point at the transaction service that **actually
 minted** the exchange. `pnpm dev:services:local` builds it from the sibling
 checkout, so the composed service is the branch build; `pnpm dev:services` runs

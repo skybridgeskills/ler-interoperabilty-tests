@@ -41,10 +41,13 @@ codebase evolves.
   (`oid4-verifier-delivery` / `oid4-verifier-acceptance`, M10b). **All three
   issuer pages have too** (M11) — direct-delivery
   (`ob3-direct-issuer-delivery`), VCALM (`vcalm-issuer-issuance`) and OID4VCI
-  (`oid4-issuer-issuance`), plus nine additive scenarios. `verifier-runner`,
-  `issuer-runner` and `wallet-runner` are now all **dead code** — the standing
-  engines, their API routes, and the legacy page components are swept together in
-  M13; only the three **wallet** pages still run on `wallet-runner` (M12)
+  (`oid4-issuer-issuance`), plus nine additive scenarios. **And so have the three
+  wallet pages** (M12) — `vcalm-wallet-acceptance`,
+  `{oid4,vcalm}-wallet-presentation` and eight
+  `data-integrity-cryptosuites` scenarios. That is **all four page families**, so
+  `verifier-runner`, `issuer-runner` and `wallet-runner` are now **all dead
+  code**: nothing reachable scores through any of them. The standing engines,
+  their API routes and the legacy page components are swept together in M13
   ([`adr/2026-08-19-migrating-a-server-scorer-onto-scenarios.md`](adr/2026-08-19-migrating-a-server-scorer-onto-scenarios.md)).
 
 ## Scenarios
@@ -292,6 +295,59 @@ The tampered pass depends on a transaction service that honours `tamper`; a buil
 that silently drops it delivers a valid credential and the discrimination
 measures nothing. See [`docker/README.md`](../docker/README.md).
 
+### The wallet catalog (M12)
+
+Fifteen wallet scenarios, twelve of them M12's. They divide by **who holds the
+key**, which is the distinction the whole family turns on.
+
+- **Acceptance and refusal** — `{oid4,vcalm}-wallet-acceptance`,
+  `{oid4,vcalm}-wallet-refusal-discrimination`, `oid4-wallet-faithful-rendering`.
+- **Presentation** — `{oid4,vcalm}-wallet-presentation`. Here the suite is the
+  **verifier**, which is why this half needed no new `ScenarioAction`, no server
+  leaf and no new evidence slot: the transaction service folds verifier-core's
+  result into `variables.results.default`, and the poll route already returns it.
+  The nine checks are the `wallet-runner` scorer's own functions, moved.
+- **`data-integrity-cryptosuites`, eight scenarios on two axes.** The
+  **producer** axis (`{oid4,vcalm}-wallet-present-{eddsa,ecdsa}`) is **observed**:
+  the wallet holds the key and nothing in a presentation request can choose a
+  cryptosuite, so the scenario reads the suite off the presentation that arrives.
+  The **consumer** axis (`{oid4,vcalm}-wallet-accept-{eddsa,ecdsa}`) is **pinned**,
+  and is the first place `IssuingIntent` does real work — "can your wallet verify
+  this" cannot be asked by watching, because a wallet that only ever meets EdDSA
+  tells you nothing about ECDSA by accepting one.
+
+All eight DIC scenarios are `additive-only` in their base profile, never
+`optional`. Complete is cumulative, so `optional` would quietly make "a complete
+OID4 wallet" mean "…and supports both cryptosuites".
+
+One cost worth stating: the acceptance-_producer_ rows merged into the
+presentation-producer scenarios, because the wallet's DIDAuth key-proof suite is
+not persisted into the exchange. A wallet that only ever accepts and never
+presents therefore cannot fill the DIC producer obligation.
+
+### Pinned issuing, and the tenant map
+
+A scenario pins its issuing crypto with an optional `IssuingIntent`
+(`{ cryptosuite, didMethod }`) on an `issue` action. **Absent means elective** —
+the transaction service already ranks its issuer instances against the suites the
+wallet advertised — and present means pinned.
+
+**Pinning can only be a tenant swap.** That service picks its issuer instance at
+_claim_ time from the wallet's advertised suites, so no field on the create
+request can request a cryptosuite; the only lever is minting under a tenant whose
+instances offer the one you want. `resolveIssuingContext` makes that choice from a
+deployment's configured tenant map and the create route carries it **in the Bearer
+token**, so the tenant never appears in a URL.
+
+A pin this deployment cannot serve returns a typed `CannotServe`, which renders
+the scenario **disabled with its reason on all four surfaces** — homepage, profile
+page, scenario page and badge page — while **keeping its requirements in the
+completion denominator**. Blocked-ness buys legibility, not arithmetic: a
+shrinking denominator would let two deployments issue badges that look identical
+and mean different things. See
+[the tenant-map ADR](./adr/2026-08-22-pinned-issuing-through-a-tenant-map.md), and
+[`docker/README.md`](../docker/README.md) for configuring the tenants themselves.
+
 ### The completion group
 
 A **completion group** is how a `(profile, role)` **bundle** is read: a heading
@@ -320,8 +376,12 @@ A base profile-role reads as up to **three kinds of category**, in this order:
    additive's own page.
 
 Tier colour is cued on the dot, label and rule (Essential = primary, Complete and
-Expanded = accent, add-on = `live`), never on the bar: meter **fill** stays
-semantic everywhere (green full, warm partial). A group with no expanded set and no
+Expanded = accent, add-on = `additive`), never on the bar: meter **fill** stays
+semantic everywhere (green full, warm partial). Add-ons used to render in the warm
+`live` flame; that reserve is for "talking to a real service right now", and an
+additive profile is a requirement _layer_, not a runtime state — so they moved to
+the cool `additive` family, which also clears AA where `text-live` did not. See
+[the additive-layer colour ADR](./adr/2026-08-21-additive-requirement-layer-colour.md). A group with no expanded set and no
 selected add-on renders as one meter and one flat list, exactly as before.
 
 The level that makes category 3 possible is **`additive-only`**: a base membership

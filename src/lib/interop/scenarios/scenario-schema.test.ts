@@ -51,7 +51,7 @@ describe('ScenarioAction — receive-from-issuer', () => {
 		const parsed = ScenarioAction({
 			kind: 'receive-from-issuer',
 			transport: 'oid4vci',
-			// @ts-expect-error — pinning is M12's, and belongs to the actions where the suite mints.
+			// @ts-expect-error — pinning landed in M12, on the actions where the suite mints.
 			intent: { cryptosuite: 'eddsa-rdfc-2022', didMethod: 'did:key' }
 		});
 		expect(parsed).not.toHaveProperty('intent');

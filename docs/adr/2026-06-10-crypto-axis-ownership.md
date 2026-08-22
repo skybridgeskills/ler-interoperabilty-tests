@@ -100,3 +100,17 @@ cryptosuite axis is now **measured**, on the producer side, through
   `assertionMethod` by construction on an issuer's credential proof, so nothing
   observed would ever fail it. Recorded here so the absence does not read as
   coverage.
+
+## Amendment (2026-08-22, M12 — the wallet consumer half lands and is measured)
+
+M11's amendment above scored the producer axis per suite. M12 lands the **wallet consumer half**:
+`{oid4,vcalm}-wallet-accept-{eddsa,ecdsa}` ask whether a wallet can _verify_ a credential in a given
+cryptosuite, which — unlike the producer axis — cannot be answered by observation and must be
+answered by **pinning what we issue**. It is measured, not attested: `issued-suite` reuses M11's
+`credential-di-proof-{eddsa,ecdsa}` over `StepEvidence.artifact`, so a pin that silently fell back to
+the default tenant turns the row red instead of letting the scenario pass under a false label. Only
+the wallet's own verdict is attested, because only the operator can see it.
+
+**The issuer consumer half stays M15's, unchanged** — `verify-vp-all`, `resolve-holder-dids`. It is
+now mechanical rather than open: the wallet half settled the shape, so M15 inherits a pattern to
+apply rather than a question to answer.

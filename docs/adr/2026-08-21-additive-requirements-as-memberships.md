@@ -125,3 +125,31 @@ M15 sibling effort, scheduled after M12.
 **Keeping `optional` for the base membership**, as the M11 plan originally
 specified. Rejected once the two-tier model landed: see the decision above. The
 plan predated it, and its own stated invariant is the reason to change.
+
+## Amendment (2026-08-22, M12 — the wallet's two DIC axes, and why they differ)
+
+M11 established that the issuer's `data-integrity-cryptosuites` axis is **observed**, not pinned:
+the suite mints nothing there, so it can only read the suite off what arrives. M12 authored the
+wallet's eight DIC scenarios and found the axis splits in two, in a way the issuer family never
+had to face.
+
+**The producer axis is observed** — `{oid4,vcalm}-wallet-present-{eddsa,ecdsa}`. The suite is the
+verifier, the wallet holds the key, and nothing in a presentation request can choose a cryptosuite.
+Exactly M11's finding, restated for wallets.
+
+**The consumer axis is pinned** — `{oid4,vcalm}-wallet-accept-{eddsa,ecdsa}` — and it is the first
+place `IssuingIntent` does real work. _"Can your wallet verify this"_ cannot be asked by watching: a
+wallet that only ever meets EdDSA tells you nothing about ECDSA by accepting one. So the suite mints
+the credential in the suite under test, which is what the tenant map exists for. On a deployment
+with only the default tenant these render disabled, keep their requirements in the denominator, and
+block the DIC badge.
+
+**All eight are `additive-only` in their base profile, never `optional`.** Complete is cumulative,
+so `optional` would quietly redefine "a complete OID4 wallet" as "…and supports both cryptosuites"
+— which is precisely the silent scope creep this ADR's level distinction exists to prevent.
+
+**One cost, stated rather than hidden.** The acceptance-_producer_ rows merged into the
+presentation-producer scenarios, because the wallet's DIDAuth key-proof suite is not persisted into
+the exchange (M12 `notes.md` F14). The consequence: a wallet that only ever accepts and never
+presents cannot fill the DIC producer obligation. That is a real gap in coverage, not a modelling
+choice, and it is recorded here so a later reader does not mistake it for one.

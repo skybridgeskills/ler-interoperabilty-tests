@@ -12,8 +12,10 @@ import { resolve } from '$app/paths';
  * dropping the query would silently break the runbook. `resolve()` keeps the
  * target base-path aware, matching the house pattern in `checklist-href.ts`.
  *
- * The vcalm sibling (`/wallet/credential-acceptance/vcalm`) is untouched — its
- * page has no scenario yet and keeps the old runner until M12.
+ * The vcalm sibling (`/wallet/credential-acceptance/vcalm`) redirects the same
+ * way as of M12, as do both presentation routes. All four carry attach links,
+ * which is the rule the whole migration followed: redirect iff the route carries
+ * documented attach links; otherwise delete outright.
  */
 export function load({ url }: { url: URL }) {
 	redirect(308, `${resolve('/scenarios/[slug]', { slug: 'oid4-wallet-acceptance' })}${url.search}`);

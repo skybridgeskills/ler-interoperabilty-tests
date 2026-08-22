@@ -166,9 +166,8 @@
 			</div>
 		{:else}
 			<p class="text-body-md text-muted-foreground">
-				No scenarios are registered for this profile yet — its workflows are still being converted.
-				They appear in the homepage's <span class="font-medium">Not yet migrated</span> section until
-				then.
+				No scenarios are registered for this profile yet. Every profile the suite ships has them —
+				this state is reachable only for a profile added without a catalog entry.
 			</p>
 		{/if}
 	</section>

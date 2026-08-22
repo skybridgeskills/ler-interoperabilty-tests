@@ -206,3 +206,40 @@ coverage, so they are one check whose message names all three endpoints.
 sweep — though `wallet-runner` still serves the three **wallet** pages until M12.
 M11 deleted only the three **routes** (no redirect), the same line M10a and M10b
 held.
+
+## Amendment (2026-08-22, M12 — the wallet family, fourth and genuinely last)
+
+The M11 amendment above called itself "third and last". It was third; it was not last. The three
+wallet pages remained, and M12 migrated them. Four families, four migrations — the pattern is now
+closed, and this is the amendment that closes it.
+
+**The pattern held, and the wallet family was the cheapest of the four.** The reason is worth
+recording because it is structural rather than lucky: here the suite is the **verifier**, so the
+evidence _is_ the exchange record. The transaction service folds verifier-core's result into
+`variables.results.default`, `GET /api/exchange-runner/[exchangeId]` already returns `variables` to
+the client, and the black-box model reads exactly that. So unlike `verifier-present/` and
+`issuer-receive/`, this migration needed **no new `ScenarioAction` kind, no server leaf, and no new
+evidence slot** — the checks are the scorer's own functions, moved. Where the suite is the party
+under observation's counterparty, there is nothing to project.
+
+**`warn`/`n/a` resolved at authoring, as this ADR requires.** The six dispositions are recorded in
+M12's [`mapping.md`](../../.skybridge/planning/ler-interoperability-tests/2026-08-11-scenario-architecture/12-migrate-wallet-pages/mapping.md) §3,
+and M11's distinction is preserved intact: a rule with **nothing to apply to** passes vacuously
+(`key-type-matches` on a non-`did:key` holder), while a rule whose input is missing **because
+something upstream failed** fails.
+
+**One correction to the engine, not the scorer.** A terminal `invalid` exchange was being treated as
+a _harness_ failure by the scenario runner, while the legacy page scored it. That was the wrong
+side of the line this ADR draws: settling on any terminal state is what makes a non-verifying VP a
+**failed requirement** rather than an unrecordable run. `onFailed` now means only what it should —
+create failed, poll errored, window timed out — because those alone leave nothing honest to record.
+The same fix closed the same latent hole on the claim side.
+
+**The whole `wallet-runner` cluster is now dead**, joining `verifier-runner` and the two issuer
+engines. All four families are migrated and the engine deletions are one sweep, M13's.
+
+**The route rule, stated once for all four milestones:** _redirect iff the route carries documented
+attach links; otherwise delete outright._ M6 and M12 redirect (their routes parse `?exchangeId=`);
+M10a, M10b and M11 deleted (theirs carried none). That is one rule consistently applied, not two
+policies — a distinction worth making explicitly, because the surface reads like an inconsistency
+until you know what decides it.

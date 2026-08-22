@@ -7,7 +7,7 @@ import type { RunnerWorkflowId } from '$lib/interop/runner-state.js';
  */
 export type AttachProtocolLink = 'iu' | 'OID4VCI' | 'OID4VP';
 
-/** Error affordance shape both runnable wallet pages already render. */
+/** Error affordance shape the scenario page renders for a failed attach. */
 export type AttachError = { message: string; hint?: string };
 
 export type AttachExchangeResult =
