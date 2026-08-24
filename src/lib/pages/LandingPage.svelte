@@ -2,183 +2,183 @@
 	import { onMount } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 
-	import { allLatestRuns, runCombinationKey, runsFor } from '$lib/client/run-history/index.js';
-	import { selectionStore } from '$lib/client/selection/index.js';
-	import { AdditiveProfileSelector } from '$lib/components/interop/additive-profile-selector/index.js';
-	import { ChecklistRow } from '$lib/components/interop/checklist-row/index.js';
-	import { ProfileSelector } from '$lib/components/interop/profile-selector/index.js';
-	import { RoleSelector } from '$lib/components/interop/role-selector/index.js';
+	import { allBadgeClaims } from '$lib/client/badges/index.js';
 	import {
-		additiveChecklistsForCombination,
-		allAdditiveProfiles,
-		allCombinations,
-		allProfiles,
-		allRoles,
-		checklistHref,
-		isCombinationSelected,
-		profileBySlug,
-		roleBySlug,
-		sortCombinations,
-		workflowBySlug,
-		type ChecklistCombination,
-		type TestRunRecord
+		allScenarioRuns,
+		exportResults,
+		importResults
+	} from '$lib/client/scenario-runs/index.js';
+	import { selectionStore } from '$lib/client/selection/index.js';
+	import { CompletionGroup } from '$lib/components/interop/completion-group/index.js';
+	import { FilterBar } from '$lib/components/interop/filter-bar/index.js';
+	import { ResultsTransfer } from '$lib/components/interop/results-transfer/index.js';
+	import {
+		badgeHrefFor,
+		badgeNameFor,
+		type BadgeClaimSnapshot,
+		claimedInfoFor,
+		expandedBadgeHrefFor,
+		expandedBadgeNameFor,
+		expandedClaimedInfoFor,
+		completionGroups
 	} from '$lib/interop/index.js';
+	import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
+	import type { CannotServe } from '$lib/interop/scenarios/index.js';
 
 	import { resolve } from '$app/paths';
 
-	// Static set of rows — pure, SSR-safe.
-	const combos = allCombinations();
+	/**
+	 * Which scenarios this deployment cannot serve, keyed by slug — resolved by the
+	 * route's server load, never read from config here.
+	 *
+	 * Defaulted to `{}` so Storybook and the component's own specs can render the
+	 * page without a server: a deployment that pins nothing blocks nothing, which
+	 * is the honest default rather than a convenience.
+	 */
+	let { blocked = {} }: { blocked?: Record<string, CannotServe> } = $props();
 
-	// Run history is browser-only; hydrate after mount to avoid SSR/localStorage.
-	let latestRuns = $state<Map<string, TestRunRecord>>(new Map());
-	let recentRuns = $state<Map<string, TestRunRecord[]>>(new Map());
+	// Persisted scenario runs — localStorage, so browser-only. Seeded empty for
+	// SSR and hydrated on mount, exactly like the selection; the meters render
+	// zeroed server-side and fill in once the store is read.
+	let runs = $state<Record<string, ScenarioRunRecord>>({});
+	let claims = $state<BadgeClaimSnapshot[]>([]);
+
+	/** Re-read the persisted stores — on mount, and again after an import. */
+	function reloadResults() {
+		runs = allScenarioRuns();
+		claims = allBadgeClaims();
+	}
 
 	onMount(() => {
-		// Both stores read localStorage — browser only.
+		// All read localStorage — browser only.
 		selectionStore.hydrate();
-		latestRuns = allLatestRuns();
-		recentRuns = new Map(
-			combos.map((c) => [
-				runCombinationKey(c.role, c.workflow, c.profile),
-				runsFor(c.role, c.workflow, c.profile)
-			])
-		);
+		reloadResults();
 	});
 
 	const selection = $derived(selectionStore.selection);
-	const sortedCombos = $derived(sortCombinations(combos, selection));
-	const selectedCombos = $derived(sortedCombos.filter((c) => isCombinationSelected(c, selection)));
-	const otherCombos = $derived(sortedCombos.filter((c) => !isCombinationSelected(c, selection)));
-	const hasSelection = $derived(selectedCombos.length > 0);
 	const selectedAdditives = $derived(new SvelteSet(selectionStore.additiveProfiles));
 
-	/** Selected additive profiles that apply to a given combination. */
-	function appliedAdditivesFor(combo: ChecklistCombination) {
-		return additiveChecklistsForCombination(combo.profile, combo.role, combo.workflow)
-			.filter(({ additive }) => selectedAdditives.has(additive.slug))
-			.map(({ additive }) => ({ slug: additive.slug, name: additive.name }));
-	}
+	// Completion groups — one per (profile, role) that has scenarios. A blocked
+	// scenario renders as a disabled row and keeps its requirements in the
+	// denominator; `evaluateCompletion` owns that arithmetic and this page only
+	// forwards what the server resolved.
+	const groups = $derived(
+		completionGroups({ runs, blocked, additives: [...selectionStore.additiveProfiles] })
+	);
+
+	/**
+	 * The filter **filters**: a group matches when every dimension the reader has
+	 * narrowed still admits it, and an untouched dimension admits everything.
+	 *
+	 * This replaces the old selected/"other" split, which reordered rather than
+	 * filtered and therefore rendered an empty "your scenarios" section whenever a
+	 * selection happened to match nothing — the single most misleading thing the
+	 * page did.
+	 */
+	// String-keyed sets for the match test: a group's `profileSlug` is typed
+	// `ProfileSlug | AdditiveProfileSlug` (the widget is shared with the additive
+	// profile page) while the homepage selection only ever holds base profiles, so
+	// a string-keyed `.has` compares cleanly without a cast.
+	const selectedRoleSlugs = $derived(new SvelteSet<string>(selection.roles));
+	const selectedProfileSlugs = $derived(new SvelteSet<string>(selection.profiles));
+
+	const matchesFilter = (group: (typeof groups)[number]) =>
+		(selectedRoleSlugs.size === 0 || selectedRoleSlugs.has(group.roleSlug)) &&
+		(selectedProfileSlugs.size === 0 || selectedProfileSlugs.has(group.profileSlug));
+
+	const shownGroups = $derived(groups.filter(matchesFilter));
+	const hiddenGroups = $derived(groups.filter((g) => !matchesFilter(g)));
+	let showHidden = $state(false);
 </script>
 
-<section class="space-y-4">
-	<h1 class="text-display-lg">LER Interoperability Test Suite</h1>
+<section class="space-y-3 pb-6">
+	<!-- `text-display-lg` alone overflows at 375px; scale it up from `text-headline-md`. -->
+	<h1 class="text-headline-md sm:text-display-lg">LER Interoperability Test Suite</h1>
 	<p class="max-w-prose text-body-md text-muted-foreground">
 		Your console for building and evaluating interoperable Learning &amp; Employment Record systems.
-		Pick the roles and profiles you care about, and the workflow checklists below reorganize into
-		your working set — each one drillable into the exact ordered steps your profile requires, with
-		the result of your most recent test run.
-	</p>
-</section>
-
-<section class="mt-4">
-	<p class="text-body-sm max-w-prose text-muted-foreground">
-		Standards compliance isn’t the same as interoperability.
+		Standards compliance isn’t the same as interoperability —
 		<a href={resolve('/about')} class="text-primary hover:underline">
-			Read about what this tool does →
+			read about what this tool does →
 		</a>
 	</p>
 </section>
 
-<section class="mt-12">
-	<RoleSelector
-		roles={allRoles}
-		selected={selection.roles}
-		onToggle={selectionStore.toggleRole}
-		description="Choose the role(s) you build or evaluate. Wallets play the holder role; the label stays “Wallet.”"
-		builderNote="Pick the role(s) your product plays: issuer, wallet, verifier, or some combination."
-		evaluatorNote="Pick the role(s) you need a platform, vendor, or implementation to demonstrate."
-	/>
-</section>
+<FilterBar
+	roles={selection.roles}
+	profiles={selection.profiles}
+	additives={selectedAdditives}
+	onToggleRole={selectionStore.toggleRole}
+	onToggleProfile={selectionStore.toggleProfile}
+	onToggleAdditive={selectionStore.toggleAdditiveProfile}
+	onClear={selectionStore.clear}
+	matched={shownGroups.length}
+	hidden={hiddenGroups.length}
+/>
 
-<section class="mt-12">
-	<ProfileSelector
-		profiles={allProfiles}
-		selected={selection.profiles}
-		onToggle={selectionStore.toggleProfile}
-		builderNote="Cover the profiles your product needs to interoperate with."
-		evaluatorNote="Pick the profiles your ecosystem requires, then ask the platform or implementation to demonstrate them."
+{#snippet groupCard(group: (typeof groups)[number])}
+	<CompletionGroup
+		profileName={group.profileName}
+		roleName={group.roleName}
+		result={group.result}
+		additives={group.additives}
+		{runs}
+		claimHref={badgeHrefFor(group.profileSlug, group.roleSlug)}
+		claim={claimedInfoFor(group.profileSlug, group.roleSlug, claims)}
+		baseBadgeName={badgeNameFor(group.profileSlug, group.roleSlug)}
+		expandedClaimHref={expandedBadgeHrefFor(group.profileSlug, group.roleSlug)}
+		expandedClaim={expandedClaimedInfoFor(group.profileSlug, group.roleSlug, claims)}
+		expandedBadgeName={expandedBadgeNameFor(group.profileSlug, group.roleSlug)}
 	/>
-</section>
-
-<section class="mt-12">
-	<AdditiveProfileSelector
-		profiles={allAdditiveProfiles}
-		selected={selectedAdditives}
-		onToggle={selectionStore.toggleAdditiveProfile}
-	/>
-</section>
-
-{#snippet checklistRow(combo: ChecklistCombination)}
-	{@const role = roleBySlug(combo.role)}
-	{@const workflow = workflowBySlug(combo.workflow)}
-	{@const profile = profileBySlug(combo.profile)}
-	{#if role && workflow && profile}
-		<ChecklistRow
-			combination={{ role, workflow, profile }}
-			selected={isCombinationSelected(combo, selection)}
-			latestRun={latestRuns.get(runCombinationKey(combo.role, combo.workflow, combo.profile))}
-			recentRuns={recentRuns.get(runCombinationKey(combo.role, combo.workflow, combo.profile)) ??
-				[]}
-			href={checklistHref(combo.role, combo.workflow, combo.profile)}
-			appliedAdditives={appliedAdditivesFor(combo)}
-		/>
-	{/if}
 {/snippet}
 
-<section class="mt-16 space-y-6">
-	<header class="space-y-2">
-		<h2 class="text-headline-md">Workflows</h2>
-		<p class="max-w-prose text-body-md text-muted-foreground">
-			Each row opens the full checklist — the exact ordered steps your profile requires — and shows
-			your latest run result.
-		</p>
-		<p class="text-body-sm max-w-prose text-muted-foreground">
-			Assessment results are private to the organization or user completing the test and are not
-			visible to other vendors or external users unless intentionally shared.
-		</p>
-	</header>
+<section class="mt-8 space-y-6">
+	<h2 class="sr-only">Scenario sets</h2>
 
-	{#if hasSelection}
-		<div class="space-y-3">
-			<header class="space-y-1">
-				<h3 class="text-title-lg text-foreground">Selected workflow checklists</h3>
-				<p class="max-w-prose text-body-md text-muted-foreground">
-					These checklists match the roles and profiles you selected above. Open each checklist to
-					review requirements and run the corresponding test.
-				</p>
-			</header>
-			<div class="space-y-2">
-				{#each selectedCombos as combo (runCombinationKey(combo.role, combo.workflow, combo.profile))}
-					{@render checklistRow(combo)}
-				{/each}
-			</div>
+	{#if shownGroups.length === 0}
+		<div class="rounded-lg border border-dashed border-border p-8 text-center">
+			<p class="text-body-md text-foreground">No scenario set matches that combination yet.</p>
+			<p class="mt-1 text-body-md text-muted-foreground">
+				Every scenario set is still available — clear a filter to see them.
+			</p>
 		</div>
 	{/if}
 
-	{#if otherCombos.length > 0}
-		<details class="group space-y-3" open={!hasSelection}>
-			<summary class="cursor-pointer list-none space-y-1">
-				<span class="flex items-center gap-2">
-					<span
-						aria-hidden="true"
-						class="text-muted-foreground transition-transform group-open:rotate-90"
-					>
-						›
-					</span>
-					<span class="text-title-lg text-foreground"
-						>{hasSelection ? 'Other available checklists' : 'Available checklists'}</span
-					>
-				</span>
-				<p class="max-w-prose pl-6 text-body-md text-muted-foreground">
-					These checklists are not part of your current selection. Expand this section to view
-					additional workflows, or change your role/profile selections above.
-				</p>
-			</summary>
-			<div class="mt-3 space-y-2">
-				{#each otherCombos as combo (runCombinationKey(combo.role, combo.workflow, combo.profile))}
-					{@render checklistRow(combo)}
-				{/each}
-			</div>
-		</details>
+	<div class="space-y-4">
+		{#each shownGroups as group (group.profileSlug + ':' + group.roleSlug)}
+			{@render groupCard(group)}
+		{/each}
+	</div>
+
+	{#if hiddenGroups.length > 0}
+		<!--
+			The escape hatch. A filter that can only ever remove things strands a
+			reader who filtered too hard, so what is held back is always one click
+			away and says how much it is holding.
+		-->
+		<div class="space-y-4">
+			<button
+				type="button"
+				onclick={() => (showHidden = !showHidden)}
+				class="text-label-md text-primary hover:underline"
+			>
+				{showHidden
+					? 'Hide the sets outside your filter'
+					: `Show ${hiddenGroups.length} scenario set${hiddenGroups.length === 1 ? '' : 's'} outside your filter`}
+			</button>
+			{#if showHidden}
+				<div class="space-y-4 opacity-75">
+					{#each hiddenGroups as group (group.profileSlug + ':' + group.roleSlug)}
+						{@render groupCard(group)}
+					{/each}
+				</div>
+			{/if}
+		</div>
 	{/if}
+
+	<p class="max-w-prose text-body-md text-muted-foreground">
+		Assessment results are private to the organization or user completing the test and are not
+		visible to other vendors or external users unless intentionally shared.
+	</p>
+
+	<ResultsTransfer onExport={exportResults} onImport={importResults} onImported={reloadResults} />
 </section>

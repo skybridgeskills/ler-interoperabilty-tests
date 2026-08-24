@@ -19,7 +19,12 @@ import {
  */
 export type SubmitResponse = (
 	responseUri: string,
-	body: { vp_token: unknown; presentation_submission: PresentationSubmission }
+	body: {
+		vp_token: unknown;
+		presentation_submission: PresentationSubmission;
+		/** Echoed from the authorization request when present (OID4VP 1.0 §8.2). */
+		state?: string;
+	}
 ) => Promise<Record<string, unknown>>;
 
 export type PresentationDriverResult = {
@@ -109,7 +114,12 @@ export function Oid4vpPresentationDriver(deps: {
 		try {
 			const submissionResult = await submit(request.response_uri, {
 				vp_token: vpToken,
-				presentation_submission: match.submission
+				presentation_submission: match.submission,
+				// Echo `state` when the request carried it (OID4VP 1.0 §8.2).
+				// Verifiers treat it as a replay/correlation guard and reject a
+				// response without it, so omitting it fails an otherwise-correct
+				// exchange.
+				...(request.state !== undefined ? { state: request.state } : {})
 			});
 			return { ...base, submitted: true, submissionResult };
 		} catch (e) {

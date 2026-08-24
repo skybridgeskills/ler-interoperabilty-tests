@@ -3,11 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { FakeTransactionServiceClient } from './fake-transaction-service-client.js';
 import { TransactionServiceError } from './transaction-service-client.js';
 
+/** Stand-in for a recipe-built document; these tests care about plumbing, not content. */
+const testCredential = { id: 'urn:uuid:test-credential', type: ['VerifiableCredential'] };
+
 describe('FakeTransactionServiceClient', () => {
 	it('createIssuanceExchange returns URL-shaped iu, unique exchangeId, pending state, claim workflow', async () => {
 		const client = FakeTransactionServiceClient();
-		const a = await client.createIssuanceExchange({ retrievalId: 'a' });
-		const b = await client.createIssuanceExchange({ retrievalId: 'b' });
+		const a = await client.createIssuanceExchange({ retrievalId: 'a', credential: testCredential });
+		const b = await client.createIssuanceExchange({ retrievalId: 'b', credential: testCredential });
 
 		expect(a.exchangeId).not.toBe(b.exchangeId);
 		expect(a.workflowId).toBe('claim');
@@ -16,12 +19,20 @@ describe('FakeTransactionServiceClient', () => {
 
 		const stored = client.getStored(a.exchangeId);
 		expect(stored?.state).toBe('pending');
-		expect(stored?.variables).toEqual({ retrievalId: 'a' });
+		// The fake records what it was asked to mint, exactly as the real service
+		// stores it, so tests can assert on the credential document itself.
+		expect(stored?.variables).toEqual({
+			retrievalId: 'a',
+			vc: JSON.stringify(testCredential)
+		});
 	});
 
 	it('createIssuanceExchange returns an OID4VCI deep link referencing the credential-offer URI', async () => {
 		const client = FakeTransactionServiceClient();
-		const { exchangeId, protocols } = await client.createIssuanceExchange({ retrievalId: 'x' });
+		const { exchangeId, protocols } = await client.createIssuanceExchange({
+			retrievalId: 'x',
+			credential: testCredential
+		});
 		expect(protocols.OID4VCI).toMatch(/^openid-credential-offer:\/\/\?credential_offer_uri=/);
 		expect(protocols.OID4VCI).toContain(
 			encodeURIComponent(`/workflows/claim/exchanges/${exchangeId}/openid/credential-offer`)
@@ -30,7 +41,10 @@ describe('FakeTransactionServiceClient', () => {
 
 	it('respects custom host on the iu / vcapi / OID4VCI URLs', async () => {
 		const client = FakeTransactionServiceClient({ host: 'https://demo.test' });
-		const { protocols } = await client.createIssuanceExchange({ retrievalId: 'x' });
+		const { protocols } = await client.createIssuanceExchange({
+			retrievalId: 'x',
+			credential: testCredential
+		});
 		expect(protocols.iu.startsWith('https://demo.test/')).toBe(true);
 		expect(protocols.vcapi.startsWith('https://demo.test/')).toBe(true);
 		expect(protocols.OID4VCI).toContain(encodeURIComponent('https://demo.test/'));
@@ -38,7 +52,10 @@ describe('FakeTransactionServiceClient', () => {
 
 	it('advanceToActive / Complete / Invalid mutate state and merge variables', async () => {
 		const client = FakeTransactionServiceClient();
-		const { exchangeId } = await client.createIssuanceExchange({ retrievalId: 'x' });
+		const { exchangeId } = await client.createIssuanceExchange({
+			retrievalId: 'x',
+			credential: testCredential
+		});
 
 		client.advanceToActive(exchangeId, { didAuthHolderDid: 'did:key:zABC' });
 		expect((await client.getExchange('claim', exchangeId)).state).toBe('active');
@@ -56,7 +73,9 @@ describe('FakeTransactionServiceClient', () => {
 			'did:key:zABC'
 		);
 
-		const other = (await client.createIssuanceExchange({ retrievalId: 'y' })).exchangeId;
+		const other = (
+			await client.createIssuanceExchange({ retrievalId: 'y', credential: testCredential })
+		).exchangeId;
 		client.advanceToInvalid(other, 'expired');
 		expect((await client.getExchange('claim', other)).state).toBe('invalid');
 		expect((await client.getExchange('claim', other)).variables?.invalidReason).toBe('expired');
@@ -72,10 +91,52 @@ describe('FakeTransactionServiceClient', () => {
 		});
 	});
 
+	describe('getProtocols (attach mode)', () => {
+		it('re-reads a claim exchange and returns exactly the protocols its mint returned', async () => {
+			const client = FakeTransactionServiceClient();
+			const minted = await client.createIssuanceExchange({
+				retrievalId: 'x',
+				credential: testCredential
+			});
+
+			const adopted = await client.getProtocols('claim', minted.exchangeId);
+
+			expect(adopted).toEqual(minted);
+		});
+
+		it('re-reads a verify exchange, echoing the requested credential type back into the VPR', async () => {
+			const client = FakeTransactionServiceClient();
+			const minted = await client.createVerificationExchange({
+				vprCredentialType: ['OpenBadgeCredential'],
+				vprContext: ['ctx']
+			});
+
+			const adopted = await client.getProtocols('verify', minted.exchangeId);
+
+			expect(adopted).toEqual(minted);
+		});
+
+		it('throws 404 for unknown ids, and for an id looked up under the wrong workflow', async () => {
+			const client = FakeTransactionServiceClient();
+			const { exchangeId } = await client.createIssuanceExchange({
+				retrievalId: 'x',
+				credential: testCredential
+			});
+
+			await expect(client.getProtocols('claim', 'does-not-exist')).rejects.toMatchObject({
+				status: 404,
+				name: 'TransactionServiceError'
+			});
+			await expect(client.getProtocols('verify', exchangeId)).rejects.toMatchObject({
+				status: 404
+			});
+		});
+	});
+
 	it('clear() empties the store; listExchanges() reflects what is there', async () => {
 		const client = FakeTransactionServiceClient();
-		await client.createIssuanceExchange({ retrievalId: 'a' });
-		await client.createIssuanceExchange({ retrievalId: 'b' });
+		await client.createIssuanceExchange({ retrievalId: 'a', credential: testCredential });
+		await client.createIssuanceExchange({ retrievalId: 'b', credential: testCredential });
 		expect(client.listExchanges()).toHaveLength(2);
 		client.clear();
 		expect(client.listExchanges()).toEqual([]);
@@ -83,7 +144,10 @@ describe('FakeTransactionServiceClient', () => {
 
 	it('returned records are clones — mutating callers does not affect storage', async () => {
 		const client = FakeTransactionServiceClient();
-		const { exchangeId } = await client.createIssuanceExchange({ retrievalId: 'x' });
+		const { exchangeId } = await client.createIssuanceExchange({
+			retrievalId: 'x',
+			credential: testCredential
+		});
 		const record = await client.getExchange('claim', exchangeId);
 		(record.variables as Record<string, unknown>).leak = 'should-not-stick';
 		const re = await client.getExchange('claim', exchangeId);
@@ -166,7 +230,10 @@ describe('FakeTransactionServiceClient', () => {
 
 		it('advanceOid4vciOfferFetched stamps preAuthorizedCode, state stays pending', async () => {
 			const client = FakeTransactionServiceClient();
-			const { exchangeId } = await client.createIssuanceExchange({ retrievalId: 'x' });
+			const { exchangeId } = await client.createIssuanceExchange({
+				retrievalId: 'x',
+				credential: testCredential
+			});
 			client.advanceOid4vciOfferFetched(exchangeId);
 			const ex = await client.getExchange('claim', exchangeId);
 			expect(ex.state).toBe('pending');
@@ -175,7 +242,10 @@ describe('FakeTransactionServiceClient', () => {
 
 		it('advanceOid4vciTokenIssued sets codeUsed + accessToken, persists prior fields, still pending', async () => {
 			const client = FakeTransactionServiceClient();
-			const { exchangeId } = await client.createIssuanceExchange({ retrievalId: 'x' });
+			const { exchangeId } = await client.createIssuanceExchange({
+				retrievalId: 'x',
+				credential: testCredential
+			});
 			client.advanceOid4vciOfferFetched(exchangeId);
 			client.advanceOid4vciTokenIssued(exchangeId);
 			const ex = await client.getExchange('claim', exchangeId);
@@ -188,7 +258,10 @@ describe('FakeTransactionServiceClient', () => {
 
 		it('advanceOid4vciNonceIssued sets cNonce', async () => {
 			const client = FakeTransactionServiceClient();
-			const { exchangeId } = await client.createIssuanceExchange({ retrievalId: 'x' });
+			const { exchangeId } = await client.createIssuanceExchange({
+				retrievalId: 'x',
+				credential: testCredential
+			});
 			client.advanceOid4vciOfferFetched(exchangeId);
 			client.advanceOid4vciTokenIssued(exchangeId);
 			client.advanceOid4vciNonceIssued(exchangeId);
@@ -199,7 +272,10 @@ describe('FakeTransactionServiceClient', () => {
 
 		it('advanceOid4vciComplete flips to complete, merges vars, persists prior oid4vci fields', async () => {
 			const client = FakeTransactionServiceClient();
-			const { exchangeId } = await client.createIssuanceExchange({ retrievalId: 'x' });
+			const { exchangeId } = await client.createIssuanceExchange({
+				retrievalId: 'x',
+				credential: testCredential
+			});
 			client.advanceOid4vciOfferFetched(exchangeId);
 			client.advanceOid4vciTokenIssued(exchangeId);
 			client.advanceOid4vciNonceIssued(exchangeId);
@@ -214,7 +290,10 @@ describe('FakeTransactionServiceClient', () => {
 
 		it('returned oid4vci records remain clones', async () => {
 			const client = FakeTransactionServiceClient();
-			const { exchangeId } = await client.createIssuanceExchange({ retrievalId: 'x' });
+			const { exchangeId } = await client.createIssuanceExchange({
+				retrievalId: 'x',
+				credential: testCredential
+			});
 			client.advanceOid4vciOfferFetched(exchangeId);
 			const ex = await client.getExchange('claim', exchangeId);
 			(ex.variables?.oid4vci as Record<string, unknown>).leak = 'nope';

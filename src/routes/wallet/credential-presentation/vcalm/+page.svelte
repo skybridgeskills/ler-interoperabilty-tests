@@ -1,5 +1,5 @@
-<script lang="ts">
-	import { RunnableWalletPresentationPage } from '$lib/pages/runnable-wallet-presentation/index.js';
-</script>
-
-<RunnableWalletPresentationPage profile="vcalm" />
+<!--
+	Never rendered: `+page.ts`'s load always redirects to
+	`/scenarios/vcalm-wallet-presentation`. A page route still needs a component to
+	compile, so this is an inert stub.
+-->

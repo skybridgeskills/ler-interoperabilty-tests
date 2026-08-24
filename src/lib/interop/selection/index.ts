@@ -1,1 +1,1 @@
-export * from './checklist-selection.js';
+export * from './selection.js';

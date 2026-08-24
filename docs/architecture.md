@@ -10,13 +10,474 @@ codebase evolves.
   variables, then **wrapped per request** in AsyncLocalStorage so any
   server code can access services via thin accessors.
 - **No database.** Day-one services are `LoggerService`, `TimeService`,
-  `IdService`. Domain folders live under
-  `src/lib/server/domain/<feature>/` — today: `wallet-crypto`,
-  `wallet-client`, `issuer-runner`, `wallet-runner`, `exchange-runner`,
-  and `verifier-runner` (the verifier acceptance-pass generator +
-  scorer, plus the OID4VP and VCALM request floors and present-time
-  delivery; see
-  [`adr/2026-07-04-verifier-assessment-model.md`](adr/2026-07-04-verifier-assessment-model.md)).
+  `IdService`. Domain folders live under `src/lib/server/domain/<feature>/` —
+  today:
+  - **`wallet-crypto`** — ephemeral `did:key` pairs, Data Integrity signing and
+    verification for the two cryptosuites.
+  - **`wallet-client`** — the suite's own test wallet, server side: the VCALM and
+    OID4VCI issuer-flow drivers, the OID4VP presentation driver, and the HTTP +
+    TLS primitives they share.
+  - **`exchange-runner`** — the transaction-service client and the config seam.
+  - **`scenario-runner`** — credential recipes, presentation requests, the
+    `resolveIssuingContext` seam, the verifier-core client, and three drivers:
+    `deliverDirect` (signs one recipe with an ephemeral `did:key` issuer for a
+    file the operator hands over), `present` (presents a signed recipe to the
+    operator's verifier over a live exchange) and `receive` (takes delivery of a
+    credential the operator's _own_ issuer produced).
+  - **`verifier-present`** — the shared holder-side present primitives, one leaf
+    per live transport. The OID4 leaf inspects the pasted authorization request
+    for the floor **and** submits the credential in one call, since OID4's floor
+    does not ride on a fetch the way VCALM's does.
+  - **`issuer-receive`** — its mirror image: the shared **recipient**-side intake
+    primitives. The two live leaves add no protocol code; they wrap
+    `wallet-client`'s issuer-flow drivers and project their observations into a
+    client-safe `IssuerFlowSummary`.
+
+  **M13 deleted the four scoring engines** — `issuer-runner`, `wallet-runner`,
+  `verifier-runner` and their API routes — along with the eight runnable page
+  components and `profile.checklists`. Every page family migrated to scenarios
+  (M6, M10/M10a/M10b, M11, M12), which left them scoring nothing reachable. See
+  [`adr/2026-08-19-migrating-a-server-scorer-onto-scenarios.md`](adr/2026-08-19-migrating-a-server-scorer-onto-scenarios.md).
+
+## Scenarios
+
+A **scenario** is the suite's runnable unit: one small, subtle measurement made of
+ordered steps, each with an optional action and its own fine-grained
+requirements. It replaces the combination `(role, workflow, profile)` as the
+thing you run. See
+[`adr/2026-08-13-scenario-as-runnable-unit.md`](adr/2026-08-13-scenario-as-runnable-unit.md).
+
+The model lives in `src/lib/interop/scenarios/` and is **client-safe** — nothing
+in it imports from `src/lib/server/`:
+
+| File                      | What it holds                                                                                               |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `scenario-schema.ts`      | `Scenario`, `ScenarioStep`, `ScenarioAction`, and the opaque `RecipeId` / `RequestId` / `IssuingIntent` ids |
+| `requirement-schema.ts`   | `Requirement`, `RequirementLevel`, `RequirementCheck`, `AttestedAnswer`                                     |
+| `membership.ts`           | `Membership`, `MembershipLevel`, `OneOfGroup`                                                               |
+| `scenario-fingerprint.ts` | `scenarioFingerprint()` — drift detection                                                                   |
+| `catalog-validation.ts`   | `validateCatalog()` / `assertValidCatalog()`                                                                |
+| `accessors.ts`            | `scenarioBySlug`, `scenariosFor`, `membershipsOfProfile` (`scenarioHref` is in `checklist-href.ts`)         |
+| `all-scenarios.ts`        | the registry, validated at module evaluation                                                                |
+
+Four properties are load-bearing:
+
+- **`workflow` is taxonomy only.** It groups the catalog and never constrains
+  what a step's action may do.
+- **`ScenarioAction` is a closed union** (`issue`, `request-presentation`,
+  `deliver-direct`, `present-to-verifier`, `receive-from-issuer`). Extending it is the only escape
+  hatch — a new kind is reviewed once and reusable forever, unlike a bespoke
+  page. `issue` and `request-presentation` mint an exchange through the
+  transaction service; `deliver-direct` mints none — the suite signs the recipe
+  locally (`scenarioRunner.deliverDirect`, optional `tamper`) for the operator to
+  download and hand over; `present-to-verifier` is the inverse of
+  `request-presentation` — the suite is **holder**, presenting a signed recipe to
+  the operator's own verifier over a live exchange the operator drives (they
+  paste the interaction URL / authorization request at run time),
+  `transport: 'vcalm' | 'oid4vp'` — both live (see
+  [`adr/2026-08-20-present-to-verifier-action.md`](adr/2026-08-20-present-to-verifier-action.md));
+  `receive-from-issuer` is the inverse of `issue` — the suite is the
+  **recipient**, taking delivery of a credential the operator's own issuer
+  produced, over `transport: 'direct' | 'vcalm' | 'oid4vci'` (a pasted
+  credential, a VC-API interaction URL, an `openid-credential-offer://` URL, all
+  supplied at run time). Its optional `keyProofSuite` is the cryptosuite the
+  **suite's own** test wallet signs its holder key proof with; it is generated
+  locally, is therefore always servable, and is **not** an `IssuingIntent` —
+  nothing in an issuer scenario pins the deployment's crypto axis, because the
+  suite mints nothing.
+- **The level belongs to the membership, not the scenario.** A scenario carries
+  `memberships[]`, each `required | optional | additive-only | { oneOf }`,
+  exactly one naming a base profile. `additive-only` is what an additive
+  scenario takes in its base profile: the base names it because that protocol is
+  what the scenario runs over, and claims **none** of it, so add-on work never
+  enters a base profile's Essential or Expanded meter. So a profile is a _derived_ set of memberships
+  (`membershipsOfProfile`), not a list stored on the profile.
+  **`{ oneOf }` is dormant as of M15** — no scenario uses it. The seven
+  cross-protocol groups it served were dissolved when add-on badges became
+  per-base-profile; the primitive and its validation rule stay for a future
+  genuinely-alternative obligation. See
+  [the add-on keying ADR](./adr/2026-08-24-add-on-badges-per-base-profile.md).
+- **Drift is derived, never declared.** There is no `version` field;
+  `scenarioFingerprint()` hashes scoring-relevant content (requirement ids,
+  levels, statements, answer kinds, `choose` options and right answers, step
+  actions) and excludes cosmetic fields (`name`, `blurb`, `shuffleLabel`, step `id`/`title`/
+  `summary`), so copy-editing never costs anyone their results.
+
+### Catalog validation
+
+`all-scenarios.ts` calls `assertValidCatalog()` at module evaluation and
+**throws**, naming every violation at once — an invalid catalog is a build-time
+authoring bug, not a runtime condition. `validateCatalog()` is the pure form
+that returns the list. Eight rules:
+
+1. Scenario slugs are unique.
+2. Step ids are unique within a scenario.
+3. Requirement ids are unique within a scenario.
+4. Exactly one membership names a base profile.
+5. **Every member of a `oneOf` group declares the same requirement ids.** A
+   group is one obligation, so the completion denominator must not depend on
+   which alternative the operator ran. Guards a **dormant** primitive since M15
+   — kept because the rule is what makes reintroducing a group safe.
+6. A `choose` answer's `correct` is one of its own option values.
+7. Shuffled steps form a single contiguous run.
+8. **A scenario with any shuffled step declares `shuffleLabel`.** A shuffled
+   step's authored `title` is an answer key ("Offer an expired credential"), so
+   the page never renders it — `shuffleLabel` is the neutral positional noun it
+   renders instead. Without it, the page would have to fall back to the title,
+   which is the leak the field exists to prevent.
+
+### The run engine
+
+`src/lib/interop/scenario-run/` turns a definition plus operator input into a
+completed run. **Headless and pure** — no Svelte, no `localStorage`, no server
+imports, and time and randomness are injected rather than read ambiently, so it
+is deterministic under test. A page drives it; it drives nothing.
+
+| File                     | What it holds                                                   |
+| ------------------------ | --------------------------------------------------------------- |
+| `evidence.ts`            | `StepEvidence` / `RunEvidence` and the accessors a check reads  |
+| `automatic-checks.ts`    | the `AutomaticCheck` type and the id-keyed registry (`checks/`) |
+| `run-state.ts`           | `ScenarioRunState`, the step lifecycle, `startRun`              |
+| `shuffle.ts`             | seeded permutation of contiguous shuffled runs                  |
+| `score-answer.ts`        | attested answer, and automatic check, → `RequirementOutcome`    |
+| `requirement-outcome.ts` | the persisted outcome shape                                     |
+| `roll-up.ts`             | outcomes → `passed \| failed \| incomplete`                     |
+
+Four behaviours are load-bearing, and each has a test asserting it:
+
+- **Automatic requirements resolve the moment a step settles, before any
+  attested question is scored.** They are the wire truth, and showing "delivery
+  completed ✓" while asking "so was it stored?" is the best teaching moment the
+  suite has.
+- **`cant-tell` fails.** "My wallet gave me nothing to judge by" is precisely the
+  legibility failure under test; bucketing it as incomplete would park the
+  commonest real failure mode in limbo and punish the honest answer. So
+  `incomplete` means only "not answered yet".
+- **A failing `SHOULD` is recorded and shown but does not block**; only a failing
+  `MUST` fails the scenario. The unanswered check runs first — a run in progress
+  is not yet a verdict.
+- **A retry is simply `startRun` again**: fresh exchange, fresh fixture, fresh
+  shuffle seed, every requirement answered anew. There is no answer editing and
+  no answer-locking machinery, because re-answering after a reveal tests nothing.
+
+`RunEvidence` is keyed by step id rather than holding only the current step's,
+so a check **can** read a prior step. Nothing shipped crosses steps yet;
+round-trip will, and the shape admits it without a rewrite.
+
+**`StepEvidence` has one slot per fact, never two.** `artifact` is what actually
+moved — the credential issued, the presentation received, the credential the
+operator's issuer delivered — and `transport` is whether it moved at all. The
+live-transport summaries beside them carry only **wire facts**, each a
+client-safe union discriminated on `transport` with one accessor:
+`VerifierRequestSummary` (`verifierRequestForStep`) for what the operator's
+verifier asked for, and `IssuerFlowSummary` (`issuerFlowForStep`) for what their
+issuer's exchange did. That split is what makes the issuer payload checks
+transport-independent: the `credential-*` and `osa-*` families read `artifact`
+and never the summary, so one family of checks serves a paste, a VC-API exchange
+and an OID4VCI offer alike — which is why 58 engine rows collapsed to 33 checks
+in M11. A summary is **plain data**: it is serialised to the browser, so no
+access token, key or server object may enter one.
+
+**`trace` is the one slot that is shown but never scored.** A `WireTrace` is the
+ordered list of requests a step's transport actually made — stage, method, URL,
+status, error, and the response body — projected by the receive/present leaves
+from observations the drivers already keep (OID4VCI's is already
+token-redacted). Three rules make it safe, and each has a test:
+
+- **No `automatic` check may read it.** Every check reads the summaries above,
+  which the leaf computes server-side from the **full** response before the
+  projection runs. `trace-is-not-scored.test.ts` resolves every registered check
+  over the same evidence with and without a loud trace and requires identical
+  verdicts.
+- **Bodies are capped for display** at 8 KB per stage (`server/domain/wire-trace/`),
+  and a truncated stage says so with its original size. Because nothing scores
+  off it, truncating costs detail and never a measurement.
+- **It is never persisted.** `ScenarioRunRecord` holds outcomes only, exactly as
+  the checklist era's `raw` did — a stored run is a list of outcomes, not a
+  packet capture.
+
+A step with no wire (`direct`, a pure question step) has no trace at all; its
+summary and its `artifact` are the evidence.
+
+A check that cannot be resolved (the catalog names an unregistered `checkId`)
+**fails** rather than throwing — authored data should surface an authoring error,
+not collapse a live run. A step that errored outright leaves its automatic
+requirements **unresolved rather than failed**: we did not observe them, and
+recording a failure we did not measure is the dishonesty the whole design avoids.
+
+### The scenario page
+
+`/scenarios/[slug]` is the **one generic route** — `ScenarioPage.svelte` renders
+any catalog scenario, and **there are no bespoke scenario pages, ever**. The
+route (`src/routes/scenarios/[slug]/`) resolves the scenario, parses attach
+params and 404s an unknown slug in `+page.ts`; a `+page.server.ts` resolves
+blocked-ness up front so a scenario this deployment cannot serve renders disabled
+before the operator tries. `ScenarioPage.svelte` is a template over
+`createScenarioRunController` (`scenario-run-controller.svelte.ts`), which owns
+the run's `$state` and drives the engine — the component decides nothing about
+scoring. URL reading stays at the route boundary; the page component takes props,
+so Storybook drives the same component.
+
+- **Step-as-spine.** Each step is a collapsing card
+  (`components/interop/scenario-step/`) with its action rendered inside it —
+  superseding the two-column `RunnableChecklist` layout for scenarios. A live
+  step is expanded; a settled step collapses to a one-line summary and stays
+  reopenable, which keeps a multi-step run short on a phone.
+- **The reveal rule.** A step's setup is always visible and its requirement
+  statements are always visible; only the **expected answer is concealed**, per
+  requirement, until that requirement is answered — then revealed in the
+  verdict-strip treatment. Automatic requirements resolve when the step settles,
+  **before** its attested questions are answerable, so the operator sees what the
+  wire said before being asked what they saw.
+- **Details are step-level.** A live or settled step carries a collapsed
+  `StepDetails` panel showing that step's evidence: the wire trace, the summary
+  the requirements were checked against, and the received credential. It is
+  step-level rather than per-requirement (as the checklist pages were) because
+  checks are pure functions over one step's evidence and there are 40+ of them —
+  a check → slice registry would have to be maintained against every one — and
+  because the issuer scenarios are single-step, so `oid4-issuer-issuance` would
+  otherwise render fifteen identical panels. The panel is on the **live** step
+  too, which is the case it exists for: a delivery miss leaves the step in
+  flight, and that is when an operator needs to see the 500. Miss evidence is
+  held beside the run rather than settled, because settling is what resolves
+  requirements and a miss resolves nothing. A stored run shows no panel.
+- **`can't tell` is always offered** on every attested requirement, is appended
+  by the component (never authored, never omittable), fails, and renders in the
+  warning family — amber, so it is visibly a failure yet distinguishable from a
+  wrong answer.
+- **A run records only when every requirement is answered.** Finish is disabled
+  with a count until then, never hidden. A step whose **harness** fails therefore
+  makes a run **unrecordable** — its automatic requirements stay unresolved — and
+  the page offers only "Start over". Navigating away records nothing.
+- **A terminal exchange is evidence, not a harness failure.** `complete` and
+  `invalid` both settle the step, and the checks decide what the state means: a
+  presentation whose proof did not verify fails `vp-signature-valid` rather than
+  losing the measurement. Only failures of the harness itself — create failed,
+  the poll errored, the window timed out — make a run unrecordable, because only
+  those leave nothing honest to record.
+- **Attach mode** adopts an externally-minted exchange into step 1, and **only
+  for a single-action-step scenario**: in a shuffled scenario step 1 is random,
+  so adopting into it is both meaningless and a leak of which pass the operator
+  is on.
+- **`shuffleLabel` + position** is the only label a shuffled step ever shows; its
+  authored title is an answer key. The label is resolved by the controller, never
+  by the step card, so the leak cannot be reintroduced by a component reading the
+  whole step.
+
+### The proof-of-concept catalog
+
+Two scenarios prove the architecture on `credential-acceptance × oid4`, and they
+are the worked example of authoring one as data — no code, no bespoke page:
+
+- **`oid4-wallet-acceptance`** — the migrated happy path. One `issue` step
+  (`minimal-ob3`, elective), two automatic MUSTs (the exchange completed, the
+  holder proved a DID), one attested MUST the wire cannot see (the credential
+  landed in the list), and a SHOULD characterising what the wallet drew.
+  `/wallet/credential-acceptance/oid4` is a query-preserving `308` redirect to
+  it, so attach links keep working. Its VCALM sibling
+  (`vcalm-wallet-acceptance`) and the two presentation scenarios
+  (`{oid4,vcalm}-wallet-presentation`) redirect the same way.
+- **`oid4-wallet-refusal-discrimination`** — three `shuffle: true` passes (valid
+  control, `ob3-expired`, `minimal-ob3` + `tamper: 'proof'`) that permute
+  together. Every pass carries an **identical** requirement shape — a weak
+  automatic check (the offer was fetched), an attested MUST ("what did your
+  wallet do?"), and an attested legibility SHOULD — so the passes are
+  indistinguishable before answering; only the concealed right answer differs
+  (accept the control, refuse the other two). This is **one measurement, not
+  three**: one scenario, one result.
+
+The tampered pass depends on a transaction service that honours `tamper`; a build
+that silently drops it delivers a valid credential and the discrimination
+measures nothing. See [`docker/README.md`](../docker/README.md).
+
+### The wallet catalog (M12)
+
+Fifteen wallet scenarios, twelve of them M12's. They divide by **who holds the
+key**, which is the distinction the whole family turns on.
+
+- **Acceptance and refusal** — `{oid4,vcalm}-wallet-acceptance`,
+  `{oid4,vcalm}-wallet-refusal-discrimination`, `oid4-wallet-faithful-rendering`.
+- **Presentation** — `{oid4,vcalm}-wallet-presentation`. Here the suite is the
+  **verifier**, which is why this half needed no new `ScenarioAction`, no server
+  leaf and no new evidence slot: the transaction service folds verifier-core's
+  result into `variables.results.default`, and the poll route already returns it.
+  The nine checks are the deleted wallet scorer's own functions, moved.
+- **`data-integrity-cryptosuites`, eight scenarios on two axes.** The
+  **producer** axis (`{oid4,vcalm}-wallet-present-{eddsa,ecdsa}`) is **observed**:
+  the wallet holds the key and nothing in a presentation request can choose a
+  cryptosuite, so the scenario reads the suite off the presentation that arrives.
+  The **consumer** axis (`{oid4,vcalm}-wallet-accept-{eddsa,ecdsa}`) is **pinned**,
+  and is the first place `IssuingIntent` does real work — "can your wallet verify
+  this" cannot be asked by watching, because a wallet that only ever meets EdDSA
+  tells you nothing about ECDSA by accepting one.
+
+All eight DIC scenarios are `additive-only` in their base profile, never
+`optional`. Expanded is cumulative with Essential, so `optional` would quietly
+make "an expanded OID4 wallet" mean "…and supports both cryptosuites".
+
+One cost worth stating: the acceptance-_producer_ rows merged into the
+presentation-producer scenarios, because the wallet's DIDAuth key-proof suite is
+not persisted into the exchange. A wallet that only ever accepts and never
+presents therefore cannot fill the DIC producer obligation.
+
+### The M15 catalog — three axes, fourteen scenarios
+
+M15 took the catalog from 32 to 46 scenarios, closing the two roles the
+cryptosuite axis had never reached and giving the orphaned conduct checks a home.
+
+- **DIC issuer consumer** (4) — `{vcalm,oid4}-issuer-consumer-{eddsa,ecdsa}`.
+  Varies `receive-from-issuer.keyProofSuite` and asks whether the operator's
+  issuer accepts our key proof in each bundle suite. Three checks read
+  `IssuerFlowSummary`: acceptance, then `holderDid`'s `did:key` multibase prefix
+  as a **verify-what-you-got** guard proving which suite we actually used, then
+  `diVpSigningAlgs` as an OID4VCI-only SHOULD. **Live transports only** — a
+  credential pasted out of band carries no key proof to consume.
+- **DIC verifier** (6) — `{ob3-direct,vcalm,oid4}-verifier-{eddsa,ecdsa}`. The
+  role's first additive axis. **Discrimination-shaped**: two shuffled passes, one
+  valid and one whose proof was corrupted after signing, because a verifier that
+  accepts everything passes "does it accept ECDSA" and fails the question worth
+  asking. Two passes rather than the base scenarios' four — the schema and expiry
+  defects are suite-independent, so repeating them per suite doubles the
+  operator's work and measures nothing new. These are the first consumers of the
+  locally-signed `cryptosuite` field (see below).
+- **Conduct** (4) — `oid4-wallet-presentation-{pex,limited}`,
+  `oid4-wallet-discovery`, `oid4-wallet-tamper-refusal`. All `optional` in `oid4`,
+  the first real population of an Expanded tier. They carry the five `*-recorded`
+  checks the exchange-variation effort shipped with no scenario to run them.
+  They are **new siblings, not rows added to shipped scenarios**: an action is
+  inside `scenarioFingerprint`, so adding a conduct field to
+  `oid4-wallet-presentation` would have dropped every stored run of it.
+
+`oid4-wallet-tamper-refusal` deserves its own note. `tamper-recorded` protects
+the refusal-discrimination scenarios — against a deployment predating the tamper
+seam the instruction is stripped, an intact credential is delivered, the operator
+honestly answers "accepted", and a **conformant wallet fails**. But it is an
+_automatic_ row, and automatic outcomes resolve live rather than deferring to the
+end-of-run reveal, so putting it on the tampered pass alone would give that pass a
+visible row the others lack — telling the operator exactly which credential is
+corrupted, which is what the shuffle exists to prevent. So it gets a
+**non-shuffled** home: a deliberately weaker scenario whose value is the
+precondition it establishes for the stronger one.
+
+### Pinned issuing, and the tenant map
+
+**Only `issue` is tenant-bound.** It is the one action the transaction service
+mints, so it is the one action whose crypto axis a deployment can fail to serve.
+`deliver-direct` and `present-to-verifier` sign locally with `wallet-crypto`,
+which serves both bundle suites unconditionally, so they carry a plain
+`LocallySignedSuite` and are **never blocked** — `receive-from-issuer.keyProofSuite`
+had already stated this for itself and now shares the type. Until M15 P2 both
+resolved through the tenant map, which meant a locally-signed ECDSA hand-off
+would have rendered disabled on a deployment that could serve it perfectly well;
+nothing exercised it, which is why it survived. The distinction is not _whether_
+something is minted but _who mints it_. See
+[the tenant-binding ADR](./adr/2026-08-24-only-issue-is-tenant-bound.md).
+
+A scenario pins its issuing crypto with an optional `IssuingIntent`
+(`{ cryptosuite, didMethod }`) on an `issue` action. **Absent means elective** —
+the transaction service already ranks its issuer instances against the suites the
+wallet advertised — and present means pinned.
+
+**Pinning can only be a tenant swap.** That service picks its issuer instance at
+_claim_ time from the wallet's advertised suites, so no field on the create
+request can request a cryptosuite; the only lever is minting under a tenant whose
+instances offer the one you want. `resolveIssuingContext` makes that choice from a
+deployment's configured tenant map and the create route carries it **in the Bearer
+token**, so the tenant never appears in a URL.
+
+A pin this deployment cannot serve returns a typed `CannotServe`, which renders
+the scenario **disabled with its reason on all four surfaces** — homepage, profile
+page, scenario page and badge page — while **keeping its requirements in the
+completion denominator**. Blocked-ness buys legibility, not arithmetic: a
+shrinking denominator would let two deployments issue badges that look identical
+and mean different things. See
+[the tenant-map ADR](./adr/2026-08-22-pinned-issuing-through-a-tenant-map.md), and
+[`docker/README.md`](../docker/README.md) for configuring the tenants themselves.
+
+### The completion group
+
+A **completion group** is how a `(profile, role)` **bundle** is read: a heading
+with a meter and its scenario rows, with **workflow as a sub-heading inside** the
+group — never the top-level grouping, so "how close am I to the OID4 Wallet
+badge?" is answerable at a glance rather than spread across three headings. It
+renders in two places: the homepage (replacing the flat workflow list) and each
+profile detail page (one group per role, scoped to that profile).
+
+A base profile-role reads as up to **three kinds of category**, in this order:
+
+1. **Essential interoperability** — the profile's `required` scenarios → the
+   Essential badge, e.g. _OID4 Wallet Essentials_.
+2. **Expanded interoperability** — the _same_ profile's `optional` scenarios.
+   Together with Essential these form the **Expanded** tier → the Expanded badge.
+   Expanded is **cumulative**: its meter counts Essential ∪ Expanded, so it spans
+   two body sections. That is why **every category heading carries its own count**
+   — `8/13 + 0/4 = 8/17` has to be a sum the reader can do from the rows on
+   screen, or a cumulative meter is unauditable. An Expanded badge is registered
+   **only where the optional set is non-empty** (today `oid4:wallet` alone); over
+   an empty tier it would be claimable the instant Essential was.
+3. **Add-ons** — one section per selected additive profile that reaches this
+   `(profile, role)`, counted toward **neither** base tier. An additive layers work
+   many implementers will never want; a denominator they cannot opt out of would
+   put Expanded beyond their reach. The section shows a **slice** —
+   `evaluateAdditiveSlice`, this base profile's share of the additive — and since
+   M15 that slice **is** the add-on badge's key, so the fraction the card renders
+   is the fraction its own badge scores. The card carries no claim control;
+   claiming happens on the additive's own page, which renders **one card per
+   `(base profile, role)`**, each with its own control.
+
+Tier colour is cued on the dot, label and rule (Essential = primary, Expanded =
+accent, add-on = `additive`), never on the bar: meter **fill** stays
+semantic everywhere (green full, warm partial). Add-ons used to render in the warm
+`live` flame; that reserve is for "talking to a real service right now", and an
+additive profile is a requirement _layer_, not a runtime state — so they moved to
+the cool `additive` family, which also clears AA where `text-live` did not. See
+[the additive-layer colour ADR](./adr/2026-08-21-additive-requirement-layer-colour.md). A group with no expanded set and no
+selected add-on renders as one meter and one flat list, exactly as before.
+
+The level that makes category 3 possible is **`additive-only`**: a base membership
+that names the delivery protocol a scenario runs over while placing it in neither
+of that profile's tiers. See
+[the badge award model ADR](./adr/2026-08-18-badge-award-model.md) § Amendment
+2026-08-21, and
+[the add-on keying ADR](./adr/2026-08-24-add-on-badges-per-base-profile.md) for
+why the slice became the key.
+
+Every number the group shows comes from M4's `evaluateCompletion` in
+`src/lib/interop/completion/` — the widget **computes nothing**:
+
+- **The unit is the requirement, not the scenario.** A row reads
+  `4/5 requirements met`, so the meter visibly adds up from its own rows; a
+  scenario with a failing SHOULD is not flattened to a bare ✗.
+- **A `oneOf` group renders as one obligation** — "any one of" siblings that
+  each stay runnable but stop gating once one passes. Dormant since M15; the
+  rendering path is kept alongside the primitive.
+- **`optional` memberships render in the Expanded section**, never folded into the
+  Essential meter — including them would mean Essential could never fill. They
+  _are_ counted by the cumulative Expanded meter above them.
+- **`additive-only` memberships are not the base profile's work at all** and
+  appear in neither Essential nor Expanded — only in the add-on's own section.
+- **A blocked scenario renders disabled with its `CannotServe` reason and still
+  counts in the denominator** — the badge is blocked, not made easier.
+- **Each tier's meter fills exactly when _its_ badge is claimable.** A tier's
+  meter fill and its `[Claim …]` control read the same predicate, so a header
+  cannot lie. Each control links to its own `/badges/[slug]` — Essential via
+  `essentialBadgeFor`, Expanded via `expandedBadgeFor`, add-on via
+  `addOnBadgeFor(additive, baseProfile, role)`. **An add-on is additionally gated
+  on core**: `isAddOnClaimable(addOn, core)` needs both meters full, and
+  `addOnClaimBlocker` distinguishes `'unfinished'` (the add-on's own work) from
+  `'core'` (the Essential badge underneath), because those are different things
+  for a reader to fix. A blocked-on-core control is a deliberate state, not a
+  dead one. Once claimed, each tier shows its own _"Claimed 3 Aug against N
+  requirements · k new since"_ line (see **§ Badges**).
+
+Run records are browser-only (`localStorage`), so both surfaces hydrate them in
+`onMount` and render a zeroed meter during SSR. There is deliberately **no
+separate `/scenarios` index**: the homepage is the catalog.
+
+The homepage used to carry a **"Not yet migrated"** section listing the
+`(role, workflow, profile)` combinations no scenario covered yet. It counted
+toward no meter and shrank with each migration; M12 emptied it and M13 deleted
+it along with the combinations themselves.
 
 ## Provider dependency injection
 
@@ -94,6 +555,143 @@ returns the package + git info from `appVersion()`. A third endpoint,
 `health-snapshot` structured log for Loki/Grafana (see
 `src/lib/server/health/`).
 
+## Exchange runner — minting, and attach mode
+
+A scenario step whose action is `issue` or `request-presentation` drives a real
+exchange against the DCC transaction service. There are two ways in, and the
+read path is identical afterwards.
+
+(The four `/wallet/credential-{acceptance,presentation}/{vcalm,oid4}` routes used
+to be where this happened. They are now query-preserving `308` redirects to their
+scenarios — **redirect iff the route carries documented attach links** is the rule
+the whole migration followed, which is why the verifier and issuer routes, which
+carried none, were deleted outright instead. M13 deleted the legacy page
+components and the engine behind them.)
+
+**Mint** (the default). The page `POST`s **a scenario action** to
+`/api/exchange-runner/create`, takes the one protocol link its profile speaks
+(`iu`, `OID4VCI`, or `OID4VP`), renders the QR, and polls
+`GET /api/exchange-runner/[exchangeId]?stepCount&workflow` every 2s until the
+exchange settles.
+
+The body is `{ kind: 'issue', credential, tamper?, intent?, exchangeIdPrefix? }`
+or
+`{ kind: 'request-presentation', request, queryLanguage?, limitDisclosure?, advertiseCryptosuites? }`. (`deliver-direct` and
+`present-to-verifier` mint no suite exchange and never reach here — the first
+signs a file locally, the second joins an exchange the operator's verifier
+hosts, each via its own `scenario-runner` route.) There is no default action: an
+unrecognised body is a 400, as is an id no registry knows or an intent this
+deployment cannot serve.
+
+### What a scenario may vary, and where it comes from
+
+`src/lib/server/domain/scenario-runner/` holds the id-keyed registries the
+catalog reaches into. Scenarios stay client-safe data; the documents and
+tenancy live here.
+
+- **`credential-recipes.ts`** (+ `recipes/`) — `RecipeId` → an unsigned OB3
+  document. The claim workflow's template is `{{{vc}}}`, a Handlebars
+  **triple-stache**, so the document a recipe builds _is_ the credential. The
+  services overwrite only `credentialSubject.id`, `credentialStatus`,
+  `issuer.id` and `proof`; everything else — dates, achievement content,
+  `image`, `alignment`, arbitrary extra fields — is the recipe's. Expiry and
+  not-yet-valid therefore cost nothing. A recipe **must not hardcode the
+  credential `id`**: the status service's allocate is idempotency-guarded per
+  credential id, so the route mints a fresh one per exchange.
+- **`presentation-requests.ts`** (+ `requests/`) — `RequestId` → the
+  `vprCredentialType` / `vprContext` / `vprClaims` / `trustedIssuers` a verify
+  exchange is minted with. **The payload only** — how the asking is _conducted_
+  lives on the action; see below.
+- **`resolve-issuing-context.ts`** — the seam between a scenario's
+  `IssuingIntent` and what the deployment can actually serve. **Absent intent
+  means elective** (the transaction service already ranks issuer instances by
+  the wallet's advertised suites); present means pinned. An unservable pin
+  returns a typed `CannotServe`, which the route surfaces as a 400 and the UI
+  renders as a disabled scenario — **still counted in the completion
+  denominator**, so the badge is blocked rather than quietly made easier.
+
+Two variables are worth calling out on the wire. **`tamper`** (`'proof'` or
+`'claim'`) corrupts the credential _after_ signing and before delivery, which is
+the only way to get a proof and payload that genuinely disagree.
+**`exchangeIdPrefix`** is a **sibling of `variables`, not a member of it** — it
+rides into the minted `exchangeId` and so appears in the exchange journal, which
+outlives the exchange itself (`EXCHANGE_TTL`).
+
+**Where a variation is named: the registry holds the payload, the action holds
+the conduct.** `RecipeId` and `RequestId` say _what_ is issued or asked for,
+opaque behind a server-side registry; everything describing _how the exchange is
+conducted_ lives on the action. That rule already explained `tamper`, `intent`,
+`transport` and `keyProofSuite`, and it places the three verify variations:
+`request-presentation` carries `queryLanguage` (`'dcql' | 'pex'`),
+`limitDisclosure` (`'required' | 'preferred'`, the DIF PE constraint) and
+`advertiseCryptosuites` (extra suite names unioned into the advertised
+`cryptosuite_values`, to coax a wallet into deriving a selective-disclosure proof
+so it can be observed). `verificationExchangeBody` maps them onto the transaction
+service's own wire names — `oid4vpQueryLanguage`, `vprLimitDisclosure`,
+`vprAdvertiseCryptosuites` — and **spreads them conditionally, never as an
+explicit `undefined`**, because presence in the stored `exchange.variables` is
+exactly what the `*-recorded` automatic checks read.
+
+The rule is load-bearing rather than tidy: `limitDisclosure` is meaningless
+without `queryLanguage: 'pex'`, and a catalog rule can only enforce that because
+both halves are in one place. Split across the action and the registry, nothing
+would see both. See
+[`adr/2026-08-22-payload-in-the-registry-conduct-on-the-action.md`](adr/2026-08-22-payload-in-the-registry-conduct-on-the-action.md).
+
+Three axes are **wallet-borne**: the service serves every option and the wallet's
+choice _is_ the measurement. Metadata discovery is one — the transaction service
+answers both well-known constructions and discriminates on neither, recording
+each election on the exchange as `discoveryElections`, which
+`discovery-construction-rfc8414` scores as a SHOULD.
+
+Cryptosuite and DID method are **deployment configuration**, not request
+variables: they ride the tenant (`TENANT_CRYPTOSUITE_<T>` on the signing
+service, and `did:web` when `TENANT_DID_URL_<T>` is set). This suite holds one
+tenant, so `resolveIssuingContext` answers from
+`TRANSACTION_SERVICE_TENANT_CRYPTOSUITE` / `_DID_METHOD`. When a
+`(cryptosuite, didMethod) → tenant` map or a transaction-service API takes over,
+**only that function changes — no scenario is touched.**
+
+**Attach** (`?exchangeId=…&workflow=claim|verify`). The exchange was minted
+_outside_ the suite — by an interop-probe CLI, or another harness — and the page
+adopts it by id:
+
+- `+page.ts` parses the query (`client/exchange-runner/attach-params.ts`) and
+  passes `attachExchangeId` / `attachWorkflow` in as props. **URL reading stays
+  at the route boundary**: the page components are also driven by Storybook
+  stories, so they stay parameterised rather than location-aware.
+- On mount, `attachExchange()` (`client/exchange-runner/attach-exchange.ts`)
+  `GET`s `/api/exchange-runner/[exchangeId]/protocols?workflow=…`, which returns
+  the same `{ exchangeId, protocols, workflowId }` body `create` does. The page
+  then sets `interactionUrl`, goes to `awaiting-wallet` and polls exactly as a
+  minted run does.
+- **Attach offers no path to minting.** No `onInitiate`, no `onRetry` (it would
+  mint) and no `onReset` (its only exit is minting) reach
+  `ExchangeRunnerPanel`; with no `onInitiate` the panel replaces its idle CTA
+  with an explanation instead of rendering a control that cannot work.
+- Attach renders **observations, not verdicts** — the per-step display and the
+  run record are unchanged, and `deriveRunStateFromExchange` maps steps
+  positionally, so a probe whose step shape differs from the checklist's will
+  show approximate per-step states.
+
+The adopt endpoint is a separate route from the poll endpoint on purpose: the
+poller ticks every 2s and does not need protocols, which never change. It
+mirrors the poll route's disabled-hint, workflow parsing and error mapping, so
+the runner API keeps one error vocabulary.
+
+`getProtocols` sits on the `TransactionServiceClient` interface beside
+`createIssuanceExchange` / `createVerificationExchange` / `getExchange`, and is
+implemented by both the real HTTP client and the in-memory fake. Note the wire
+asymmetry it absorbs: the transaction service's `POST …/exchanges` returns the
+protocols object bare, while `GET …/protocols` wraps it in `{ protocols }`.
+Callers see the one shape.
+
+> **During a probe sitting, `TRANSACTION_SERVICE_URL` must point at the service
+> that actually minted the exchange** — with `pnpm dev:services:local` that is
+> the composed branch build; with `pnpm dev:services` it is the pinned image,
+> which mints none of the harness fields. See
+> [`docker/README.md`](../docker/README.md#attach-mode-and-probe-sittings).
+
 ## Theme system
 
 Lives in `src/routes/layout.css`:
@@ -118,62 +716,196 @@ on subsequent navigations and OS-preference changes.
 
 ## Client-side persistence
 
-The homepage console keeps two pieces of state in `localStorage`, isolated
-under `src/lib/client/`:
+The app keeps two pieces of state in `localStorage`, isolated under
+`src/lib/client/`:
 
 - **Selection** (`client/selection/selection-store.svelte.ts`) — the user's
   chosen roles/profiles, key `lits.selection.v1`. A Svelte 5 runes store;
   hydrate from a browser `onMount` only (never during SSR). Unknown slugs are
   validated away on read via `RoleSlug`/`ProfileSlug` schemas.
-- **Run history** (`client/run-history/run-history-store.ts`) — the latest 3
-  `TestRunRecord`s per `(role, workflow, profile)` combination, key
-  `lits.run-history.v2`. Pure model + status derivation live in
-  `interop/run-history/`; only the store touches `localStorage`. Reads
-  `safeParse` every entry and drop malformed ones — never throw to the UI.
+- **Scenario runs** (`client/scenario-runs/scenario-run-store.ts`) — one
+  `ScenarioRunRecord` per scenario, key `lits.scenario-runs.v1`. The pure model
+  lives in `interop/scenario-run/`; only the store touches `localStorage`. It
+  `safeParse`s every entry and drops malformed ones — never throws to the UI.
+- **Badge claims** (`client/badges/badge-claim-store.ts`) — an array of
+  `BadgeClaimSnapshot`, key `lits.badges.v1`. The pure model lives in
+  `interop/badges/`. Its drift rule is the **inverse** of the run store's: a
+  snapshot **never drops**. A run record is a claim about the _current_
+  definition and reverts to "not run" on drift; a claim snapshot is a
+  _historical fact_ — the badge was claimed — and must survive the catalog moving
+  on, or _"k new since"_ could not be said. Writes are idempotent on
+  `(badgeSlug, claimedAt)`. Both stores feed M9's `{ results, badges }` export
+  bundle verbatim — `results` from the run store, `badges` from this one.
 
-The run record is a **flat, id-keyed v2 shape** (see the ADR below), not a
-discriminated `payload` union:
+The record is a flat map keyed by scenario slug, **not** an array per bucket:
 
 ```
-{ id, role, workflow, profile, ranAt, status,
-  checklistFingerprint,
-  statuses: Record<requirementId, RequirementStatus>,
-  error?, pinned? }
+{ scenarioSlug, ranAt, fingerprint, status, outcomes, attempts }
 ```
 
-`id` (`crypto.randomUUID()`) and `ranAt` (ISO string) default in the factory.
-`status` is `passed | failed | incomplete`. `statuses` holds the
-presentation-ready per-requirement rows keyed by requirement id — the persisted
-`RequirementStatus` (`{ tone, label, message?, attested? }`) deliberately omits
-the live-only `raw` debug body (the in-memory `RequirementStatusView` adds it
-back). `checklistFingerprint` is an order-independent djb2 hash over the
-combined checklist's `id␟level␟text` rows (base + additives), used only for
-equality-based drift detection.
+**One result per scenario — the latest — plus an `attempts` counter.** Nothing
+in the UI wants more. Holding history costs one schema bump (the value type
+becomes an array; the record travels unchanged), which is priced as affordable
+and deliberately not pre-built. `recordScenarioRun` owns the increment, so no
+call site can get the count wrong.
 
-The selection key stays `.v1`; run history bumped to `.v2` and **abandons** the
-old v1 store rather than migrating it (v1 records lacked per-row statuses and a
-fingerprint, so rendering them as reports would fabricate data). The store never
-reads `.v1` and clears it on first write (`LEGACY_STORAGE_KEY`). Retention is
-per-combination and isolated in `applyRetention()` (cap 3), shaped to later
-preserve a `pinned` flag (reserved on `TestRunRecord`, unset in MVP) without an
-API change. `runById(id)` scans the buckets to resolve a single run for the
-reopen route. See
-[`docs/adr/2026-07-11-run-history-v2-flat-record.md`](adr/2026-07-11-run-history-v2-flat-record.md)
-(supersedes [`2026-06-10-run-history-local-persistence.md`](adr/2026-06-10-run-history-local-persistence.md)).
+Each entry of `outcomes` carries the raw answer, the **expected** answer, the
+derived status and the `automated | attested` source. Denormalising the expected
+answer is what lets a stored run render its reveal without the live definition.
 
-### Reopening a run — the view-only `/runs/[id]` route
+**Drift drops the record.** On read, each record's `fingerprint` is compared
+against the live scenario's; a mismatch — or a slug the catalog no longer holds
+— means the record is silently discarded and the row reverts to "not run". There
+is no `outdated` state to render. This is also what lets an export bundle carry
+no scenario definitions: records from a catalog that has moved on just drop.
 
-`src/routes/runs/[id]/` renders a saved run as a shareable, print-to-PDF report.
-It is **client-only** (`prerender = false`, `ssr = false`) — the record lives in
-`localStorage`, whose id is unknown at build time. After mount it resolves the
-record via `runById(id)`, re-derives the live combined checklist through
-`interop/accessors` (`combinationFor` + `additiveChecklistsForCombination`), and
-runs a strict `checklistFingerprint` drift check
-(`reopenStateFor` → `not-found | outdated | render`). An **outdated** run (the
-checklist drifted since the run) is blocked and prompts a re-run — never
-migrated or partially reconciled. A **current** run repaints the display-only
-`RunnableChecklist` (fed the persisted `statuses` map) plus a `RunHistorySummary`,
-and prints via the browser's own print dialog (`window.print()`).
+`lits.run-history.v2` and `.v1` are **removed on first write and never read**.
+There is no migration: those runs were keyed by a combination that is no longer
+runnable, their `statuses` used a deleted requirement vocabulary, and their
+fingerprint hashed a per-profile requirement list that no longer exists. See
+[`docs/adr/2026-08-13-scenario-run-record-and-completion.md`](adr/2026-08-13-scenario-run-record-and-completion.md)
+(supersedes [`2026-07-11-run-history-v2-flat-record.md`](adr/2026-07-11-run-history-v2-flat-record.md)).
+
+### The export / import bundle
+
+Durability without a server: results survive a cleared browser, move between
+machines, and — later — become the seam an agent drives this suite through.
+
+The bundle is **the two stores verbatim in a thin envelope**, downloaded as
+pretty-printed JSON:
+
+```
+{ format: 'lits.scenario-results', version: 1, exportedAt,
+  results: { [scenarioSlug]: ScenarioRunRecord },   // the run store's map
+  badges: [ BadgeClaimSnapshot ] }                   // the badge store's array
+```
+
+`results` is exactly the run store's map and `badges` exactly the badge store's
+array — **no transformation either way**. Keeping it byte-identical is what
+keeps the deferred agent surface open; a bundle that reshaped a store would have
+to be re-derived every time that store changed. No scenario definitions ride
+along — the `fingerprint` in each record is the link back to the live catalog.
+
+`ResultBundle`, `buildBundle`, `applyBundle`, and `parseBundle` are **pure** and
+live in `interop/scenario-run/bundle.ts`. The one browser-API part —
+`Blob`/`URL` download and file read — is `client/scenario-runs/bundle-io.ts`,
+which reads and writes the two stores through their own APIs (it never touches
+`localStorage` directly).
+
+**Import is per-scenario replacement, incoming copy wins.** Scenarios absent from
+the bundle are untouched; predictability beats cleverness and it needs no
+conflict UI. Incoming records pass through the **same drift rule a read applies**
+(`liveRunRecords`, shared with the run store — one code path, not two), so a
+drifted, unknown-slug, or malformed record simply drops. **Badges merge
+additively** and deduplicate on `(badgeSlug, claimedAt)`: a claim is a historical
+fact, so importing never erases one the local store already holds. A wrong
+`format` or `version` is reported as a clear error rather than silently doing
+nothing.
+
+### Completion and the meter
+
+`src/lib/interop/completion/` turns stored runs into the numbers the meter
+renders, for one `(profile, role)` set. Pure — it takes the runs and returns
+arithmetic.
+
+**The governing rule: the meter fills exactly when the badge becomes claimable.**
+They share a header, so `isClaimable()` is the single predicate both use; the
+meter never re-derives `met === total` on its own.
+
+Five rules, each with a test:
+
+1. **The unit is the requirement, not the scenario** — a row reads
+   `4/5 requirements met`, so the meter visibly adds up from its own rows, and a
+   scenario with four passes and one failing SHOULD is not flattened to a ✗.
+2. **A `oneOf` group is one obligation.** Members declare identical requirement
+   ids (catalog rule 5), so the group contributes that set once and stops gating
+   as soon as one member passes.
+3. **`optional` memberships are excluded from the base meter** and get their own
+   sub-meter. Including them would mean the base could never fill.
+4. **A blocked obligation does not shrink the denominator.** When
+   `resolveIssuingContext` reports the deployment cannot serve a pinned pair,
+   those requirements stay in `total` and contribute nothing to `met` — the
+   badge is blocked, because a shrinking denominator would let two deployments
+   issue badges that look identical and mean different things.
+5. **Only a `pass` outcome is met.** A failing SHOULD is therefore unmet here
+   while still not failing its scenario; both numbers come from the same
+   outcome map and answer different questions.
+
+## Badges
+
+A **badge** turns one tier of a `(profile, role)` bundle into a claimable Open
+Badges 3.0 recognition credential. The full rationale is
+[`docs/adr/2026-08-18-badge-award-model.md`](adr/2026-08-18-badge-award-model.md)
+(with the M14 tier-keying amendment); the shape of it:
+
+- **The domain is pure and client-safe** (`interop/badges/`): a `BadgeDefinition`
+  whose `tier` decides _which sub-set_ of a `(profile, role)` it scores —
+  `essential` the `required` floor, `expanded` the same base profile's `optional`
+  set, `add-on` **one base profile's slice** of an additive. `scenariosBehindBadge`
+  is the one seam that applies this filter; the fingerprint, the
+  `BadgeClaimSnapshot`, the `newSince` diff, and the criteria page all read through
+  it, so an Essential badge and an Expanded badge for one `(profile, role)` are two
+  different sets. The Essential badge never changes meaning when the Expanded set
+  grows.
+- **An add-on badge is keyed `(additive, base profile, role)`**, so its arm of
+  `BadgeDefinition` carries **both** profiles. _DIC VCALM Wallet_ and _DIC OID4
+  Wallet_ are different badges over disjoint sets, each naming its protocol in its
+  own copy — a wallet that never touched OID4 should not hold a credential that
+  declines to say so. Add-ons are **gated on core**. The registry holds **20**
+  definitions in `badge-definitions.ts` (8 Essential, 1 Expanded, 11 add-on),
+  derived from the catalog with hand-written copy; a test walks every renderable
+  group and fails on any without a badge, which is what stops the registry falling
+  behind the catalog the way it did between M8 and M15. See
+  [the add-on keying ADR](./adr/2026-08-24-add-on-badges-per-base-profile.md).
+- **The credential is a plain OB3** built server-side in
+  `server/domain/badges/badge-recipe.ts` — a module apart from the test recipes,
+  importing nothing from `scenario-runner/recipes/` and imported by nothing
+  there. It mirrors `minimal-ob3`'s OB3-required fields (a top-level `description`
+  and `Achievement.description`) — a badge missing them is refused by conformant
+  OID4 wallets. No `evidence`, validity window, status list, revocation, or image.
+  The `issuer` is an _object_ carrying a `did:key:placeholder` id the signing
+  service **overwrites** from the tenant seed (it replaces the value rather than
+  injecting one, so the placeholder must exist); the recipe never names the real
+  issuer, so the app stays issuer-agnostic.
+- **The version rides on `criteria.id`, not `achievement.id`.**
+  `achievement.id = <BADGE_ROOT_URL>/badges/<slug>` is stable;
+  `criteria.id = …?v=<fingerprint>`. The fingerprint composes the per-scenario
+  `scenarioFingerprint`s through the same djb2 hash — the badge `?v=` and the
+  scenario drift check are one mechanism. A stale `?v=` link renders the current
+  criteria under a plain "older version" note; no historical definitions are
+  stored.
+- **Claiming reuses the M2 mint seam but is not a scenario.** A dedicated
+  `POST /api/badges/[slug]/claim` builds the per-award doc and calls
+  `resolveIssuingContext` + `createIssuanceExchange`; the create route and the
+  test-recipe registry are untouched. The client driver (`pages/badge/`) drives
+  it with `pollExchange(..., { stepCount: 1, workflow: 'claim' })`, records **no**
+  `ScenarioRunRecord`, and on delivery persists a snapshot. A failed claim is a
+  retry, not a test finding — the receiving wallet is not the system under test.
+- **`/badges/[slug]` serves three jobs from one route.** Jobs 1–2 — the
+  stranger's criteria page and the `?v=` mismatch warning — are server-rendered
+  from the definition alone (SSR-correct, no `localStorage`). Job 3 — the claim
+  affordance and the claimed state — is a client overlay gated on the single
+  `isClaimable()` predicate; a stranger never sees it.
+- **A claimed badge never un-earns.** The `lits.badges.v1` snapshot (see
+  **§ Client-side persistence**) drives _"Claimed 3 Aug against N requirements ·
+  k new since"_ on both the badge page and the completion group. "k new since" is
+  a **membership** diff — requirements added to the set since the claim — not a
+  fingerprint compare, so a requirement that changed shape but kept its id is not
+  counted.
+
+**`did:web` is deployment configuration.** M8 validates on the dev `did:key`
+tenant; the root-domain `did:web` issuer is a tracked ops task (set
+`TENANT_DID_URL_<TENANT>` on the signing service), and `BADGE_ROOT_URL` names the
+public origin the badge ids resolve to. This repo serves no DID document. Until
+`did:web` is hosted, badges issue from the tenant's `did:key`, which is correct
+for dev. See `.env.example`.
+
+This is also why the **authoring convention** matters: a newly-registered
+scenario should join a profile as `optional` and be promoted to `required` only
+at a deliberate catalog moment (documented in `interop/scenarios/all-scenarios.ts`).
+A routine addition silently raising a badge's bar would make an earlier claim
+read as incomplete; the convention keeps a claimed badge honest as the catalog
+grows.
 
 ## Test harness
 

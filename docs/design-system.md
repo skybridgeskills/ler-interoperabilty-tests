@@ -25,11 +25,15 @@ Tailwind utilities (`bg-background`, `text-foreground`, etc.).
 | `--muted-foreground`   | `hsl(232 10% 35%)`        |
 | `--accent`             | `hsl(261 60% 55%)`        |
 | `--warning`            | `hsl(35 75% 40%)`         |
+| `--warning-soft`       | `hsl(35 75% 92%)`         |
+| `--warning-border`     | `hsl(35 58% 62%)`         |
 | `--destructive`        | `hsl(350 70% 45%)`        |
 | `--live`               | `hsl(20 92% 48%)`         |
 | `--live-soft`          | `hsl(20 90% 92%)`         |
 | `--requirement`        | `hsl(217 87% 45%)`        |
 | `--requirement-soft`   | `hsl(217 80% 92%)`        |
+| `--additive`           | `hsl(188 72% 28%)`        |
+| `--additive-soft`      | `hsl(188 55% 90%)`        |
 | `--result-pass`        | `hsl(142 60% 33%)`        |
 | `--result-pass-soft`   | `hsl(142 48% 90%)`        |
 | `--result-fail`        | `var(--destructive)`      |
@@ -54,11 +58,15 @@ Tailwind utilities (`bg-background`, `text-foreground`, etc.).
 | `--muted-foreground`   | `hsl(229 28% 70%)` |
 | `--accent`             | `hsl(261 84% 78%)` |
 | `--warning`            | `hsl(35 65% 64%)`  |
+| `--warning-soft`       | `hsl(35 35% 20%)`  |
+| `--warning-border`     | `hsl(35 48% 45%)`  |
 | `--destructive`        | `hsl(350 89% 71%)` |
 | `--live`               | `hsl(22 95% 64%)`  |
 | `--live-soft`          | `hsl(20 50% 18%)`  |
 | `--requirement`        | `hsl(217 87% 73%)` |
 | `--requirement-soft`   | `hsl(217 42% 22%)` |
+| `--additive`           | `hsl(188 62% 66%)` |
+| `--additive-soft`      | `hsl(188 32% 18%)` |
 | `--result-pass`        | `hsl(142 52% 62%)` |
 | `--result-pass-soft`   | `hsl(142 28% 18%)` |
 | `--result-fail-soft`   | `hsl(350 38% 22%)` |
@@ -73,6 +81,12 @@ on a runner page, the QR code surface, exchange-status indicators,
 delivered-credential summaries. The rest of the app stays cool — reserve
 warm hues for surfaces and elements that are talking to a real service
 right now.
+
+The completion group's **add-on sections used to bend this rule**, and no
+longer do: they render in the cool [`additive`](#additive--the-add-on-requirement-layer)
+family as of 2026-08-21. An additive profile is a requirement layer, not a
+runtime state. The reserve rule now holds without exceptions — do not
+reintroduce one. (See [ADR 2026-08-21](adr/2026-08-21-additive-requirement-layer-colour.md).)
 
 | Class                  | Where to use                                               |
 | ---------------------- | ---------------------------------------------------------- |
@@ -89,7 +103,7 @@ both light and dark.
 
 The `requirement` family renders RFC 2119 conformance levels
 (MUST / SHOULD / MAY) in cool blue. Red stays reserved for actual run
-failures, so a checklist of requirements never reads as a wall of errors.
+failures, so a list of requirements never reads as a wall of errors.
 All three levels use the single `requirement` Badge variant; intensity
 encodes the level.
 
@@ -106,17 +120,36 @@ encodes the level.
 | `text-requirement`          | Requirement label text on soft/outline chips.      |
 | `border-requirement-border` | Edge of soft/outline requirement chips.            |
 
+### Additive — the add-on requirement layer
+
+The `additive` family (cyan-teal, h188) renders the **add-on requirement
+layer**: the Add-ons sections of a completion card, and the Add-ons dimension
+of the homepage filter bar. Named for the domain term (`AdditiveProfile`), not
+for the UI label "Add-ons".
+
+| Class                      | Where to use                                                    |
+| -------------------------- | --------------------------------------------------------------- |
+| `text-additive`            | Add-on tier labels, the filter bar's Add-ons trigger + heading. |
+| `bg-additive`              | Solid add-on chips (a selected card's check pip).               |
+| `text-additive-foreground` | Foreground on `bg-additive`.                                    |
+| `bg-additive-soft`         | Soft add-on surfaces — selected cards, the panel header band.   |
+| `border-additive-border`   | Edge of soft add-on surfaces, and the add-on tier's left rule.  |
+
+Measured **4.93:1** light and **8.42:1** dark as text on `popover` — the bar
+the warm flame failed (2.96:1 in light), and the reason the add-on layer got a
+token of its own rather than continuing to borrow `live`.
+
 ### Success, run result + progress
 
 `success` is the green "done / good" family. It marks anything completed
-and successful: a **completed checklist step** (the `StepRunStateIndicator`
-`complete` state and the "Run complete" banner read prominently green) and a
-**passed run** (`result-pass` aliases `success`). Green is reserved for
-_finished success_ — the warm `progress`/`live` flame stays for _in-flight_
-work, so a filling checklist and a finished one are never confused.
+and successful: a **completed step** (the `complete` state and the "Run
+complete" banner read prominently green) and a **passed run** (`result-pass`
+aliases `success`). Green is reserved for _finished success_ — the warm
+`progress`/`live` flame stays for _in-flight_ work, so a filling meter and a
+finished one are never confused.
 
-Per-run outcome tokens summarise the most recent run of a checklist
-combination on the homepage rows and in `RunResultBadge`:
+Per-run outcome tokens summarise the most recent run of a scenario on the
+homepage rows:
 
 | Token / class           | Meaning                                                                                                     |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -126,6 +159,59 @@ combination on the homepage rows and in `RunResultBadge`:
 | `result-incomplete`     | Abandoned / timed-out / never-finished run. Neutral (`muted`).                                              |
 | `progress` (warm flame) | In-flight runtime. Aliases the `live` family; reserve it strictly for _progress_, not for finished results. |
 
+#### The three outcome tones
+
+A scenario asks the operator to judge what their wallet did, and there are
+three honest answers to that — not two. Each has its own tone, and the third
+one is the point:
+
+| Outcome       | Tone          | Why                                                                                                                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| pass          | `result-pass` | Finished success.                                                                                                                        |
+| fail          | `result-fail` | A wrong answer, or a failed automatic check.                                                                                             |
+| couldn't tell | `warning`     | It fails, and it is counted as a failure — but it is the _honest_ answer, and must be distinguishable at a glance from getting it wrong. |
+
+**Both halves of that last row are deliberate.** `can't tell` counts against
+the operator, because a wallet that leaves you unable to tell what happened
+has failed you. And it is amber rather than red, because "I couldn't tell" is
+a finding worth recording, not a mistake — rendering it identically to a wrong
+answer made the copy and the colour argue with each other in the M5 design
+review. Do not "fix" it to red for consistency, and do not soften it to a pass.
+
+`can't tell` uses the `warning` family: `bg-warning-soft`, `border-warning-border`,
+`text-warning`. `--warning-soft` and `--warning-border` exist for exactly this,
+and are reused by the completion group.
+
+#### The three requirement layers
+
+The completion group distinguishes its tiers with a coloured dot and label in each
+header row, echoed by a matching left rule on each body section:
+
+| Tier      | Token      | Hue             |
+| --------- | ---------- | --------------- |
+| Essential | `primary`  | blue, h217      |
+| Expanded  | `accent`   | violet, h261    |
+| Add-ons   | `additive` | cyan-teal, h188 |
+
+All three sit at the **cool** end, and that is the constraint, not a preference:
+warm `progress`/`live` is spoken for by in-flight runtime, green `success` by
+finished success, red by failures, and amber `warning` by "can't tell". A tier
+label is a _chooser_, not an outcome, so the cool end is the only part of the
+palette it can safely claim.
+
+The two base tiers (M14) reused `primary` and `accent` — Expanded borrows the
+violet the palette already defined, so Essential reads as the everyday bar and
+Expanded as the stretch one. (M15 renamed the tiers from `base`/`complete`/`additive`
+to **Essential / Expanded / Add-on**; the tokens and hues are unchanged.) The
+**Add-ons tier is the one that needed a new token**; it rendered in the warm `live` flame until 2026-08-21, which contradicted
+that family's meaning and failed AA in light mode.
+[ADR 2026-08-21](adr/2026-08-21-additive-requirement-layer-colour.md) has the
+reasoning and the rejected alternatives.
+
+The header meters use `CompletionMeter`'s dense `showPercent` readout
+(`met/total · pct%`) because each tier's own label already says
+"Essential" / "Expanded", making the word "requirements" redundant there.
+
 Each of `success`, `result-pass`, `result-fail`, `result-incomplete`, and
 `progress` has `-soft` (surface) and `-border` companions for chip styling;
 `success`/`result-pass` and `progress` also expose `-foreground` for solid
@@ -134,51 +220,6 @@ fills. The `progress` aliases let runtime components (e.g.
 
 `--radius` defaults to `0.5rem` and is exposed as `--radius-sm/md/lg/xl`
 via `@theme inline`.
-
-## Test wallet
-
-The runnable issuer pages (VCALM, OID4, OB3 direct-delivery) drive a
-stripped-down **test wallet** rendered by
-`src/lib/components/interop/test-wallet/`. It reads top-to-bottom like a real
-(minimal) digital wallet, on the warm `live` runtime surface:
-
-1. **Header** — wallet identity + a small live/idle state chip.
-2. **Primary action** — a semantically-labelled initiation input (interaction
-   URL / credential-offer URL / pasted credential) + a semantic submit button.
-3. **Wallet settings** — a visually-separated section (holder cryptosuite);
-   omitted entirely for the paste variant.
-4. **Credentials** — `WalletArtifact` summary cards for produced credentials.
-5. **Activity** — the ordered `WalletActivity[]` list; each row leads with a
-   neutral kind icon (interaction vs check) and trails with a
-   `RunStatusIndicator`, so activity results read in the same status language as
-   the checklist.
-
-**Base + variants (composition, not inheritance).** `TestWallet.svelte` is the
-presentational base — every label and the settings contents are props/snippets,
-no protocol strings. Thin wrappers `VcalmIssuerFlowWallet`, `Oid4IssuerFlowWallet`,
-and `DirectDeliveryWallet` supply per-flow copy/settings and forward run data.
-
-**Normalized run-response model.** The `/api/wallet-runner/issuer-{vcalm,oid4}/run`
-and `/api/issuer-runner/verify` endpoints return a client-safe
-`walletActivity: WalletActivity[]` + `artifacts: WalletArtifact[]`, derived
-server-side by a shared mapper (`wallet-activity-map.ts`) so the three
-structurally-different flows speak one activity vocabulary. Schema:
-`src/lib/interop/wallet-activity.ts`; rationale:
-[ADR 2026-07-03](adr/2026-07-03-normalized-wallet-run-response.md).
-
-**Overall verdict outside the box.** The wallet box owns artifacts + activity
-only. The overall pass/fail/stopped-early/error verdict renders in a dedicated
-`RunResultCard` in the right column, above the wallet — the detailed counterpart
-to the at-a-glance "Run complete/failed" badge `RunnableChecklist` shows at the
-top of the page.
-
-**Responsive.** Additive-profile sections render inside the left checklist
-column (via `RunnableChecklist`'s `belowSteps` snippet) so they align to the
-requirements width rather than spanning full width. On mobile the right-column
-verdict + wallet move into `MobileWalletDrawer` — a live-colored drawer opened by
-a persistent edge handle (or, in the idle state, an inline call-to-action);
-inline and unchanged on `lg+`. The drawer is opt-in and used only on the three
-issuer pages.
 
 ## Fonts
 

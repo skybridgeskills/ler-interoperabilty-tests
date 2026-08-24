@@ -1,5 +1,6 @@
 import { SvelteSet } from 'svelte/reactivity';
 
+import { additiveProfilesForRoles } from '$lib/interop/accessors.js';
 import { AdditiveProfileSlug } from '$lib/interop/additive-profile-schema.js';
 import { ProfileSlug, RoleSlug } from '$lib/interop/profile-schema.js';
 import type { Selection } from '$lib/interop/selection/index.js';
@@ -28,8 +29,32 @@ export function createSelectionStore() {
 		return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 	}
 
+	/**
+	 * Drop any selected additive whose last relevant role has been deselected.
+	 *
+	 * An additive is only offered once a role it declares a legacy list for is
+	 * selected, so leaving one selected after that role goes away would keep a
+	 * filter switched on that nothing on the page can show — invisible state that
+	 * silently narrows the console. Pruning keeps the rule true in the data, not
+	 * just in the bar's visibility.
+	 */
+	function pruneAdditives(): void {
+		const offered = additiveProfilesForRoles(roles).map((a) => a.slug);
+		const kept = additiveProfiles.filter((slug) => offered.includes(slug));
+		if (kept.length !== additiveProfiles.length) additiveProfiles = kept;
+	}
+
 	function toggleRole(slug: RoleSlug): void {
 		roles = toggle(roles, slug);
+		pruneAdditives();
+		persist();
+	}
+
+	/** Clear every dimension at once — the filter bar's "Clear". */
+	function clear(): void {
+		roles = [];
+		profiles = [];
+		additiveProfiles = [];
 		persist();
 	}
 
@@ -96,6 +121,9 @@ export function createSelectionStore() {
 		roles = validRoles;
 		profiles = validProfiles;
 		additiveProfiles = validAdditives;
+		// A payload written before the relevance rule existed can name an additive
+		// with no relevant role selected; drop it rather than honour it.
+		pruneAdditives();
 	}
 
 	return {
@@ -115,6 +143,7 @@ export function createSelectionStore() {
 			return { roles: new SvelteSet(roles), profiles: new SvelteSet(profiles) };
 		},
 		toggleRole,
+		clear,
 		toggleProfile,
 		toggleAdditiveProfile,
 		isRoleSelected,

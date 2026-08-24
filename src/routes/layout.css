@@ -24,6 +24,10 @@
 	--accent-foreground: hsl(0 0% 100%);
 	--warning: hsl(35 75% 40%);
 	--warning-foreground: hsl(0 0% 100%);
+	/* Warning (amber) — the `can't tell` outcome tone. Soft/border follow the live family's
+	   warm relationship: same hue and saturation, lifted to a surface lightness. */
+	--warning-soft: hsl(35 75% 92%);
+	--warning-border: hsl(35 58% 62%);
 	--destructive: hsl(350 70% 45%);
 	--destructive-foreground: hsl(0 0% 100%);
 	--live: hsl(20 92% 48%);
@@ -35,6 +39,13 @@
 	--requirement-foreground: hsl(0 0% 100%);
 	--requirement-soft: hsl(217 80% 92%);
 	--requirement-border: hsl(217 55% 72%);
+	/* Additive (cyan-teal) — the add-on requirement layer. Cool, so it reads as a requirement
+	   tier beside `requirement` blue and `accent` violet, and clear of `success` green so a
+	   filled add-on chip never reads as "passed". See ADR 2026-08-21. */
+	--additive: hsl(188 72% 28%);
+	--additive-foreground: hsl(0 0% 100%);
+	--additive-soft: hsl(188 55% 90%);
+	--additive-border: hsl(188 45% 55%);
 	/* Success (green) — a completed/passed outcome. Reused for run-result "pass". */
 	--success: hsl(142 60% 33%);
 	--success-foreground: hsl(0 0% 100%);
@@ -71,9 +82,9 @@
 /*
  * Tokyo Night — dark surface (primary aesthetic).
  * Wrapped in `@media screen` so that when printing we fall back to the `:root`
- * light tokens — an ink-friendly, legible report regardless of the active
- * on-screen theme. The `@media print` block near the end of this file owns the
- * rest of the print layout (hidden chrome, page breaks, the run-report document).
+ * light tokens — ink-friendly and legible regardless of the active on-screen
+ * theme. The rest of the print layout went with the `/runs/[id]` report route;
+ * whatever replaces it brings its own `@media print` rules.
  */
 @media screen {
 	.dark {
@@ -93,6 +104,8 @@
 		--accent-foreground: hsl(234 16% 13%);
 		--warning: hsl(35 65% 64%);
 		--warning-foreground: hsl(234 16% 13%);
+		--warning-soft: hsl(35 35% 20%);
+		--warning-border: hsl(35 48% 45%);
 		--destructive: hsl(350 89% 71%);
 		--destructive-foreground: hsl(234 16% 13%);
 		--live: hsl(22 95% 64%);
@@ -104,6 +117,11 @@
 		--requirement-foreground: hsl(234 16% 13%);
 		--requirement-soft: hsl(217 42% 22%);
 		--requirement-border: hsl(217 48% 45%);
+		/* Additive (cyan-teal) — dark surface. */
+		--additive: hsl(188 62% 66%);
+		--additive-foreground: hsl(234 16% 13%);
+		--additive-soft: hsl(188 32% 18%);
+		--additive-border: hsl(188 42% 40%);
 		/* Success (green) — dark surface. result-pass aliases resolve per-scope. */
 		--success: hsl(142 52% 62%);
 		--success-foreground: hsl(234 16% 13%);
@@ -145,6 +163,8 @@
 	--color-accent-foreground: var(--accent-foreground);
 	--color-warning: var(--warning);
 	--color-warning-foreground: var(--warning-foreground);
+	--color-warning-soft: var(--warning-soft);
+	--color-warning-border: var(--warning-border);
 	--color-destructive: var(--destructive);
 	--color-destructive-foreground: var(--destructive-foreground);
 	--color-live: var(--live);
@@ -155,6 +175,10 @@
 	--color-requirement-foreground: var(--requirement-foreground);
 	--color-requirement-soft: var(--requirement-soft);
 	--color-requirement-border: var(--requirement-border);
+	--color-additive: var(--additive);
+	--color-additive-foreground: var(--additive-foreground);
+	--color-additive-soft: var(--additive-soft);
+	--color-additive-border: var(--additive-border);
 	--color-success: var(--success);
 	--color-success-foreground: var(--success-foreground);
 	--color-success-soft: var(--success-soft);
@@ -243,65 +267,5 @@
 	pre,
 	kbd {
 		@apply font-mono;
-	}
-}
-
-/*
- * Print — the shareable run report at `/runs/[id]`.
- *
- * The route wraps its render in `.run-report` (only faithful, non-outdated runs
- * ever reach that render). Forced-light comes from the `@media screen`-scoped
- * `.dark` block above; app chrome and interactive-only controls are hidden with
- * Tailwind's `print:hidden` on the elements themselves (app header, the
- * Re-run / Print buttons). This block owns the page setup, the document reflow,
- * and the page-break behaviour.
- */
-@media print {
-	:root {
-		color-scheme: light;
-	}
-
-	@page {
-		margin: 16mm;
-	}
-
-	/*
-	 * Render the checklist's tone dots, RFC-2119 level chips, and soft result
-	 * surfaces faithfully — background colours are dropped from print by default,
-	 * which would erase the status dots entirely.
-	 */
-	.run-report {
-		-webkit-print-color-adjust: exact;
-		print-color-adjust: exact;
-	}
-
-	/*
-	 * Lead the document with the run summary (result verdict + identity), then the
-	 * checklist steps. On screen the two-column grid collapses to a single column
-	 * (steps first); for print we reflow to a flex column and pull the summary
-	 * (the grid's last child) to the top.
-	 */
-	.run-report section.grid {
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
-	}
-	.run-report section.grid > div:last-child {
-		order: -1;
-	}
-
-	/*
-	 * Page breaks: never split a single requirement row, the summary card, or an
-	 * expandable details block; keep a step heading attached to the start of its
-	 * body rather than stranded at the foot of a page.
-	 */
-	.run-report ul li,
-	.run-report .run-history-summary,
-	.run-report details {
-		break-inside: avoid;
-	}
-	.run-report ol > li > header {
-		break-inside: avoid;
-		break-after: avoid;
 	}
 }

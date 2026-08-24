@@ -1,12 +1,6 @@
 import type { AppContext } from './app-context.js';
 import { provideFakeTransactionServiceClient } from './domain/exchange-runner/index.js';
-import { provideFakeIssuerRunner } from './domain/issuer-runner/index.js';
-import { provideFakeVerifierRunner } from './domain/verifier-runner/index.js';
-import {
-	provideFakeOid4IssuerFlow,
-	provideFakeVcalmIssuerFlow,
-	provideFakeWalletClient
-} from './domain/wallet-client/index.js';
+import { provideFakeScenarioRunner } from './domain/scenario-runner/index.js';
 import { provideHealthRegistry } from './health/provide-health-registry.js';
 import { FakeIdService } from './services/id-service/id-service.js';
 import { SilentLoggerService } from './services/logging/logger-service.js';
@@ -15,11 +9,7 @@ import { FakeTimeService } from './services/time-service/time-service.js';
 /** Builds the test AppContext: silent logger, fixed clock, deterministic IDs, in-memory transaction-service fake, in-memory verifier-core fake. */
 export function TestAppContext(_env: Record<string, unknown>): AppContext {
 	const exchangeRunner = provideFakeTransactionServiceClient({ enabled: true });
-	const issuerRunner = provideFakeIssuerRunner();
-	const verifierRunner = provideFakeVerifierRunner();
-	const walletClient = provideFakeWalletClient();
-	const vcalmIssuerFlow = provideFakeVcalmIssuerFlow();
-	const oid4IssuerFlow = provideFakeOid4IssuerFlow();
+	const scenarioRunner = provideFakeScenarioRunner();
 	const health = provideHealthRegistry(exchangeRunner.exchangeRunnerConfig);
 	return {
 		logger: SilentLoggerService(),
@@ -27,10 +17,6 @@ export function TestAppContext(_env: Record<string, unknown>): AppContext {
 		idService: FakeIdService(),
 		...exchangeRunner,
 		...health,
-		...issuerRunner,
-		...verifierRunner,
-		...walletClient,
-		...vcalmIssuerFlow,
-		...oid4IssuerFlow
+		...scenarioRunner
 	};
 }

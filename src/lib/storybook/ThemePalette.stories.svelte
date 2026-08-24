@@ -111,11 +111,55 @@
 		</section>
 
 		<section class="space-y-4">
+			<h2 class="text-headline-md text-foreground">Additive (cyan-teal)</h2>
+			<p class="max-w-prose text-body-md text-muted-foreground">
+				The <code class="font-mono">additive</code> family marks the
+				<strong>add-on requirement layer</strong>: the Add-ons sections of a completion card, and
+				the Add-ons dimension of the homepage filter bar. It completes the cool three-tier
+				progression — Essential
+				<code class="font-mono">primary</code> blue → Expanded
+				<code class="font-mono">accent</code> violet → Add-ons
+				<code class="font-mono">additive</code> teal. Deliberately clear of
+				<code class="font-mono">success</code> green, so a filled add-on chip never reads as &ldquo;passed&rdquo;,
+				and cool rather than warm, because an additive profile is a requirement layer and not a runtime
+				state.
+			</p>
+			<div class="grid gap-4 md:grid-cols-2">
+				<div
+					class="flex items-center justify-between gap-3 rounded-md border border-border bg-additive p-4 text-additive-foreground"
+				>
+					<span class="text-body-md">additive</span>
+					<span class="text-label-md opacity-80">additive-foreground</span>
+				</div>
+				<div
+					class="flex items-center justify-between gap-3 rounded-md border border-additive-border bg-additive-soft p-4 text-additive"
+				>
+					<span class="text-body-md">additive-soft</span>
+					<span class="text-label-md opacity-80">additive (text)</span>
+				</div>
+			</div>
+			<!--
+				The three tiers side by side, in the dot + left-rule treatment `CompletionGroup`
+				uses: the point of the token is that the three read as three.
+			-->
+			<div class="space-y-3">
+				<div class="border-l-2 border-l-primary/30 pl-4">
+					<span class="text-label-md text-primary">Essential</span>
+				</div>
+				<div class="border-l-2 border-l-accent/30 pl-4">
+					<span class="text-label-md text-accent">Expanded</span>
+				</div>
+				<div class="border-l-2 border-l-additive-border pl-4">
+					<span class="text-label-md text-additive">Add-ons</span>
+				</div>
+			</div>
+		</section>
+
+		<section class="space-y-4">
 			<h2 class="text-headline-md text-foreground">Success, run result + progress</h2>
 			<p class="max-w-prose text-body-md text-muted-foreground">
 				<code class="font-mono">success</code> (green) marks anything completed + successful — a
-				done checklist step and a passed run (<code class="font-mono">result-pass</code> aliases
-				it).
+				done step and a passed run (<code class="font-mono">result-pass</code> aliases it).
 				<code class="font-mono">result-fail</code>
 				(red, aliases destructive), <code class="font-mono">result-incomplete</code> (neutral). The
 				warm <code class="font-mono">progress</code> family aliases

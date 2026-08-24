@@ -72,3 +72,83 @@ shared additive (which also matches vcalm) and never in `profiles/vcalm/*`
 - A future alternative-key-proof bundle (e.g. JWT) would be a new additive plus
   transaction-service support (per-exchange `proof_types_supported` + jwt proof
   handling) — a separate plan.
+
+## Amendment (2026-08-21, M11 — the producer axis is now scored per suite)
+
+The ownership split this ADR sets is unchanged. What changed is that the
+cryptosuite axis is now **measured**, on the producer side, through
+`data-integrity-cryptosuites` memberships rather than checklist rows.
+
+- **Producer, per suite.** Six issuer scenarios — one per (protocol × suite) —
+  form two cross-protocol `oneOf` groups, `dic-issuer-eddsa` and
+  `dic-issuer-ecdsa`. The additive's issuer card therefore carries two
+  obligations, each satisfiable over any one protocol. This is decomposition of
+  checks that already ran, not new measurement: `producer.cryptosuite-supported`
+  and each base scenario's own `di-proof` row already asserted it.
+- **The producer floor stays on the base profile**, exactly as this ADR has it:
+  "signed with a bundle suite" is a `required` row on each base scenario
+  (`credential-di-proof-bundle` on the live pages, `credential-di-proof-eddsa` on
+  the direct one). The additive answers _which_ suite, not _whether_.
+- **The consumer half is deferred.** "Your issuer verifies our DIDAuth /
+  `di_vp` key proof in every supported suite" — `consumer.verify-vp-all` and
+  `consumer.resolve-holder-dids` — is **unscored today** (no check was ever
+  registered for it) and stays unscored. It needs a per-suite key-proof run and
+  is entangled with the wallet-side present axis, so it belongs to the M15
+  sibling effort, which can see issuer, wallet and verifier at once.
+- **Two producer ids stay unmeasured, deliberately.** `producer.key-type-matches`
+  needs DID resolution and has never been registered. `producer.proof-purpose` is
+  `assertionMethod` by construction on an issuer's credential proof, so nothing
+  observed would ever fail it. Recorded here so the absence does not read as
+  coverage.
+
+## Amendment (2026-08-22, M12 — the wallet consumer half lands and is measured)
+
+M11's amendment above scored the producer axis per suite. M12 lands the **wallet consumer half**:
+`{oid4,vcalm}-wallet-accept-{eddsa,ecdsa}` ask whether a wallet can _verify_ a credential in a given
+cryptosuite, which — unlike the producer axis — cannot be answered by observation and must be
+answered by **pinning what we issue**. It is measured, not attested: `issued-suite` reuses M11's
+`credential-di-proof-{eddsa,ecdsa}` over `StepEvidence.artifact`, so a pin that silently fell back to
+the default tenant turns the row red instead of letting the scenario pass under a false label. Only
+the wallet's own verdict is attested, because only the operator can see it.
+
+**The issuer consumer half stays M15's, unchanged** — `verify-vp-all`, `resolve-holder-dids`. It is
+now mechanical rather than open: the wallet half settled the shape, so M15 inherits a pattern to
+apply rather than a question to answer.
+
+## Amendment (2026-08-24, M15 — the consumer half lands in both remaining roles)
+
+The ownership split this ADR sets is still unchanged. M11 scored the producer
+axis, M12 scored the **wallet** consumer half, and its amendment left the
+**issuer** consumer half explicitly deferred: _"`consumer.verify-vp-all` and
+`consumer.resolve-holder-dids` […] is unscored today and stays unscored."_ M15
+lands it, and adds the role this ADR never had an axis for at all.
+
+**`consumer.verify-vp-all` and `consumer.resolve-holder-dids` are finally
+scored.** Four scenarios — `{vcalm,oid4}-issuer-consumer-{eddsa,ecdsa}` — vary
+`receive-from-issuer.keyProofSuite` and ask whether the operator's issuer accepts
+a key proof in each bundle suite. Three checks read `IssuerFlowSummary`, which
+already carried everything needed: `delivered`/`credentialDelivered` (did the
+issuer accept the proof), `holderDid` (whose `did:key` multibase prefix proves
+which suite we **actually** used, not which we asked for), and `diVpSigningAlgs`
+(what OID4VCI advertises — a SHOULD, and OID4VCI only).
+
+**Live transports only.** There is no `direct` form of this axis: a credential
+pasted out of band carries no key proof, so there is nothing to consume. That is
+the one exception to the owner's M15 instruction that direct delivery should
+carry DIC coverage wherever a role can support it.
+
+**The verifier axis exists for the first time.** This ADR and both prior
+amendments cover issuer and wallet only, which was conspicuous for the one role
+whose whole job is deciding whether a signature holds. M15 adds six
+discrimination-shaped scenarios (`{ob3-direct,vcalm,oid4}-verifier-{eddsa,ecdsa}`):
+two shuffled passes, one valid and one whose proof was corrupted after signing.
+The question is not _"does your verifier accept an ECDSA credential"_ — a
+verifier that accepts everything passes that — but _"does it tell a good one from
+a bad one"_.
+
+**What still is not measured.** `producer.key-type-matches` still needs DID
+resolution and is still unregistered. `producer.proof-purpose` is still
+`assertionMethod` by construction. And the M12 gap stands unchanged: a wallet
+that only ever accepts and never presents cannot fill the DIC producer
+obligation, because its DIDAuth key-proof suite is not persisted into the
+exchange.

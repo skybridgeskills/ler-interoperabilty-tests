@@ -1,0 +1,277 @@
+import { z } from 'zod';
+
+import { RoleSlug, WorkflowSlug } from '$lib/interop/profile-schema.js';
+import { ZodFactory } from '$lib/util/zod-factory.js';
+
+import { LocallySignedSuite } from './locally-signed-suite.js';
+import { Membership } from './membership.js';
+import { Requirement } from './requirement-schema.js';
+
+/** kebab-case, the shape every slug in this app takes. */
+const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/**
+ * URL slug for a scenario — `oid4-wallet-acceptance`.
+ *
+ * A validated string rather than a `z.enum`, unlike `ProfileSlug` and friends:
+ * the catalog is meant to grow to dozens of scenarios, and an enum maintained
+ * in lockstep with the registry would be pure duplication. Uniqueness is
+ * enforced at catalog load instead.
+ */
+export const ScenarioSlug = ZodFactory(z.string().regex(KEBAB));
+export type ScenarioSlug = ReturnType<typeof ScenarioSlug>;
+
+/**
+ * Id of a credential recipe — the unsigned document a scenario asks the mint
+ * path to issue. Opaque here on purpose: the registry it keys into is server
+ * code, and this module is client-safe.
+ */
+export const RecipeId = ZodFactory(z.string().regex(KEBAB));
+export type RecipeId = ReturnType<typeof RecipeId>;
+
+/** Id of a presentation request. Opaque here for the same reason as {@link RecipeId}. */
+export const RequestId = ZodFactory(z.string().regex(KEBAB));
+export type RequestId = ReturnType<typeof RequestId>;
+
+/**
+ * A pinned `(cryptosuite, didMethod)` pair.
+ *
+ * **Absent means elective**, present means pinned. Election already exists in
+ * the backend — the transaction service ranks issuer instances by the wallet's
+ * advertised suites — so a scenario that does not care simply omits this and
+ * lets the deployment choose.
+ *
+ * The runner resolves it behind a `resolveIssuingContext` seam, so the
+ * substrate can move from a tenant map to a future transaction-service API
+ * without touching a single scenario. A pair the deployment cannot serve
+ * renders **disabled with a typed reason and does not shrink the completion
+ * denominator** — the badge is blocked instead, because a shrinking denominator
+ * would let two deployments issue badges that look identical and mean different
+ * things.
+ */
+export const IssuingIntent = ZodFactory(
+	z.object({
+		cryptosuite: z.string().min(1),
+		didMethod: z.string().min(1)
+	})
+);
+export type IssuingIntent = ReturnType<typeof IssuingIntent>;
+
+/**
+ * What a step does. A closed, small union covering every runnable page shape in
+ * the suite today, and nothing else.
+ *
+ * **Extending this union is the only escape hatch** — reviewed once, reusable
+ * forever. If a scenario cannot be expressed, the fix is a new kind here, never
+ * a bespoke page that forks the result shape.
+ */
+export const ScenarioAction = ZodFactory(
+	z.discriminatedUnion('kind', [
+		/** Mint a `claim` exchange, render its link, poll until it settles. */
+		z.object({
+			kind: z.literal('issue'),
+			credential: RecipeId.schema,
+			/**
+			 * Corrupt the credential **after signing**, before delivery. `proof`
+			 * flips one character mid-`proofValue` (length and multibase prefix
+			 * preserved, so it fails as a *signature*, not a parse); `claim`
+			 * appends to a signature-covered value and leaves the proof untouched.
+			 * A wallet that only checks a proof is present and well-formed passes
+			 * the first and fails the second.
+			 */
+			tamper: z.enum(['proof', 'claim']).optional(),
+			intent: IssuingIntent.schema.optional()
+		}),
+		/**
+		 * Mint a `verify` exchange and poll for the presentation.
+		 *
+		 * **The registry holds the payload; the action holds the conduct.**
+		 * `request` names *what* is asked for — opaque behind a server-side registry
+		 * — and the three optional fields say *how* the asking is conducted. They do
+		 * not change what is asked for, which is why they are here and not in the
+		 * request registry: split across two places, nothing sees both halves and
+		 * the `limitDisclosure`/`queryLanguage` constraint below is unenforceable.
+		 */
+		z.object({
+			kind: z.literal('request-presentation'),
+			request: RequestId.schema,
+			/**
+			 * Which OID4VP query language to ask in. Absent means the service's
+			 * default (`dcql`). Conduct, not payload — the same credential is asked
+			 * for either way; only the shape of the asking differs, and a wallet may
+			 * understand one and not the other.
+			 */
+			queryLanguage: z.enum(['dcql', 'pex']).optional(),
+			/**
+			 * DIF Presentation Exchange `constraints.limit_disclosure`. PEX arm only —
+			 * the catalog rejects it without `queryLanguage: 'pex'`, because DCQL has
+			 * no such constraint and a scenario that set both would silently measure
+			 * nothing. Conduct: it varies how much of the credential the verifier
+			 * insists on, not which credential.
+			 */
+			limitDisclosure: z.enum(['required', 'preferred']).optional(),
+			/**
+			 * ADVERTISE-TO-OBSERVE bait: extra cryptosuite names unioned into the
+			 * advertised `cryptosuite_values`, to coax a conformant wallet into
+			 * DERIVING a selective-disclosure proof so it can be observed. Our own
+			 * verification of the derived proof is expected to fail and is not relied
+			 * upon — the observation is the measurement. Conduct: it changes what the
+			 * verifier says it accepts, never what it asks for.
+			 */
+			advertiseCryptosuites: z.array(z.string()).optional()
+		}),
+		/** File download / copy-paste. No exchange is minted. */
+		z.object({
+			kind: z.literal('deliver-direct'),
+			credential: RecipeId.schema,
+			/**
+			 * Same post-signing corruption the `issue` action carries, so a
+			 * `deliver-direct` scenario can hand a verifier a broken credential.
+			 * `proof` flips one character mid-`proofValue` (fails as a *signature*,
+			 * not a parse); `claim` appends to a signature-covered value and leaves
+			 * the proof untouched. Unlike `issue` — where the transaction service
+			 * applies the tamper — here the suite signs locally and tampers itself.
+			 */
+			tamper: z.enum(['proof', 'claim']).optional(),
+			/**
+			 * The cryptosuite the suite signs this deliverable with. **Locally
+			 * signed, so always servable** — this is NOT an `IssuingIntent`, needs no
+			 * capability resolution, and can never render a scenario blocked. Absent
+			 * means the deployment's configured default.
+			 *
+			 * It carried an `IssuingIntent` until M15, which routed it through the
+			 * tenant map even though `signDeliverable` signs with locally-generated
+			 * keys — so a pinned ECDSA deliverable rendered *disabled* on a
+			 * single-tenant EdDSA deployment that could serve it perfectly well.
+			 */
+			cryptosuite: LocallySignedSuite.schema.optional()
+		}),
+		/**
+		 * Present a credential to the operator's **own verifier** over a live
+		 * exchange. The suite is the **holder** here — the inverse of
+		 * `request-presentation`, where the suite is the verifier requesting from a
+		 * wallet. The operator's verifier drives (it issues the interaction), and
+		 * the operator supplies the interaction URL at run time (a paste field on
+		 * the step); the suite signs the step's credential and submits it.
+		 *
+		 * `transport` is the seam the live transports slot into — `'vcalm'` (M10a)
+		 * and `'oid4vp'` (M10b). `tamper` corrupts the credential after signing,
+		 * exactly as `deliver-direct` does, so a discrimination pass can present a
+		 * broken one.
+		 */
+		z.object({
+			kind: z.literal('present-to-verifier'),
+			credential: RecipeId.schema,
+			transport: z.enum(['vcalm', 'oid4vp']),
+			tamper: z.enum(['proof', 'claim']).optional(),
+			/**
+			 * The cryptosuite the suite signs the presented credential with — the
+			 * same locally-signed, always-servable axis `deliver-direct` carries.
+			 * Absent means the deployment's configured default.
+			 *
+			 * Until M15 this action had no cryptosuite field at all, so a verifier
+			 * scenario could not ask *"does your verifier handle ECDSA"*. That is
+			 * what the `data-integrity-cryptosuites` verifier scenarios need.
+			 */
+			cryptosuite: LocallySignedSuite.schema.optional()
+		}),
+		/**
+		 * Receive a credential from the operator's **own issuer**. The suite is the
+		 * recipient here — the inverse of `issue`, where the suite mints for the
+		 * operator's wallet. The operator's issuer produces the credential and the
+		 * operator supplies the run-time input on the step: a pasted credential
+		 * (`'direct'`), a VC-API interaction URL (`'vcalm'`), or an
+		 * `openid-credential-offer://` URL (`'oid4vci'`).
+		 *
+		 * `transport` is the seam the intakes slot into. `keyProofSuite` is the
+		 * cryptosuite the **suite's own** test wallet uses for its holder key proof —
+		 * the DIDAuthentication VP (VCALM) or the `di_vp` key proof (OID4VCI). It is
+		 * generated locally by `wallet-crypto` and is therefore always servable; it is
+		 * NOT an `IssuingIntent` and needs no capability resolution. Absent means the
+		 * default (`eddsa-rdfc-2022`); `'direct'` has no key proof and ignores it.
+		 *
+		 * No `credential` field: the credential comes **from** the operator, not from
+		 * a recipe.
+		 */
+		z.object({
+			kind: z.literal('receive-from-issuer'),
+			transport: z.enum(['direct', 'vcalm', 'oid4vci']),
+			keyProofSuite: LocallySignedSuite.schema.optional()
+		})
+	])
+);
+export type ScenarioAction = ReturnType<typeof ScenarioAction>;
+
+/**
+ * One ordered step of a scenario.
+ *
+ * A step with no `action` is a pure question step — a debrief. Steps exist for
+ * **sequence**, not to subdivide a measurement: a joint measurement across
+ * several passes is one measurement, and therefore one scenario.
+ */
+export const ScenarioStep = ZodFactory(
+	z.object({
+		/** Stable, scenario-scoped. Run evidence is keyed by it. */
+		id: z.string().min(1),
+		title: z.string().min(1),
+		summary: z.string(),
+		action: ScenarioAction.schema.optional(),
+		/**
+		 * Contiguous shuffled steps permute together, so a discrimination
+		 * scenario's passes cannot be learned by position.
+		 */
+		shuffle: z.literal(true).optional(),
+		requirements: z.array(Requirement.schema)
+	})
+);
+export type ScenarioStep = ReturnType<typeof ScenarioStep>;
+
+/**
+ * A small, subtle test with fine-grained requirements — the first-class
+ * runnable concept, and the row a completion group renders.
+ *
+ * **A scenario is one measurement.** It replaces `(role, workflow, profile)` as
+ * the runnable unit; `workflow` stays a six-way taxonomy that groups the
+ * catalog and **never constrains what a step's action may do**. A round-trip
+ * scenario registers under the workflow it is *about* and still mints a
+ * verification exchange partway through.
+ *
+ * Two fields a reader may expect are deliberately absent:
+ *
+ * - **No `version`.** Drift is a *derived* fingerprint over scoring-relevant
+ *   content ({@link scenarioFingerprint}), because a hand-maintained integer
+ *   fails dishonestly — an author edits a right answer, forgets to bump, and a
+ *   stored `passed` now claims a correct answer to a question that changed.
+ * - **No scenario "type".** "Integration" versus "discrimination" is authoring
+ *   vocabulary only.
+ */
+export const Scenario = ZodFactory(
+	z.object({
+		slug: ScenarioSlug.schema,
+		name: z.string().min(1),
+		/** One line, shown on the catalog row. Cosmetic — outside the fingerprint. */
+		blurb: z.string(),
+		role: RoleSlug.schema,
+		/** Taxonomy only. Never a constraint on what the steps may do. */
+		workflow: WorkflowSlug.schema,
+		/** Exactly one names a base profile; any number may name additives. */
+		memberships: z.array(Membership.schema).min(1),
+		/**
+		 * Neutral noun for a shuffled step, rendered positionally as
+		 * `${shuffleLabel} ${n}` in RUN order — "Credential 1", "Credential 2".
+		 *
+		 * A shuffled step's authored `title` is an answer key: "Offer an expired
+		 * credential" tells the operator exactly what they are being asked to
+		 * judge. The page therefore never renders `title` for a shuffled step,
+		 * and this is what it renders instead. The verifier flow already does
+		 * this by assigning `PassDefinition.label = "Credential 1"` at
+		 * generation time; this gives scenario authors the same vocabulary.
+		 *
+		 * Presentation only, and therefore OUTSIDE the fingerprint — renaming
+		 * the label must not cost anyone their results.
+		 */
+		shuffleLabel: z.string().min(1).optional(),
+		steps: z.array(ScenarioStep.schema).min(1)
+	})
+);
+export type Scenario = ReturnType<typeof Scenario>;

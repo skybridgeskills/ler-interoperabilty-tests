@@ -2,7 +2,7 @@
 	import { parseInlineMarkup } from './inline-markup.js';
 
 	/**
-	 * Render checklist copy with backtick spans as styled inline `<code>` chips
+	 * Render requirement copy with backtick spans as styled inline `<code>` chips
 	 * (e.g. `QueryByExample` → a small mono chip). Purely presentational and
 	 * XSS-safe — the text is split into real escaped text/code DOM nodes, never
 	 * `{@html}`. `class` passes through to the wrapping span so callers keep their
