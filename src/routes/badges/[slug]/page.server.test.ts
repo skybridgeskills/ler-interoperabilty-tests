@@ -27,9 +27,9 @@ describe('GET /badges/[slug] load', { timeout: 20_000 }, () => {
 
 	it('serves the stranger view: definition ids and no version mismatch without ?v=', async () => {
 		await withCtx(() => {
-			const data = call('oid4-wallet');
-			expect(data.badge.slug).toBe('oid4-wallet');
-			expect(data.achievementId).toBe('http://localhost:5173/badges/oid4-wallet');
+			const data = call('oid4-wallet-essential');
+			expect(data.badge.slug).toBe('oid4-wallet-essential');
+			expect(data.achievementId).toBe('http://localhost:5173/badges/oid4-wallet-essential');
 			expect(data.criteriaId).toContain('?v=');
 			expect(data.versionMismatch).toBe(false);
 			expect(data.blocked).toEqual({});
@@ -38,14 +38,14 @@ describe('GET /badges/[slug] load', { timeout: 20_000 }, () => {
 
 	it('does not flag a mismatch when ?v= equals the current fingerprint', async () => {
 		await withCtx(() => {
-			const fp = badgeFingerprint(badgeBySlug('oid4-wallet')!);
-			expect(call('oid4-wallet', `?v=${fp}`).versionMismatch).toBe(false);
+			const fp = badgeFingerprint(badgeBySlug('oid4-wallet-essential')!);
+			expect(call('oid4-wallet-essential', `?v=${fp}`).versionMismatch).toBe(false);
 		});
 	});
 
 	it('flags a mismatch for a stale ?v=', async () => {
 		await withCtx(() => {
-			expect(call('oid4-wallet', '?v=stale0000').versionMismatch).toBe(true);
+			expect(call('oid4-wallet-essential', '?v=stale0000').versionMismatch).toBe(true);
 		});
 	});
 });

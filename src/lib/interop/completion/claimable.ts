@@ -68,3 +68,44 @@ export function isExpandedClaimable(result: CompletionResult): boolean {
 export function blockedObligations(result: CompletionResult) {
 	return result.obligations.filter((o) => o.blocked);
 }
+
+/**
+ * Whether an **add-on** badge can be claimed.
+ *
+ * Two conditions, and the second is the one that is easy to forget: the add-on's
+ * own slice must be full, **and** the base profile-role's Essential set must be
+ * too. An add-on layers on a base profile; claiming *"Data Integrity
+ * Cryptosuites — VCALM Wallet"* while the VCALM Wallet Essential badge is unearned
+ * would recognise the decoration and not the thing it decorates.
+ *
+ * Both results are passed explicitly rather than a precomputed `coreMet` flag.
+ * The flag version is where a call site forgets, and this predicate is shared by
+ * the homepage card, the profile page and the badge page — they agree today only
+ * because they all read one function.
+ *
+ * Note the asymmetry with {@link isExpandedClaimable}: Expanded is cumulative and
+ * so subsumes its floor arithmetically, while an add-on's slice is a *different*
+ * completion set that cannot see the base profile's at all. Hence the second
+ * argument.
+ */
+export function isAddOnClaimable(addOn: CompletionResult, core: CompletionResult): boolean {
+	return isClaimable(addOn) && isClaimable(core);
+}
+
+/**
+ * Why an add-on badge is not claimable — the distinction a single disabled
+ * control cannot make.
+ *
+ * `'unfinished'` means the operator still has add-on work to do; `'core'` means
+ * they have finished it and are gated on the base profile-role's Essential badge.
+ * Those are different situations with different next actions, and telling them
+ * apart is the whole reason this returns a reason rather than a boolean.
+ */
+export function addOnClaimBlocker(
+	addOn: CompletionResult,
+	core: CompletionResult
+): 'unfinished' | 'core' | undefined {
+	if (!isClaimable(addOn)) return 'unfinished';
+	if (!isClaimable(core)) return 'core';
+	return undefined;
+}

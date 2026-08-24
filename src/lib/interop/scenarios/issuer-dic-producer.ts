@@ -3,30 +3,34 @@ import { Scenario } from './scenario-schema.js';
 import type { ScenarioAction } from './scenario-schema.js';
 
 /**
- * The `data-integrity-cryptosuites` **producer** scenarios — six of them, in two
- * cross-protocol `oneOf` groups.
+ * The `data-integrity-cryptosuites` issuer **producer** scenarios — six of them,
+ * one per (protocol × suite).
  *
- * **The model, and why it is not the brief's.** The producer *floor* — "your
- * issuer signs with a cryptosuite we can verify" — is already a `required` row
- * on each base scenario (`credential-di-proof-bundle` on the live pages,
- * `credential-di-proof-eddsa` on the direct one). Nothing more is needed there,
- * so `oneOf` is free to express something better: **protocol breadth inside the
- * additive**. EdDSA over VCALM and EdDSA over OID4VCI complete the same EdDSA
- * item. DIC's issuer card therefore carries **two** obligations — EdDSA and
- * ECDSA — each satisfiable by any one protocol, so as few as two runs fill it,
- * not six.
+ * **The model, and why it changed in M15.** M11 shipped these as two
+ * cross-protocol `oneOf` groups: EdDSA over VCALM and EdDSA over OID4VCI
+ * completed the same EdDSA item, so as few as two runs filled DIC's issuer card.
+ * That served an add-on badge keyed `(additive, role)`, which spanned every base
+ * profile.
+ *
+ * **M15 re-keyed the add-on badge to `(additive, base profile, role)`** — a *DIC
+ * VCALM Issuer* badge distinct from a *DIC OID4 Issuer* badge — and the groups
+ * went with it. Inside one base profile's slice a group had exactly one member:
+ * arithmetically correct, and expressing nothing. So each scenario is now plain
+ * `required` in the additive, and each protocol's add-on badge asks for **both**
+ * cryptosuites over **that** protocol. Harder, and it names its protocol. See
+ * `docs/adr/2026-08-21-additive-requirements-as-memberships.md` and its M15
+ * amendment.
  *
  * **Not new measurement.** `producer.cryptosuite-supported` and the base
- * `di-proof` rows already assert exactly this; M11 decomposes them so the meter
- * is honest about *which* suite was proven. Three DIC ids are deliberately
- * dropped and two deferred — see `mapping.md` § 4.
+ * `di-proof` rows already assert exactly this; M11 decomposed them so the meter
+ * is honest about *which* suite was proven, and M15 changed only who counts it.
+ * Three DIC ids are deliberately dropped and two deferred — see `mapping.md` § 4.
  *
  * Each scenario is **`additive-only`** in its base profile: the base names it
  * because that protocol is what it runs over, and claims none of it. An additive
  * scenario must never enlarge the base meters or make either base badge harder
  * to earn — and `optional` would, because under the two-tier model it is the
- * profile's Expanded set and counts toward Complete, which would make "a
- * complete OID4 issuer" quietly mean "…and supports both cryptosuites".
+ * profile's Expanded set and counts toward Complete.
  */
 
 /** The two requirements every member of both groups declares — ids identical, per catalog rule 5. */
@@ -59,10 +63,10 @@ function summaryFor(suite: 'eddsa' | 'ecdsa', delivery: string): string {
 	return `Configure your issuer to sign with ${name}, then ${delivery} We read the cryptosuite off the credential's proof — the suite is yours to choose, and this is the whole of what the scenario asks.`;
 }
 
-/** The blurb every member carries, so nobody reads six scenarios as six obligations. */
+/** The blurb every member carries: this scenario belongs to THIS protocol's add-on badge. */
 function blurbFor(suite: 'eddsa' | 'ecdsa', protocol: string): string {
 	const name = suite === 'eddsa' ? 'eddsa-rdfc-2022' : 'ecdsa-rdfc-2019';
-	return `Sign a credential with ${name} and deliver it over ${protocol}. Passing either cryptosuite over any one protocol completes that cryptosuite's item — you do not need to run all six.`;
+	return `Sign a credential with ${name} and deliver it over ${protocol}. It counts toward this protocol's Data Integrity Cryptosuites add-on badge; the other protocols have their own.`;
 }
 
 const DIRECT_ACTION: ScenarioAction = { kind: 'receive-from-issuer', transport: 'direct' };
@@ -91,7 +95,7 @@ export const ob3DirectIssuerEddsa = Scenario({
 	workflow: 'direct-credential-issuance',
 	memberships: [
 		{ profile: 'ob3-direct-delivery', level: 'additive-only' },
-		{ profile: 'data-integrity-cryptosuites', level: { oneOf: 'dic-issuer-eddsa' } }
+		{ profile: 'data-integrity-cryptosuites', level: 'required' }
 	],
 	steps: [
 		{
@@ -112,7 +116,7 @@ export const vcalmIssuerEddsa = Scenario({
 	workflow: 'credential-issuance',
 	memberships: [
 		{ profile: 'vcalm', level: 'additive-only' },
-		{ profile: 'data-integrity-cryptosuites', level: { oneOf: 'dic-issuer-eddsa' } }
+		{ profile: 'data-integrity-cryptosuites', level: 'required' }
 	],
 	steps: [
 		{
@@ -136,7 +140,7 @@ export const oid4IssuerEddsa = Scenario({
 	workflow: 'credential-issuance',
 	memberships: [
 		{ profile: 'oid4', level: 'additive-only' },
-		{ profile: 'data-integrity-cryptosuites', level: { oneOf: 'dic-issuer-eddsa' } }
+		{ profile: 'data-integrity-cryptosuites', level: 'required' }
 	],
 	steps: [
 		{
@@ -160,7 +164,7 @@ export const ob3DirectIssuerEcdsa = Scenario({
 	workflow: 'direct-credential-issuance',
 	memberships: [
 		{ profile: 'ob3-direct-delivery', level: 'additive-only' },
-		{ profile: 'data-integrity-cryptosuites', level: { oneOf: 'dic-issuer-ecdsa' } }
+		{ profile: 'data-integrity-cryptosuites', level: 'required' }
 	],
 	steps: [
 		{
@@ -181,7 +185,7 @@ export const vcalmIssuerEcdsa = Scenario({
 	workflow: 'credential-issuance',
 	memberships: [
 		{ profile: 'vcalm', level: 'additive-only' },
-		{ profile: 'data-integrity-cryptosuites', level: { oneOf: 'dic-issuer-ecdsa' } }
+		{ profile: 'data-integrity-cryptosuites', level: 'required' }
 	],
 	steps: [
 		{
@@ -205,7 +209,7 @@ export const oid4IssuerEcdsa = Scenario({
 	workflow: 'credential-issuance',
 	memberships: [
 		{ profile: 'oid4', level: 'additive-only' },
-		{ profile: 'data-integrity-cryptosuites', level: { oneOf: 'dic-issuer-ecdsa' } }
+		{ profile: 'data-integrity-cryptosuites', level: 'required' }
 	],
 	steps: [
 		{

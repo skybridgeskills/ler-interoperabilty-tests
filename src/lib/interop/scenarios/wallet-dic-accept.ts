@@ -3,8 +3,12 @@ import { Scenario } from './scenario-schema.js';
 
 /**
  * The `data-integrity-cryptosuites` wallet **consumer** scenarios — four of
- * them, in two `oneOf` groups of two, and **the first scenarios in the catalog
- * to pin an `IssuingIntent`.**
+ * them, one per (protocol × suite), and **the first scenarios in the catalog to
+ * pin an `IssuingIntent`.**
+ *
+ * **Each belongs to its own protocol's add-on badge.** M12 shipped these in two
+ * cross-protocol `oneOf` groups; M15 re-keyed the add-on badge to
+ * `(additive, base profile, role)` and the groups went with it.
  *
  * **Pinned, not observed.** The question here is *can your wallet verify this*,
  * and that cannot be asked by watching: a wallet that only ever meets EdDSA
@@ -45,8 +49,8 @@ const SUITE_NAME: Record<Suite, string> = {
 const TRANSPORT: Record<Protocol, string> = { oid4: 'OID4VCI', vcalm: 'VCALM' };
 
 /**
- * The two requirements every member of a group declares — ids identical across
- * the group, per catalog rule 5.
+ * The two requirements every one of the four declares — ids identical across the
+ * protocol pair, so the two protocols' results compare like with like.
  *
  * **`issued-suite`** reuses M11's producer checks unchanged. They read the
  * credential off `StepEvidence.artifact`, which a claim settle populates from
@@ -88,9 +92,9 @@ function summaryFor(suite: Suite, protocol: Protocol): string {
 	return `We will issue a well-formed Open Badges credential signed with \`${SUITE_NAME[suite]}\` and offer it over ${TRANSPORT[protocol]}. ${open} and accept it. Everything about this credential is correct, so a wallet that supports the cryptosuite should take it without complaint — a signature or issuer error is the finding.`;
 }
 
-/** The blurb every member carries, so four scenarios do not read as four obligations. */
+/** The blurb every member carries: this scenario belongs to THIS protocol's add-on badge. */
 function blurbFor(suite: Suite, protocol: Protocol): string {
-	return `Check that your wallet can verify a ${SUITE_NAME[suite]} credential, offered over ${TRANSPORT[protocol]}. Passing over either protocol completes that cryptosuite's item — you do not need to run both.`;
+	return `Check that your wallet can verify a ${SUITE_NAME[suite]} credential, offered over ${TRANSPORT[protocol]}. It counts toward this protocol's Data Integrity Cryptosuites add-on badge; the other protocol has its own.`;
 }
 
 function acceptScenario(protocol: Protocol, suite: Suite) {
@@ -102,7 +106,7 @@ function acceptScenario(protocol: Protocol, suite: Suite) {
 		workflow: 'credential-acceptance',
 		memberships: [
 			{ profile: protocol, level: 'additive-only' },
-			{ profile: 'data-integrity-cryptosuites', level: { oneOf: `dic-wallet-accept-${suite}` } }
+			{ profile: 'data-integrity-cryptosuites', level: 'required' }
 		],
 		steps: [
 			{

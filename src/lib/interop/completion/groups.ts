@@ -34,10 +34,18 @@ export type CompletionGroupData = {
 	 * The selected add-ons that apply to this group, each with its slice of work
 	 * in **this** base profile. Empty unless the caller passed a selection.
 	 *
-	 * A slice is **not** a badge key and carries no claim: an additive badge spans
-	 * every base profile it applies to, and this is one profile's share of it.
+	 * A slice **is** a badge key since M15 — an add-on badge is keyed
+	 * `(additive, base profile, role)` — so a card rendering one carries its own
+	 * claim control. See `evaluateAdditiveSlice`.
 	 */
 	additives: AdditiveSliceData[];
+	/**
+	 * Set when this card IS one additive's slice rather than a base profile's own
+	 * meter — the shape the additive's own page renders. `result` is then that
+	 * additive's work within `(profileSlug, roleSlug)`, and the claim control is
+	 * the add-on badge for that triple, **not** the base profile's Essential badge.
+	 */
+	addOn?: { slug: AdditiveProfileSlug; name: string };
 };
 
 /** One selected add-on's work inside one `(base profile, role)` group. */
@@ -128,10 +136,17 @@ function additiveSlicesFor(args: {
 }
 
 /**
- * The completion groups for one profile across every role it has scenarios in —
- * the profile detail page's version, and the additive case: a slug that names
- * an additive resolves its memberships the same way, which is that additive's
- * own sub-meter promoted to a page.
+ * The completion groups for one profile's detail page.
+ *
+ * **A base profile** gets one card per role it has scenarios in, exactly as the
+ * homepage does, with the reader's selected add-ons as slices inside each.
+ *
+ * **An additive profile** gets one card per `(base profile, role)` — because that
+ * triple is what an add-on badge is keyed to since M15. It used to get one card
+ * per *role*, aggregating across every base profile, which was right when a
+ * single add-on badge spanned them; that badge no longer exists, so the aggregate
+ * had nothing behind it and no honest claim control. Each card now carries the
+ * add-on badge for its own protocol.
  */
 export function completionGroupsForProfile(args: {
 	profileSlug: ProfileSlug | AdditiveProfileSlug;
@@ -146,6 +161,15 @@ export function completionGroupsForProfile(args: {
 	 */
 	additives?: AdditiveProfileSlug[];
 }): CompletionGroupData[] {
+	if (!isBaseProfile(args.profileSlug)) {
+		return addOnGroupsForAdditive({
+			additive: args.profileSlug as AdditiveProfileSlug,
+			additiveName: args.profileName,
+			runs: args.runs,
+			blocked: args.blocked
+		});
+	}
+
 	const groups: CompletionGroupData[] = [];
 	for (const role of allRoles) {
 		if (scenariosFor(args.profileSlug, role.slug).length === 0) continue;
@@ -160,16 +184,54 @@ export function completionGroupsForProfile(args: {
 				runs: args.runs,
 				blocked: args.blocked
 			}),
-			additives: isBaseProfile(args.profileSlug)
-				? additiveSlicesFor({
-						baseProfile: args.profileSlug as ProfileSlug,
-						role: role.slug,
-						selected: args.additives ?? [],
-						runs: args.runs,
-						blocked: args.blocked
-					})
-				: []
+			additives: additiveSlicesFor({
+				baseProfile: args.profileSlug as ProfileSlug,
+				role: role.slug,
+				selected: args.additives ?? [],
+				runs: args.runs,
+				blocked: args.blocked
+			})
 		});
+	}
+	return groups;
+}
+
+/**
+ * One card per `(base profile, role)` this additive reaches — the additive's own
+ * page.
+ *
+ * Base-profile-major in catalog order, role-minor, the same ordering
+ * {@link completionGroups} uses on the homepage, so a reader moving between the
+ * two does not have to re-find their place. An empty slice is omitted: a 0/0
+ * meter is not information.
+ */
+function addOnGroupsForAdditive(args: {
+	additive: AdditiveProfileSlug;
+	additiveName: string;
+	runs: Record<string, ScenarioRunRecord>;
+	blocked?: Record<string, CannotServe>;
+}): CompletionGroupData[] {
+	const groups: CompletionGroupData[] = [];
+	for (const profile of allProfiles) {
+		for (const role of allRoles) {
+			const result = evaluateAdditiveSlice({
+				additive: args.additive,
+				baseProfile: profile.slug,
+				role: role.slug,
+				runs: args.runs,
+				blocked: args.blocked
+			});
+			if (sliceIsEmpty(result)) continue;
+			groups.push({
+				profileSlug: profile.slug,
+				profileName: profile.name,
+				roleSlug: role.slug,
+				roleName: role.name,
+				result,
+				additives: [],
+				addOn: { slug: args.additive, name: args.additiveName }
+			});
+		}
 	}
 	return groups;
 }

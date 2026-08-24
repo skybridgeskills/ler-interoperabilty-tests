@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { RoleSlug, WorkflowSlug } from '$lib/interop/profile-schema.js';
 import { ZodFactory } from '$lib/util/zod-factory.js';
 
+import { LocallySignedSuite } from './locally-signed-suite.js';
 import { Membership } from './membership.js';
 import { Requirement } from './requirement-schema.js';
 
@@ -132,7 +133,18 @@ export const ScenarioAction = ZodFactory(
 			 * applies the tamper — here the suite signs locally and tampers itself.
 			 */
 			tamper: z.enum(['proof', 'claim']).optional(),
-			intent: IssuingIntent.schema.optional()
+			/**
+			 * The cryptosuite the suite signs this deliverable with. **Locally
+			 * signed, so always servable** — this is NOT an `IssuingIntent`, needs no
+			 * capability resolution, and can never render a scenario blocked. Absent
+			 * means the deployment's configured default.
+			 *
+			 * It carried an `IssuingIntent` until M15, which routed it through the
+			 * tenant map even though `signDeliverable` signs with locally-generated
+			 * keys — so a pinned ECDSA deliverable rendered *disabled* on a
+			 * single-tenant EdDSA deployment that could serve it perfectly well.
+			 */
+			cryptosuite: LocallySignedSuite.schema.optional()
 		}),
 		/**
 		 * Present a credential to the operator's **own verifier** over a live
@@ -151,7 +163,17 @@ export const ScenarioAction = ZodFactory(
 			kind: z.literal('present-to-verifier'),
 			credential: RecipeId.schema,
 			transport: z.enum(['vcalm', 'oid4vp']),
-			tamper: z.enum(['proof', 'claim']).optional()
+			tamper: z.enum(['proof', 'claim']).optional(),
+			/**
+			 * The cryptosuite the suite signs the presented credential with — the
+			 * same locally-signed, always-servable axis `deliver-direct` carries.
+			 * Absent means the deployment's configured default.
+			 *
+			 * Until M15 this action had no cryptosuite field at all, so a verifier
+			 * scenario could not ask *"does your verifier handle ECDSA"*. That is
+			 * what the `data-integrity-cryptosuites` verifier scenarios need.
+			 */
+			cryptosuite: LocallySignedSuite.schema.optional()
 		}),
 		/**
 		 * Receive a credential from the operator's **own issuer**. The suite is the
@@ -174,7 +196,7 @@ export const ScenarioAction = ZodFactory(
 		z.object({
 			kind: z.literal('receive-from-issuer'),
 			transport: z.enum(['direct', 'vcalm', 'oid4vci']),
-			keyProofSuite: z.enum(['eddsa-rdfc-2022', 'ecdsa-rdfc-2019']).optional()
+			keyProofSuite: LocallySignedSuite.schema.optional()
 		})
 	])
 );

@@ -111,12 +111,16 @@ async function verifyWithVerifierCore(
 export function provideFakeScenarioRunner(): { scenarioRunner: ScenarioRunner } {
 	return {
 		scenarioRunner: {
-			deliverDirect: async ({ doc, tamper }) => {
+			// The proof is not real, but the **cryptosuite is echoed** rather than
+			// hardcoded: a route that dropped or ignored the caller's choice would
+			// otherwise still answer 200 with a plausible-looking credential, and the
+			// route tests would prove nothing about what actually got signed.
+			deliverDirect: async ({ doc, cryptosuite, tamper }) => {
 				const signed: Record<string, unknown> = {
 					...doc,
 					proof: {
 						type: 'DataIntegrityProof',
-						cryptosuite: 'fake',
+						cryptosuite,
 						proofValue: `z${'A'.repeat(80)}2`
 					}
 				};

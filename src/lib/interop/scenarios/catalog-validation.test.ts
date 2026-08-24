@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import { assertValidCatalog, validateCatalog } from './catalog-validation.js';
+import { oneOfGroupOf } from './membership.js';
 import { Requirement } from './requirement-schema.js';
+import { scenarioFingerprint } from './scenario-fingerprint.js';
 import { Scenario, ScenarioStep } from './scenario-schema.js';
+
+import { allScenarios } from './index.js';
 
 type ScenarioInput = Parameters<typeof Scenario>[0];
 type StepInput = Parameters<typeof ScenarioStep>[0];
@@ -379,5 +383,33 @@ describe('assertValidCatalog', () => {
 	it('names every violation in the message', () => {
 		const catalog = [scenario(), scenario()];
 		expect(() => assertValidCatalog(catalog)).toThrow(/1 violation\(s\)/);
+	});
+});
+
+describe('the catalog after M15', () => {
+	it('declares no `{oneOf}` membership at all — the primitive is dormant', () => {
+		// M15 dropped the seven cross-protocol groups when add-on badges were re-keyed
+		// to `(additive, base profile, role)`: inside one base profile's slice a group
+		// had exactly one member. `{oneOf}` and rule 5 both survive, guarding a future
+		// group; this asserts there is not one today, so a later author reaching for
+		// the primitive has to read `membership.ts` and find out why it is empty.
+		const withGroups = allScenarios.filter((scenario) =>
+			scenario.memberships.some((m) => oneOfGroupOf(m.level) !== undefined)
+		);
+		expect(withGroups.map((s) => s.slug)).toEqual([]);
+	});
+
+	it('kept every scenario’s fingerprint through the membership change', () => {
+		// The premise that made dropping the groups free: `scenarioFingerprint` covers
+		// steps, actions and requirements — NOT memberships — so restructuring an
+		// additive costs nobody their stored runs. Proven rather than trusted, by
+		// fingerprinting a scenario against a copy whose memberships are replaced.
+		for (const scenario of allScenarios) {
+			const rekeyed = {
+				...scenario,
+				memberships: [{ profile: 'oid4' as const, level: { oneOf: 'anything' } }]
+			};
+			expect(scenarioFingerprint(rekeyed), scenario.slug).toBe(scenarioFingerprint(scenario));
+		}
 	});
 });

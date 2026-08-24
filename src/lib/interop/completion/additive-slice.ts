@@ -13,13 +13,17 @@ import { type CompletionResult, evaluateMemberships } from './evaluate.js';
  * One additive profile's work **within a single base profile and role** — the
  * slice a `(base profile, role)` card can honestly show.
  *
- * An additive badge is keyed `(additive, role)` and spans every base profile it
- * applies to: the Data Integrity bundle covers `vcalm`, `oid4` *and*
- * `ob3-direct-delivery`. A card shows one base profile, so it can only show that
- * profile's share of the additive's work — which is why this is **a view for
- * display and not a badge key**, and why the card renders no claim control for
- * it. Claiming an additive badge stays on the additive's own page, which
- * aggregates every base profile.
+ * **This slice IS the add-on badge key, as of M15.** It was introduced as a view
+ * for display and explicitly *not* a badge key, back when an add-on badge was
+ * keyed `(additive, role)` and spanned every base profile — a card showing one
+ * profile could then only show that profile's share, and claiming happened on the
+ * additive's own aggregate page. That spanning badge is gone: an add-on badge is
+ * now keyed `(additive, base profile, role)`, so *DIC VCALM Wallet* is exactly
+ * this slice and the card that renders it carries its own claim control.
+ *
+ * `scenariosBehindBadge` applies the same predicate for the `add-on` tier. The
+ * two must not drift — a meter and a badge disagreeing is the one thing the
+ * completion model exists to prevent.
  *
  * The slice is well-defined because every scenario names **exactly one** base
  * profile (catalog rule 4), so an additive's set partitions cleanly across the

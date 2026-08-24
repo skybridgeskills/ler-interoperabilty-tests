@@ -7,10 +7,24 @@ import { ZodFactory } from '$lib/util/zod-factory.js';
 /**
  * The name of a `oneOf` alternatives group, scoped to the scenario catalog.
  *
- * A group is the **producer-floor** primitive: "pass EdDSA *or* ECDSA". Consumer
- * breadth is instead several `required` memberships in an additive, which is
- * what keeps selective disclosure (BBS+, `ecdsa-sd` — a separate set) off the
- * core floor.
+ * **No scenario uses this as of M15, and that is deliberate.** M11 and M12
+ * authored seven cross-protocol groups — the same additive item completing over
+ * VCALM or OID4 — to serve an add-on badge keyed `(additive, role)` that spanned
+ * every base profile. M15 re-keyed that badge to
+ * `(additive, base profile, role)`, at which point a group inside one base
+ * profile's slice had exactly one member: arithmetically correct, expressing
+ * nothing. The groups were dropped and those memberships became plain
+ * `required`.
+ *
+ * The primitive **stays**, dormant. It costs nothing, catalog rule 5
+ * (`oneOfGroupsAgree`) still guards it so a future group cannot drift, and
+ * deleting it would make re-adding it a schema change. A genuine "any one of
+ * these alternatives" obligation is still expressible; there simply is not one
+ * in the catalog today.
+ *
+ * Before reaching for it, read
+ * `docs/adr/2026-08-21-additive-requirements-as-memberships.md` and its M15
+ * amendment — the cross-protocol use is **withdrawn**, not merely unused.
  */
 export const OneOfGroup = ZodFactory(z.string().min(1));
 export type OneOfGroup = ReturnType<typeof OneOfGroup>;
@@ -25,7 +39,8 @@ export type OneOfGroup = ReturnType<typeof OneOfGroup>;
  *   Including expanded work in the Essential meter would mean that meter can
  *   never fill.
  * - `{ oneOf }` — one obligation shared with the group's other members. They
- *   stop gating once any one of them passes.
+ *   stop gating once any one of them passes. **Dormant since M15** — see
+ *   {@link OneOfGroup} for why no scenario uses it.
  * - `additive-only` — the profile **names** this scenario, because it is the
  *   delivery protocol the scenario runs over, and claims **none** of it: it
  *   counts toward neither the profile's Essential meter nor its Complete meter.

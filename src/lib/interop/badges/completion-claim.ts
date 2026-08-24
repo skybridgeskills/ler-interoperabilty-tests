@@ -1,5 +1,5 @@
 import { requirementIdsBehindBadge } from './accessors.js';
-import { badgeFor, completeBadgeFor } from './badge-registry.js';
+import { addOnBadgeFor, essentialBadgeFor, expandedBadgeFor } from './badge-registry.js';
 import type { BadgeDefinition } from './badge-schema.js';
 import type { BadgeClaimSnapshot } from './claim-snapshot.js';
 import { newSince } from './new-since.js';
@@ -39,44 +39,77 @@ function claimedInfo(
 	};
 }
 
-// --- Core / single-tier (base or additive) badge ----------------------------
+// --- Essential badge --------------------------------------------------------
 
-/** The `/badges/[slug]` route for a group's primary (Core / single-tier) badge. */
+/** The `/badges/[slug]` route for a base profile-role's Essential badge. */
 export function badgeHrefFor(profileSlug: string, roleSlug: string): string | undefined {
-	return hrefFor(badgeFor(profileSlug, roleSlug));
+	return hrefFor(essentialBadgeFor(profileSlug, roleSlug));
 }
 
-/** The claimed-state summary for a group's primary badge. */
+/** The claimed-state summary for a base profile-role's Essential badge. */
 export function claimedInfoFor(
 	profileSlug: string,
 	roleSlug: string,
 	claims: BadgeClaimSnapshot[]
 ): ClaimedInfo | undefined {
-	return claimedInfo(badgeFor(profileSlug, roleSlug), claims);
+	return claimedInfo(essentialBadgeFor(profileSlug, roleSlug), claims);
 }
 
-/** The display name of a group's primary badge, e.g. "OID4 Wallet". */
+/** The display name of a base profile-role's Essential badge. */
 export function badgeNameFor(profileSlug: string, roleSlug: string): string | undefined {
-	return badgeFor(profileSlug, roleSlug)?.name;
+	return essentialBadgeFor(profileSlug, roleSlug)?.name;
 }
 
-// --- Complete (expanded) tier badge -----------------------------------------
+// --- Expanded badge ---------------------------------------------------------
 
-/** The `/badges/[slug]` route for a base profile-role's Complete badge, if registered. */
-export function completeBadgeHrefFor(profileSlug: string, roleSlug: string): string | undefined {
-	return hrefFor(completeBadgeFor(profileSlug, roleSlug));
+/** The `/badges/[slug]` route for a base profile-role's Expanded badge, if registered. */
+export function expandedBadgeHrefFor(profileSlug: string, roleSlug: string): string | undefined {
+	return hrefFor(expandedBadgeFor(profileSlug, roleSlug));
 }
 
-/** The claimed-state summary for a base profile-role's Complete badge. */
-export function completeClaimedInfoFor(
+/** The claimed-state summary for a base profile-role's Expanded badge. */
+export function expandedClaimedInfoFor(
 	profileSlug: string,
 	roleSlug: string,
 	claims: BadgeClaimSnapshot[]
 ): ClaimedInfo | undefined {
-	return claimedInfo(completeBadgeFor(profileSlug, roleSlug), claims);
+	return claimedInfo(expandedBadgeFor(profileSlug, roleSlug), claims);
 }
 
 /** The display name of a base profile-role's Complete badge, e.g. "OID4 Wallet — Complete". */
-export function completeBadgeNameFor(profileSlug: string, roleSlug: string): string | undefined {
-	return completeBadgeFor(profileSlug, roleSlug)?.name;
+export function expandedBadgeNameFor(profileSlug: string, roleSlug: string): string | undefined {
+	return expandedBadgeFor(profileSlug, roleSlug)?.name;
+}
+
+// --- Add-on badge -----------------------------------------------------------
+
+/**
+ * The `/badges/[slug]` route for one additive's badge **within one base profile
+ * and role** — the triple that keys an add-on badge since M15.
+ */
+export function addOnBadgeHrefFor(
+	additiveSlug: string,
+	baseProfileSlug: string,
+	roleSlug: string
+): string | undefined {
+	return hrefFor(addOnBadgeFor(additiveSlug, baseProfileSlug, roleSlug));
+}
+
+/** The claimed-state summary for an add-on badge. */
+export function addOnClaimedInfoFor(
+	additiveSlug: string,
+	baseProfileSlug: string,
+	roleSlug: string,
+	claims: BadgeClaimSnapshot[]
+): ClaimedInfo | undefined {
+	return claimedInfo(addOnBadgeFor(additiveSlug, baseProfileSlug, roleSlug), claims);
+}
+
+/** The display name of an add-on badge, e.g. "Data Integrity Cryptosuites — VCALM Wallet". */
+export function addOnBadgeNameFor(
+	additiveSlug: string,
+	baseProfileSlug: string,
+	roleSlug: string
+): string | undefined {
+	return addOnBadgeFor(additiveSlug, baseProfileSlug, roleSlug)?.name;
 }

@@ -47,7 +47,7 @@ export function startDirectStep(
 				body: JSON.stringify({
 					credential: action.credential,
 					...(action.tamper ? { tamper: action.tamper } : {}),
-					...(action.intent ? { intent: action.intent } : {})
+					...(action.cryptosuite ? { cryptosuite: action.cryptosuite } : {})
 				})
 			});
 			if (stopped) return;

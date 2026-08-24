@@ -69,7 +69,8 @@ export function startPresentStep(
 						credential: action.credential,
 						transport: action.transport,
 						interactionUrl,
-						...(action.tamper ? { tamper: action.tamper } : {})
+						...(action.tamper ? { tamper: action.tamper } : {}),
+						...(action.cryptosuite ? { cryptosuite: action.cryptosuite } : {})
 					})
 				});
 				if (stopped) return;

@@ -7,7 +7,7 @@ import {
 import type { CompletionResult } from '$lib/interop/completion/index.js';
 
 /** The registered base badge, and its live requirement set. */
-export const demoBadge = badgeBySlug('oid4-wallet')!;
+export const demoBadge = badgeBySlug('oid4-wallet-essential')!;
 const requirementIds = requirementIdsBehindBadge(demoBadge);
 const total = requirementIds.length;
 
@@ -15,7 +15,7 @@ const total = requirementIds.length;
 export const serverProps = {
 	badge: demoBadge,
 	criteriaNarrative: criteriaNarrative(demoBadge),
-	achievementId: 'https://tests.example/badges/oid4-wallet',
+	achievementId: 'https://tests.example/badges/oid4-wallet-essential',
 	criteriaId: 'https://tests.example/badges/oid4-wallet?v=abcd1234'
 };
 

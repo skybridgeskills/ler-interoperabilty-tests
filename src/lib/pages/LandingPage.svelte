@@ -17,9 +17,9 @@
 		badgeNameFor,
 		type BadgeClaimSnapshot,
 		claimedInfoFor,
-		completeBadgeHrefFor,
-		completeBadgeNameFor,
-		completeClaimedInfoFor,
+		expandedBadgeHrefFor,
+		expandedBadgeNameFor,
+		expandedClaimedInfoFor,
 		completionGroups
 	} from '$lib/interop/index.js';
 	import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
@@ -125,9 +125,9 @@
 		claimHref={badgeHrefFor(group.profileSlug, group.roleSlug)}
 		claim={claimedInfoFor(group.profileSlug, group.roleSlug, claims)}
 		baseBadgeName={badgeNameFor(group.profileSlug, group.roleSlug)}
-		expandedClaimHref={completeBadgeHrefFor(group.profileSlug, group.roleSlug)}
-		expandedClaim={completeClaimedInfoFor(group.profileSlug, group.roleSlug, claims)}
-		completeBadgeName={completeBadgeNameFor(group.profileSlug, group.roleSlug)}
+		expandedClaimHref={expandedBadgeHrefFor(group.profileSlug, group.roleSlug)}
+		expandedClaim={expandedClaimedInfoFor(group.profileSlug, group.roleSlug, claims)}
+		expandedBadgeName={expandedBadgeNameFor(group.profileSlug, group.roleSlug)}
 	/>
 {/snippet}
 

@@ -68,7 +68,7 @@ describe('POST /api/badges/[slug]/claim', { timeout: 20_000 }, () => {
 	it('503s when the exchange runner is disabled', async () => {
 		await withCtx(
 			async () => {
-				const { status, payload } = await callPost('oid4-wallet', validAward);
+				const { status, payload } = await callPost('oid4-wallet-essential', validAward);
 				expect(status).toBe(503);
 				expect(payload.message).toBe('Exchange runner disabled');
 			},
@@ -78,7 +78,7 @@ describe('POST /api/badges/[slug]/claim', { timeout: 20_000 }, () => {
 
 	it('400s a malformed body', async () => {
 		await withCtx(async () => {
-			const { status, payload } = await callPost('oid4-wallet', { requirementsMet: -1 });
+			const { status, payload } = await callPost('oid4-wallet-essential', { requirementsMet: -1 });
 			expect(status).toBe(400);
 			expect(payload.message).toBe('Malformed badge claim');
 		});
@@ -86,7 +86,7 @@ describe('POST /api/badges/[slug]/claim', { timeout: 20_000 }, () => {
 
 	it('mints a claim exchange carrying the badge document and returns the exchange result', async () => {
 		await withCtx(async () => {
-			const { status, payload } = await callPost('oid4-wallet', validAward);
+			const { status, payload } = await callPost('oid4-wallet-essential', validAward);
 
 			expect(status).toBe(200);
 			expect(payload.workflowId).toBe('claim');
@@ -97,17 +97,17 @@ describe('POST /api/badges/[slug]/claim', { timeout: 20_000 }, () => {
 			const subject = credential.credentialSubject as Record<string, unknown>;
 			const achievement = subject.achievement as Record<string, unknown>;
 			expect(credential.type).toEqual(['VerifiableCredential', 'OpenBadgeCredential']);
-			expect(achievement.id).toBe('http://localhost:5173/badges/oid4-wallet');
+			expect(achievement.id).toBe('http://localhost:5173/badges/oid4-wallet-essential');
 		});
 	});
 
 	it('rides the badge slug into the exchange as the exchangeIdPrefix', async () => {
 		await withCtx(async () => {
-			const { payload } = await callPost('oid4-wallet', validAward);
+			const { payload } = await callPost('oid4-wallet-essential', validAward);
 			const stored = asFakeTransactionServiceClient(transactionServiceClient()).getStored(
 				payload.exchangeId!
 			);
-			expect(stored?.variables?.exchangeIdPrefix).toBe('oid4-wallet');
+			expect(stored?.variables?.exchangeIdPrefix).toBe('oid4-wallet-essential');
 		});
 	});
 });

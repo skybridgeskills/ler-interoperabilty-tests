@@ -11,9 +11,12 @@
 		badgeNameFor,
 		type BadgeClaimSnapshot,
 		claimedInfoFor,
-		completeBadgeHrefFor,
-		completeBadgeNameFor,
-		completeClaimedInfoFor,
+		expandedBadgeHrefFor,
+		expandedBadgeNameFor,
+		expandedClaimedInfoFor,
+		addOnBadgeHrefFor,
+		addOnBadgeNameFor,
+		addOnClaimedInfoFor,
 		completionGroupsForProfile,
 		profileBySlug,
 		profileHref
@@ -42,12 +45,16 @@
 	// For an additive profile the same call resolves its memberships, giving the
 	// additive's own sub-meter promoted to a page. Selected roles sort first.
 	const scenarioGroups = $derived.by(() => {
+		// For a BASE profile this is one card per role, with the reader's selected
+		// add-ons as slices inside. For an ADDITIVE profile it is one card per
+		// (base profile, role) — the triple an add-on badge is keyed to since M15 —
+		// and `additives` is ignored, because nesting slices inside an additive's own
+		// page would list the same scenarios twice.
 		const groups = completionGroupsForProfile({
 			profileSlug: data.profile.slug,
 			profileName: data.profile.name,
 			runs,
 			blocked: data.blocked,
-			// Honoured for a base profile only — see `completionGroupsForProfile`.
 			additives: [...selectionStore.additiveProfiles]
 		});
 		const selectedRoles = new Set<string>(selectionStore.roles);
@@ -66,24 +73,44 @@
 </script>
 
 <!--
-	One two-tier bundle card. For an additive profile (or a base profile with no
-	optional set) the group has no expanded tier, so the Complete accessors return
-	undefined and the card renders single-tier.
+	One bundle card.
+
+	`group.addOn` is set when the card IS an additive's slice — the shape this page
+	renders for an additive profile, one card per (base profile, role). Its claim
+	control is then the ADD-ON badge for that triple, never the base profile's
+	Essential badge, and it has no Expanded tier: "a complete slice of an additive"
+	is not a thing anyone can claim.
+
+	For a base profile the card is two-tier, and the Expanded accessors return
+	undefined where that profile-role has no optional set.
 -->
 {#snippet groupCard(group: (typeof scenarioGroups)[number])}
-	<CompletionGroup
-		profileName={group.profileName}
-		roleName={group.roleName}
-		result={group.result}
-		additives={group.additives}
-		{runs}
-		claimHref={badgeHrefFor(group.profileSlug, group.roleSlug)}
-		claim={claimedInfoFor(group.profileSlug, group.roleSlug, claims)}
-		baseBadgeName={badgeNameFor(group.profileSlug, group.roleSlug)}
-		expandedClaimHref={completeBadgeHrefFor(group.profileSlug, group.roleSlug)}
-		expandedClaim={completeClaimedInfoFor(group.profileSlug, group.roleSlug, claims)}
-		completeBadgeName={completeBadgeNameFor(group.profileSlug, group.roleSlug)}
-	/>
+	{#if group.addOn}
+		<CompletionGroup
+			profileName={group.profileName}
+			roleName={group.roleName}
+			result={group.result}
+			additives={[]}
+			{runs}
+			claimHref={addOnBadgeHrefFor(group.addOn.slug, group.profileSlug, group.roleSlug)}
+			claim={addOnClaimedInfoFor(group.addOn.slug, group.profileSlug, group.roleSlug, claims)}
+			baseBadgeName={addOnBadgeNameFor(group.addOn.slug, group.profileSlug, group.roleSlug)}
+		/>
+	{:else}
+		<CompletionGroup
+			profileName={group.profileName}
+			roleName={group.roleName}
+			result={group.result}
+			additives={group.additives}
+			{runs}
+			claimHref={badgeHrefFor(group.profileSlug, group.roleSlug)}
+			claim={claimedInfoFor(group.profileSlug, group.roleSlug, claims)}
+			baseBadgeName={badgeNameFor(group.profileSlug, group.roleSlug)}
+			expandedClaimHref={expandedBadgeHrefFor(group.profileSlug, group.roleSlug)}
+			expandedClaim={expandedClaimedInfoFor(group.profileSlug, group.roleSlug, claims)}
+			expandedBadgeName={expandedBadgeNameFor(group.profileSlug, group.roleSlug)}
+		/>
+	{/if}
 {/snippet}
 
 <section class="space-y-4">
@@ -135,7 +162,7 @@
 		<h2 class="text-headline-md">Scenarios</h2>
 		{#if scenarioGroups.length > 0}
 			<div class="space-y-4">
-				{#each scenarioGroups as group (group.roleSlug)}
+				{#each scenarioGroups as group (group.profileSlug + ':' + group.roleSlug)}
 					{@render groupCard(group)}
 				{/each}
 			</div>
@@ -162,7 +189,7 @@
 		<h2 class="text-headline-md">Scenarios</h2>
 		{#if scenarioGroups.length > 0}
 			<div class="space-y-4">
-				{#each scenarioGroups as group (group.roleSlug)}
+				{#each scenarioGroups as group (group.profileSlug + ':' + group.roleSlug)}
 					{@render groupCard(group)}
 				{/each}
 			</div>

@@ -34,11 +34,28 @@ describe('oid4-wallet-faithful-rendering', () => {
 
 	it('populates the oid4/wallet optional sub-meter, not the base meter', () => {
 		const result = evaluateCompletion({ profile: 'oid4', role: 'wallet', runs: {} });
-		// The base (required) meter counts only the two required scenarios' reqs.
 		expect(result.optional.total).toBeGreaterThan(0);
-		expect(result.optional.obligations.map((o) => o.obligation)).toHaveLength(1);
-		// This scenario's requirements are not in the base total.
-		const optionalReqCount = scenario.steps.flatMap((s) => s.requirements).length;
-		expect(result.optional.total).toBe(optionalReqCount);
+
+		// This scenario is IN the optional (Expanded) set, and its requirements are
+		// counted there. It was the only member until M15 P6 added the conduct
+		// scenarios — the first real population of an Expanded tier — so this asserts
+		// membership and its own contribution rather than a total that now grows
+		// whenever the tier does.
+		const optionalSlugs = result.optional.obligations.flatMap((o) =>
+			o.obligation.kind === 'scenario' ? [o.obligation.scenario.slug] : []
+		);
+		expect(optionalSlugs).toContain(scenario.slug);
+
+		const ownReqCount = scenario.steps.flatMap((s) => s.requirements).length;
+		const own = result.optional.obligations.find(
+			(o) => o.obligation.kind === 'scenario' && o.obligation.scenario.slug === scenario.slug
+		)!;
+		expect(own.total).toBe(ownReqCount);
+
+		// And none of it reaches the base (Essential) meter.
+		const baseSlugs = result.obligations.flatMap((o) =>
+			o.obligation.kind === 'scenario' ? [o.obligation.scenario.slug] : []
+		);
+		expect(baseSlugs).not.toContain(scenario.slug);
 	});
 });

@@ -54,8 +54,10 @@ describe('additive profile accessors', () => {
 		expect(p?.slug).toBe('data-integrity-cryptosuites');
 		expect(p?.appliesToBaseProfiles).toEqual(['vcalm', 'oid4', 'ob3-direct-delivery']);
 		// Roles now come from the catalog, not a list on the profile: an additive is
-		// demonstrable in a role when a scenario there names it.
-		expect(rolesOfAdditiveProfile(p!)).toEqual(['issuer', 'wallet']);
+		// demonstrable in a role when a scenario there names it. The verifier joined
+		// in M15 P5 — the role has the purest claim on a cryptosuite bundle and had
+		// no additive axis at all until then.
+		expect(rolesOfAdditiveProfile(p!)).toEqual(['issuer', 'wallet', 'verifier']);
 	});
 
 	it('returns undefined for an unknown slug', () => {

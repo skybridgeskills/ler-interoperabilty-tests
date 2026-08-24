@@ -44,7 +44,28 @@ describe('PoC scenario catalog', () => {
 			'oid4-wallet-accept-eddsa',
 			'vcalm-wallet-accept-eddsa',
 			'oid4-wallet-accept-ecdsa',
-			'vcalm-wallet-accept-ecdsa'
+			'vcalm-wallet-accept-ecdsa',
+			// M15 P4 — the DIC issuer CONSUMER axis: does your issuer verify our
+			// holder key proof in each suite? Live transports only; a paste has none.
+			'vcalm-issuer-consumer-eddsa',
+			'oid4-issuer-consumer-eddsa',
+			'vcalm-issuer-consumer-ecdsa',
+			'oid4-issuer-consumer-ecdsa',
+			// M15 P5 — the DIC VERIFIER axis: can your verifier tell a good credential
+			// in each suite from one whose proof was corrupted? Two passes, not four:
+			// the schema and expiry defects are suite-independent and stay on the base.
+			'ob3-direct-verifier-eddsa',
+			'vcalm-verifier-eddsa',
+			'oid4-verifier-eddsa',
+			'ob3-direct-verifier-ecdsa',
+			'vcalm-verifier-ecdsa',
+			'oid4-verifier-ecdsa',
+			// M15 P6 — the CONDUCT scenarios, homing the five `*-recorded` checks the
+			// exchange-variation effort shipped with no scenario to carry them.
+			'oid4-wallet-presentation-pex',
+			'oid4-wallet-presentation-limited',
+			'oid4-wallet-discovery',
+			'oid4-wallet-tamper-refusal'
 		]);
 		expect(validateCatalog(allScenarios)).toEqual([]);
 	});

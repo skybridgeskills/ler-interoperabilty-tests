@@ -4,11 +4,12 @@ import type { Requirement } from './requirement-schema.js';
  * The nine Open Skill Alignment payload requirements, shared verbatim by the
  * three `*-issuer-skills-data` scenarios.
  *
- * **The ids must be identical across all three** — catalog validation rule 5
- * (`oneOfGroupsAgree`) enforces it, and the completion meter depends on it:
- * `osa-issuer-payload` is one obligation, met by whichever protocol the operator
- * happened to run. Declaring them once here is what keeps the three from
- * drifting apart in a later edit.
+ * **The ids are identical across all three**, by construction rather than by
+ * rule. Until M15 catalog rule 5 enforced it, because the three formed an
+ * `osa-issuer-payload` `oneOf` group; M15 dropped the group, so nothing validates
+ * the parity any more and this shared module *is* the guarantee. A reader
+ * comparing an OID4 result with a VCALM one must be comparing like with like —
+ * declaring the nine once here is what keeps the three from drifting apart.
  *
  * The nine are the survivors of `mapping.md` § 5. `result.alignment-optional` is
  * dropped — a `MAY`, and `RequirementLevel` is `MUST | SHOULD` only.

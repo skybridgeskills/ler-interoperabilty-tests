@@ -3,7 +3,14 @@ import { Scenario } from './scenario-schema.js';
 
 /**
  * The `data-integrity-cryptosuites` wallet **producer** scenarios — four of
- * them, in two `oneOf` groups of two.
+ * them, one per (protocol × suite).
+ *
+ * **Each belongs to its own protocol's add-on badge.** M12 shipped these in two
+ * cross-protocol `oneOf` groups; M15 re-keyed the add-on badge to
+ * `(additive, base profile, role)` and the groups went with it, because inside
+ * one base profile's slice a group had exactly one member. *DIC VCALM Wallet*
+ * now asks for both cryptosuites over VCALM, and *DIC OID4 Wallet* for both over
+ * OID4.
  *
  * **Observed, not pinned.** The suite is the verifier here: it asks, the wallet
  * answers, and the key the wallet signs with is the wallet's own. Nothing in the
@@ -41,8 +48,9 @@ const KEY_NAME: Record<Suite, string> = { eddsa: 'Ed25519', ecdsa: 'P-256' };
 const TRANSPORT: Record<Protocol, string> = { oid4: 'OID4VP', vcalm: 'VCALM' };
 
 /**
- * The three requirements every member of a group declares — ids identical
- * across the group, per catalog rule 5, with only the checks varying by suite.
+ * The three requirements every one of the four declares — ids identical across
+ * the protocol pair, so a reader comparing an OID4 result with a VCALM one is
+ * comparing like with like. Only the checks vary by suite.
  *
  * `key-type-matches` is **kept**, unlike M11's dropped issuer analogue: the
  * wallet check reads the key type straight off the holder `did:key`'s multibase
@@ -82,9 +90,9 @@ function summaryFor(suite: Suite, protocol: Protocol): string {
 	return `We will ask your wallet for any Open Badges credential you hold, over ${TRANSPORT[protocol]}. Present it using a ${KEY_NAME[suite]} holder key, so the presentation is signed with \`${SUITE_NAME[suite]}\` — most wallets choose this in their key or DID settings. We read the cryptosuite off the presentation that arrives; a wallet that holds no ${KEY_NAME[suite]} key will fail this scenario, and that is the answer, not a fault.`;
 }
 
-/** The blurb every member carries, so four scenarios do not read as four obligations. */
+/** The blurb every member carries: this scenario belongs to THIS protocol's add-on badge. */
 function blurbFor(suite: Suite, protocol: Protocol): string {
-	return `Present a credential over ${TRANSPORT[protocol]} signed with ${SUITE_NAME[suite]}. Passing over either protocol completes that cryptosuite's item — you do not need to run both.`;
+	return `Present a credential over ${TRANSPORT[protocol]} signed with ${SUITE_NAME[suite]}. It counts toward this protocol's Data Integrity Cryptosuites add-on badge; the other protocol has its own.`;
 }
 
 function presentScenario(protocol: Protocol, suite: Suite) {
@@ -96,7 +104,7 @@ function presentScenario(protocol: Protocol, suite: Suite) {
 		workflow: 'credential-presentation',
 		memberships: [
 			{ profile: protocol, level: 'additive-only' },
-			{ profile: 'data-integrity-cryptosuites', level: { oneOf: `dic-wallet-present-${suite}` } }
+			{ profile: 'data-integrity-cryptosuites', level: 'required' }
 		],
 		steps: [
 			{

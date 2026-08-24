@@ -12,7 +12,13 @@ import { credentialVcdm2 } from './checks/credential-vcdm2.js';
 import { discoveryConstructionRfc8414 } from './checks/discovery-construction-rfc8414.js';
 import { exchangeReachedComplete } from './checks/exchange-reached-complete.js';
 import { holderDidBound } from './checks/holder-did-bound.js';
+import { issuerAcceptedKeyProofEcdsa } from './checks/issuer-accepted-key-proof-ecdsa.js';
+import { issuerAcceptedKeyProofEddsa } from './checks/issuer-accepted-key-proof-eddsa.js';
+import { issuerAdvertisesKeyProofEcdsa } from './checks/issuer-advertises-key-proof-ecdsa.js';
+import { issuerAdvertisesKeyProofEddsa } from './checks/issuer-advertises-key-proof-eddsa.js';
 import { issuerBindsHolderDid } from './checks/issuer-binds-holder-did.js';
+import { issuerKeyProofSuiteEcdsa } from './checks/issuer-key-proof-suite-ecdsa.js';
+import { issuerKeyProofSuiteEddsa } from './checks/issuer-key-proof-suite-eddsa.js';
 import { limitDisclosureRecorded } from './checks/limit-disclosure-recorded.js';
 import { offerWasFetched } from './checks/offer-was-fetched.js';
 import { oid4IssuerCredentialEndpoint } from './checks/oid4-issuer-credential-endpoint.js';
@@ -211,7 +217,17 @@ export const automaticChecks: Record<string, AutomaticCheck> = {
 	// well-known constructions, so the wallet's choice IS the measurement. Scores
 	// the ordered election array rather than a value, and is a SHOULD — a wallet
 	// with the bug completes here and fails against a stricter verifier later.
-	[discoveryConstructionRfc8414.id]: discoveryConstructionRfc8414
+	[discoveryConstructionRfc8414.id]: discoveryConstructionRfc8414,
+
+	// The `data-integrity-cryptosuites` ISSUER CONSUMER axis (M15 P4) — the one DIC
+	// axis never measured under any model. Locally-signed key proofs, so always
+	// servable; see `checks/issuer-key-proof.ts`.
+	[issuerAcceptedKeyProofEddsa.id]: issuerAcceptedKeyProofEddsa,
+	[issuerAcceptedKeyProofEcdsa.id]: issuerAcceptedKeyProofEcdsa,
+	[issuerKeyProofSuiteEddsa.id]: issuerKeyProofSuiteEddsa,
+	[issuerKeyProofSuiteEcdsa.id]: issuerKeyProofSuiteEcdsa,
+	[issuerAdvertisesKeyProofEddsa.id]: issuerAdvertisesKeyProofEddsa,
+	[issuerAdvertisesKeyProofEcdsa.id]: issuerAdvertisesKeyProofEcdsa
 };
 
 /**

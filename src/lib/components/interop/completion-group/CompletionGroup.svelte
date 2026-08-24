@@ -22,19 +22,19 @@
 	 * category.
 	 *
 	 * - **Essential** — the profile's `required`/`oneOf` scenarios → the base badge.
-	 * - **Complete** — **cumulative**: Essential ∪ the profile's own `optional`
-	 *   set → the "— Complete" badge. Its meter therefore spans two body sections,
+	 * - **Expanded** — **cumulative**: Essential ∪ the profile's own `optional`
+	 *   set → the "— Expanded" badge. Its meter therefore spans two body sections,
 	 *   which is why **every section heading carries its own count**: `8/13 + 0/4 =
 	 *   8/17` has to be a sum the reader can do from the rows on screen, or a
 	 *   cumulative meter is unauditable.
 	 * - **Add-ons** — one section per selected additive profile that reaches this
-	 *   `(profile, role)`, ordered **below** Complete and counted toward **neither**
+	 *   `(profile, role)`, ordered **below** Expanded and counted toward **neither**
 	 *   base tier. An additive layers work many implementers will never want; a
-	 *   denominator they cannot opt out of would put Complete out of their reach.
+	 *   denominator they cannot opt out of would put Expanded out of their reach.
 	 *   The section shows a **slice** — this base profile's share of an additive
 	 *   whose badge spans several — so it carries no claim control.
 	 *
-	 * A group with no expanded set and no selected add-on renders as a single flat
+	 * A group with no Expanded set and no selected add-on renders as a single flat
 	 * list with one meter, exactly as before.
 	 *
 	 * Purely presentational. Every completion number arrives pre-computed; each
@@ -53,7 +53,7 @@
 		baseBadgeName = 'badge',
 		expandedClaimHref,
 		expandedClaim,
-		completeBadgeName = 'complete badge'
+		expandedBadgeName = 'expanded badge'
 	}: {
 		profileName: string;
 		roleName: string;
@@ -68,18 +68,18 @@
 		claim?: ClaimedInfo;
 		/** Base badge display name, e.g. "OID4 Wallet". Falls back to a generic label. */
 		baseBadgeName?: string;
-		/** The Complete badge's `/badges/[slug]` route. Undefined → disabled. */
+		/** The Expanded badge's `/badges/[slug]` route. Undefined → disabled. */
 		expandedClaimHref?: string;
-		/** Present once the Complete badge has been claimed. */
+		/** Present once the Expanded badge has been claimed. */
 		expandedClaim?: ClaimedInfo;
-		/** Complete badge display name, e.g. "OID4 Wallet — Complete". */
-		completeBadgeName?: string;
+		/** Expanded badge display name, e.g. "OID4 Wallet — Expanded". */
+		expandedBadgeName?: string;
 	} = $props();
 
-	type Tone = 'essential' | 'complete' | 'additive';
+	type Tone = 'essential' | 'expanded' | 'add-on';
 
 	const essentialClaimable = $derived(isClaimable(result));
-	const completeClaimable = $derived(isExpandedClaimable(result));
+	const expandedClaimable = $derived(isExpandedClaimable(result));
 	const complete = $derived(completeTotals(result));
 	const hasExpanded = $derived(result.optional.obligations.length > 0);
 
@@ -105,13 +105,13 @@
 	 * text on light surfaces. See ADR 2026-08-21.
 	 */
 	const dotClass = (tone: Tone) =>
-		tone === 'essential' ? 'bg-primary' : tone === 'complete' ? 'bg-accent' : 'bg-additive';
+		tone === 'essential' ? 'bg-primary' : tone === 'expanded' ? 'bg-accent' : 'bg-additive';
 	const textClass = (tone: Tone) =>
-		tone === 'essential' ? 'text-primary' : tone === 'complete' ? 'text-accent' : 'text-additive';
+		tone === 'essential' ? 'text-primary' : tone === 'expanded' ? 'text-accent' : 'text-additive';
 	const ruleClass = (tone: Tone) =>
 		tone === 'essential'
 			? 'border-l-primary/30'
-			: tone === 'complete'
+			: tone === 'expanded'
 				? 'border-l-accent/30'
 				: 'border-l-additive-border';
 </script>
@@ -190,7 +190,7 @@
 		Below `sm:` the bar drops to its own full-width line: sharing the line with
 		the label squeezes it, and an add-on's longer label squeezes it to a stub.
 		The note sits after the numbers rather than in the label column, where
-		"Complete · Essential + 4" wrapped to three lines and made the header ragged.
+		"Expanded · Essential + 4" wrapped to three lines and made the header ragged.
 	-->
 	<div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2.5 gap-y-1">
 		<span class={`size-2 shrink-0 rounded-full ${dotClass(tone)}`}></span>
@@ -215,7 +215,7 @@
 	<div class="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
 		<span class={`size-2 shrink-0 self-center rounded-full ${dotClass(tone)}`}></span>
 		<span class={`text-label-md ${textClass(tone)}`}>{label}</span>
-		<!-- The count in every heading is what makes the cumulative Complete meter checkable. -->
+		<!-- The count in every heading is what makes the cumulative Expanded meter checkable. -->
 		<span class="text-label-md text-muted-foreground">{met}/{total}</span>
 		{#if note}
 			<span class="text-label-md text-muted-foreground">· {note}</span>
@@ -263,17 +263,17 @@
 				{#if hasExpanded}
 					<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
 						{@render tierRow(
-							'Complete',
-							'complete',
+							'Expanded',
+							'expanded',
 							complete.met,
 							complete.total,
 							`Essential + ${result.optional.total}`
 						)}
 						<div class="shrink-0 sm:w-64">
 							{@render claimAffordance(
-								completeBadgeName,
+								expandedBadgeName,
 								expandedClaimHref,
-								completeClaimable,
+								expandedClaimable,
 								expandedClaim,
 								'secondary'
 							)}
@@ -284,7 +284,7 @@
 				{#each additives as slice (slice.slug)}
 					{@const totals = completeTotals(slice.result)}
 					<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-						{@render tierRow(slice.name, 'additive', totals.met, totals.total, 'Add-on')}
+						{@render tierRow(slice.name, 'add-on', totals.met, totals.total, 'Add-on')}
 						<!--
 							No claim here on purpose: an additive badge spans every base profile
 							it applies to, and this card shows one profile's slice of it.
@@ -308,7 +308,7 @@
 			{#if hasExpanded}
 				{@render category(
 					'Expanded interoperability',
-					'complete',
+					'expanded',
 					result.optional.met,
 					result.optional.total,
 					result.optional.obligations
@@ -318,7 +318,7 @@
 				{@const totals = completeTotals(slice.result)}
 				{@render category(
 					slice.name,
-					'additive',
+					'add-on',
 					totals.met,
 					totals.total,
 					sliceRows(slice),

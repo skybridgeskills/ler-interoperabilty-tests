@@ -67,4 +67,26 @@ describe('POST /api/scenario-runner/present', () => {
 		const { status } = await callPost('not-json');
 		expect(status).toBe(400);
 	});
+
+	/**
+	 * M15 P2: this route signs LOCALLY, so its cryptosuite is always servable.
+	 * Until M15 it called `resolveIssuingContext(config, undefined)` — taking the
+	 * deployment's tenant suite — and had no way to vary the suite at all, which
+	 * is why the `data-integrity-cryptosuites` verifier scenarios could not exist.
+	 *
+	 * The test context is a single-tenant EdDSA deployment. What actually gets
+	 * signed is asserted on the deliver-direct route, which shares
+	 * `signDeliverable`; here the point is that a non-default suite is *accepted*
+	 * rather than refused.
+	 */
+	it('accepts a non-default cryptosuite on a single-tenant deployment', async () => {
+		const { status } = await callPost({
+			credential: 'minimal-ob3',
+			transport: 'vcalm',
+			interactionUrl: 'https://verifier.test/exchanges/abc',
+			cryptosuite: 'ecdsa-rdfc-2019'
+		});
+
+		expect(status).toBe(200);
+	});
 });

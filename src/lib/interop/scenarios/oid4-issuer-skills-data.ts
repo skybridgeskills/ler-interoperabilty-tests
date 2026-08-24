@@ -6,20 +6,20 @@ import { Scenario } from './scenario-schema.js';
 
 /**
  * Open Skill Alignment over **OID4VCI** — one of the three members of the
- * `osa-issuer-payload` group. Identical to its siblings apart from slug,
+ * `osa-issuer-payload` siblings. Identical to them apart from slug,
  * workflow, action and copy; see `ob3-direct-issuer-skills-data.ts` for why the
- * group is shaped this way.
+ * three are shaped this way, and why M15 dropped the `oneOf` group they used to form.
  */
 export const oid4IssuerSkillsData = Scenario({
 	slug: 'oid4-issuer-skills-data',
 	name: 'Deliver skills data over OID4VCI',
 	blurb:
-		'Issue a credential carrying a performance scale and a learner result over OID4VCI. Passing this over any one protocol completes the skills-data item.',
+		'Issue a credential carrying a performance scale and a learner result over OID4VCI. It counts toward this protocol’s Open Skill Alignment add-on badge.',
 	role: 'issuer',
 	workflow: 'credential-issuance',
 	memberships: [
 		{ profile: 'oid4', level: 'additive-only' },
-		{ profile: 'open-skill-alignment', level: { oneOf: 'osa-issuer-payload' } }
+		{ profile: 'open-skill-alignment', level: 'required' }
 	],
 	steps: [
 		{

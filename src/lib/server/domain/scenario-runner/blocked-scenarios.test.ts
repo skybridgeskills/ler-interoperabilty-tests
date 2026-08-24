@@ -119,3 +119,64 @@ describe('blockedScenarios', () => {
 		expect(blockedScenarios(config, [elective, servablePin])).toEqual({});
 	});
 });
+
+describe('what is NOT blockable — only `issue` is tenant-bound', () => {
+	/**
+	 * The defect M15 P2 fixed, captured. `deliver-direct` and
+	 * `present-to-verifier` sign with locally-generated keys that `wallet-crypto`
+	 * always produces, so their cryptosuite can never be unservable. Until M15
+	 * `deliver-direct` carried an `IssuingIntent` and went through the tenant map,
+	 * which rendered a locally-signed ECDSA deliverable *disabled* on a
+	 * single-tenant EdDSA deployment that could serve it perfectly well.
+	 */
+	function locallySigned(
+		slug: string,
+		action: Parameters<typeof Scenario>[0]['steps'][number]['action']
+	) {
+		return Scenario({
+			slug,
+			name: 'A locally-signed scenario',
+			blurb: 'One line.',
+			role: 'verifier',
+			workflow: 'credential-request-and-verification',
+			memberships: [{ profile: 'oid4', level: 'required' }],
+			steps: [
+				{
+					id: 'step',
+					title: 'Hand it over',
+					summary: 'We sign a credential and hand it to your verifier.',
+					action,
+					requirements: []
+				}
+			]
+		});
+	}
+
+	it('never blocks a `deliver-direct` step, whatever suite it signs with', () => {
+		const ecdsa = locallySigned('dd-ecdsa', {
+			kind: 'deliver-direct',
+			credential: 'minimal-ob3',
+			cryptosuite: 'ecdsa-rdfc-2019'
+		});
+		// The deployment above serves EdDSA only. An `issue` step pinned to ECDSA
+		// IS blocked (see above); this one must not be.
+		expect(blockedScenario(config, ecdsa)).toBeUndefined();
+		expect(blockedScenarios(config, [ecdsa])).toEqual({});
+	});
+
+	it('never blocks a `present-to-verifier` step, whatever suite it signs with', () => {
+		const ecdsa = locallySigned('ptv-ecdsa', {
+			kind: 'present-to-verifier',
+			credential: 'minimal-ob3',
+			transport: 'vcalm',
+			cryptosuite: 'ecdsa-rdfc-2019'
+		});
+		expect(blockedScenario(config, ecdsa)).toBeUndefined();
+	});
+
+	it('still blocks the same suite on an `issue` step — the distinction is who mints', () => {
+		// Same deployment, same cryptosuite, different action: the transaction
+		// service mints an `issue`, so its tenant map decides and it can say no.
+		expect(blockedScenario(config, unservablePin)?.kind).toBe('cryptosuite-unavailable');
+	});
+});

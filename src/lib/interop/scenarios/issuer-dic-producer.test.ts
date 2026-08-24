@@ -9,9 +9,14 @@ import { scenarioFingerprint } from './scenario-fingerprint.js';
 import { allScenarios, scenarioBySlug } from './index.js';
 
 /**
- * The six `data-integrity-cryptosuites` producer scenarios (M11 P7) and the two
- * cross-protocol `oneOf` groups they form — the membership model's first real
- * additive scoring.
+ * The six `data-integrity-cryptosuites` issuer producer scenarios (M11 P7), and
+ * what they became when M15 re-keyed add-on badges to
+ * `(additive, base profile, role)`.
+ *
+ * They used to form two cross-protocol `oneOf` groups, so two runs filled DIC's
+ * issuer card. Now each is plain `required` in the additive: six obligations,
+ * and each protocol's DIC badge asks for **both** cryptosuites over **that**
+ * protocol.
  */
 
 const EDDSA = ['ob3-direct-issuer-eddsa', 'vcalm-issuer-eddsa', 'oid4-issuer-eddsa'] as const;
@@ -52,36 +57,30 @@ describe('the six DIC producer scenarios', () => {
 		}
 	});
 
-	it('are `additive-only` in their base profile and `{oneOf}` in their suite group', () => {
-		for (const [slugs, group] of [
-			[EDDSA, 'dic-issuer-eddsa'],
-			[ECDSA, 'dic-issuer-ecdsa']
-		] as const) {
-			for (const slug of slugs) {
-				const scenario = scenarioBySlug(slug)!;
-				const base = scenario.memberships.find((m) => m.profile !== 'data-integrity-cryptosuites')!;
-				const dic = scenario.memberships.find((m) => m.profile === 'data-integrity-cryptosuites')!;
-				expect(base.level, slug).toBe('additive-only');
-				expect(dic.level, slug).toEqual({ oneOf: group });
-			}
+	it('are `additive-only` in their base profile and `required` in the additive', () => {
+		for (const slug of ALL) {
+			const scenario = scenarioBySlug(slug)!;
+			const base = scenario.memberships.find((m) => m.profile !== 'data-integrity-cryptosuites')!;
+			const dic = scenario.memberships.find((m) => m.profile === 'data-integrity-cryptosuites')!;
+			expect(base.level, slug).toBe('additive-only');
+			// `required`, not a `oneOf` group: M15 keys the add-on badge per base
+			// profile, so a group inside one profile's slice had a single member.
+			expect(dic.level, slug).toBe('required');
 		}
 	});
 
-	it('declare identical requirement ids within each group — catalog rule 5, named per group', () => {
-		for (const [slugs, group] of [
-			[EDDSA, 'dic-issuer-eddsa'],
-			[ECDSA, 'dic-issuer-ecdsa']
-		] as const) {
-			for (const slug of slugs) {
-				expect(
-					scenarioBySlug(slug)!.steps[0].requirements.map((r) => r.id),
-					`${group} / ${slug}`
-				).toEqual(['cryptosuite', 'issuer-did-method']);
-			}
+	it('declare identical requirement ids — by construction now, since rule 5 no longer applies', () => {
+		// With the groups gone nothing validates this parity. The shared
+		// `producerRequirements` factory IS the guarantee; this notices an inline.
+		for (const slug of ALL) {
+			expect(
+				scenarioBySlug(slug)!.steps[0].requirements.map((r) => r.id),
+				slug
+			).toEqual(['cryptosuite', 'issuer-did-method']);
 		}
 	});
 
-	it('use different checks per group, which rule 5 permits — it compares requirement ids', () => {
+	it('use different checks per suite, over the same requirement ids', () => {
 		const checkOf = (slug: string, id: string) => {
 			const requirement = scenarioBySlug(slug)!.steps[0].requirements.find((r) => r.id === id)!;
 			return requirement.check.kind === 'automatic' ? requirement.check.checkId : '';
@@ -110,65 +109,73 @@ describe('the six DIC producer scenarios', () => {
 		}
 	});
 
-	it('say in the blurb that one protocol is enough, so six scenarios do not read as six obligations', () => {
+	it('says in the blurb which protocol’s add-on badge it counts toward', () => {
+		// The old copy promised cross-protocol completion ("any one protocol"),
+		// which M15 made false. A reader who ran the VCALM member and expected the
+		// OID4 card to light up needs to be told otherwise, and the blurb is where
+		// they look.
 		for (const slug of ALL) {
-			expect(scenarioBySlug(slug)!.blurb, slug).toMatch(/any one protocol/i);
+			expect(scenarioBySlug(slug)!.blurb, slug).toMatch(/this protocol's Data Integrity/i);
+			expect(scenarioBySlug(slug)!.blurb, slug).not.toMatch(/any one protocol/i);
 		}
 	});
 
-	it('author no DIC consumer requirement — that axis is deferred to M15', () => {
+	it('author no DIC consumer requirement — that axis lives in `issuer-dic-consumer.ts`', () => {
 		const ids = ALL.flatMap((slug) =>
 			scenarioBySlug(slug)!.steps[0].requirements.map((r) => r.id)
 		).join(' ');
 		expect(ids).not.toMatch(/consumer|verify-vp|resolve-holder|key-type|proof-purpose/);
 	});
 
-	it('keeps the whole catalog valid, including rule 5 on both groups', () => {
+	it('keeps the whole catalog valid', () => {
 		expect(validateCatalog(allScenarios)).toEqual([]);
 	});
 });
 
 describe('DIC’s issuer meter', () => {
-	it('reads two obligations, not six', () => {
-		const result = evaluateCompletion({
+	/**
+	 * These assert about the **producer** obligations specifically, not the whole
+	 * DIC issuer meter — M15 P4 added a consumer axis to the same
+	 * `(data-integrity-cryptosuites, issuer)` completion set, and a test that
+	 * counted the whole meter would break every time the additive grows.
+	 */
+	const producerObligations = (runs = {}) =>
+		evaluateCompletion({
 			profile: 'data-integrity-cryptosuites',
 			role: 'issuer',
-			runs: {}
-		});
-		expect(result.obligations).toHaveLength(2);
-		expect(
-			result.obligations.map((p) =>
-				p.obligation.kind === 'oneOf' ? p.obligation.group : p.obligation.scenario.slug
-			)
-		).toEqual(['dic-issuer-eddsa', 'dic-issuer-ecdsa']);
-		// Two requirements each, counted once per group rather than once per member.
-		expect(result.total).toBe(4);
+			runs
+		}).obligations.filter(
+			(o) => o.obligation.kind === 'scenario' && ALL.includes(o.obligation.scenario.slug as never)
+		);
+
+	it('contributes six obligations — one per (protocol × suite)', () => {
+		const producer = producerObligations();
+		// Before M15: two `oneOf` obligations of 2 each. Now six plain ones, so each
+		// protocol's DIC badge asks for both suites over that protocol.
+		expect(producer).toHaveLength(6);
+		expect(producer.reduce((n, o) => n + o.total, 0)).toBe(12);
 	});
 
-	it('marks a group met by whichever single protocol the operator ran', () => {
+	it('credits one (protocol × suite) at a time', () => {
 		for (const slug of EDDSA) {
-			const result = evaluateCompletion({
-				profile: 'data-integrity-cryptosuites',
-				role: 'issuer',
-				runs: { [slug]: fullRun(slug) }
-			});
-			expect(result.obligations, slug).toHaveLength(2);
-			expect(result.met, slug).toBe(2);
-			expect(result.total, slug).toBe(4);
+			const producer = producerObligations({ [slug]: fullRun(slug) });
+			expect(producer, slug).toHaveLength(6);
+			expect(
+				producer.reduce((n, o) => n + o.met, 0),
+				slug
+			).toBe(2);
 		}
 	});
 
-	it('fills with two runs — one per suite — not six', () => {
-		const result = evaluateCompletion({
-			profile: 'data-integrity-cryptosuites',
-			role: 'issuer',
-			runs: {
-				'vcalm-issuer-eddsa': fullRun('vcalm-issuer-eddsa'),
-				'oid4-issuer-ecdsa': fullRun('oid4-issuer-ecdsa')
-			}
+	it('needs both suites over one protocol to fill that protocol’s share', () => {
+		// The pair that earns a DIC VCALM Issuer badge's producer half: EdDSA and
+		// ECDSA, both over VCALM. Two runs, four of the producer axis's twelve.
+		const producer = producerObligations({
+			'vcalm-issuer-eddsa': fullRun('vcalm-issuer-eddsa'),
+			'vcalm-issuer-ecdsa': fullRun('vcalm-issuer-ecdsa')
 		});
-		expect(result.met).toBe(result.total);
-		expect(result.obligations).toHaveLength(2);
+		expect(producer.reduce((n, o) => n + o.met, 0)).toBe(4);
+		expect(producer.reduce((n, o) => n + o.total, 0)).toBe(12);
 	});
 
 	it('leaves every base profile’s Essential *and* Complete meters unchanged — the silent-regression guard', () => {

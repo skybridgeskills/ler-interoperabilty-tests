@@ -4,7 +4,7 @@ import { badgeBySlug, badgeFingerprint } from '$lib/interop/badges/index.js';
 
 import { buildBadgeCredential } from './badge-recipe.js';
 
-const badge = badgeBySlug('oid4-wallet')!;
+const badge = badgeBySlug('oid4-wallet-essential')!;
 const rootUrl = 'https://tests.example';
 
 function build() {
@@ -28,8 +28,10 @@ describe('buildBadgeCredential', () => {
 		const achievement = subject.achievement as Record<string, unknown>;
 		const criteria = achievement.criteria as Record<string, unknown>;
 
-		expect(achievement.id).toBe(`${rootUrl}/badges/oid4-wallet`);
-		expect(criteria.id).toBe(`${rootUrl}/badges/oid4-wallet?v=${badgeFingerprint(badge)}`);
+		expect(achievement.id).toBe(`${rootUrl}/badges/oid4-wallet-essential`);
+		expect(criteria.id).toBe(
+			`${rootUrl}/badges/oid4-wallet-essential?v=${badgeFingerprint(badge)}`
+		);
 	});
 
 	it('carries no evidence / credentialStatus / image / validUntil', () => {

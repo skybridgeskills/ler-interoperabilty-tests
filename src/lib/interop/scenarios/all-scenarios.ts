@@ -1,5 +1,11 @@
 import { assertValidCatalog } from './catalog-validation.js';
 import {
+	oid4IssuerConsumerEcdsa,
+	oid4IssuerConsumerEddsa,
+	vcalmIssuerConsumerEcdsa,
+	vcalmIssuerConsumerEddsa
+} from './issuer-dic-consumer.js';
+import {
 	ob3DirectIssuerEcdsa,
 	ob3DirectIssuerEddsa,
 	oid4IssuerEcdsa,
@@ -26,6 +32,20 @@ import { vcalmVerifierDelivery } from './vcalm-verifier-delivery.js';
 import { vcalmWalletAcceptance } from './vcalm-wallet-acceptance.js';
 import { vcalmWalletPresentation } from './vcalm-wallet-presentation.js';
 import { vcalmWalletRefusalDiscrimination } from './vcalm-wallet-refusal-discrimination.js';
+import {
+	ob3DirectVerifierEcdsa,
+	ob3DirectVerifierEddsa,
+	oid4VerifierEcdsa,
+	oid4VerifierEddsa,
+	vcalmVerifierEcdsa,
+	vcalmVerifierEddsa
+} from './verifier-dic-discrimination.js';
+import {
+	oid4WalletDiscovery,
+	oid4WalletPresentationLimited,
+	oid4WalletPresentationPex,
+	oid4WalletTamperRefusal
+} from './wallet-conduct.js';
 import {
 	oid4WalletAcceptEcdsa,
 	oid4WalletAcceptEddsa,
@@ -86,7 +106,21 @@ export const allScenarios: Scenario[] = [
 	oid4WalletAcceptEddsa,
 	vcalmWalletAcceptEddsa,
 	oid4WalletAcceptEcdsa,
-	vcalmWalletAcceptEcdsa
+	vcalmWalletAcceptEcdsa,
+	vcalmIssuerConsumerEddsa,
+	oid4IssuerConsumerEddsa,
+	vcalmIssuerConsumerEcdsa,
+	oid4IssuerConsumerEcdsa,
+	ob3DirectVerifierEddsa,
+	vcalmVerifierEddsa,
+	oid4VerifierEddsa,
+	ob3DirectVerifierEcdsa,
+	vcalmVerifierEcdsa,
+	oid4VerifierEcdsa,
+	oid4WalletPresentationPex,
+	oid4WalletPresentationLimited,
+	oid4WalletDiscovery,
+	oid4WalletTamperRefusal
 ];
 
 // Fail loudly at import rather than rendering a meter whose denominator is

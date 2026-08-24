@@ -53,10 +53,10 @@ describe('completionGroups', () => {
 	it('carries add-on slices on exactly the groups whose scenarios claim an additive', () => {
 		// M11 is where selecting an add-on first changed a card — the issuer
 		// scenarios name `open-skill-alignment` and `data-integrity-cryptosuites`.
-		// M12 P7 added the DIC **wallet** axes, so the two live wallet groups now
-		// carry a slice too. `ob3-direct-delivery:wallet` does not exist (that
-		// profile has no wallet scenarios) and no verifier scenario names an
-		// additive, so the verifier groups stay empty.
+		// M12 P7 added the DIC **wallet** axes and M15 P5 the DIC **verifier** one,
+		// so every group with scenarios now carries a slice except
+		// `ob3-direct-delivery:wallet`, which does not exist — that profile has no
+		// wallet scenarios at all.
 		const groups = completionGroups({
 			runs: {},
 			additives: ['data-integrity-cryptosuites', 'open-skill-alignment']
@@ -66,13 +66,15 @@ describe('completionGroups', () => {
 		expect(withSlices.map((g) => `${g.profileSlug}:${g.roleSlug}`)).toEqual([
 			'vcalm:issuer',
 			'vcalm:wallet',
+			'vcalm:verifier',
 			'oid4:issuer',
 			'oid4:wallet',
-			'ob3-direct-delivery:issuer'
+			'oid4:verifier',
+			'ob3-direct-delivery:issuer',
+			'ob3-direct-delivery:verifier'
 		]);
-		expect(
-			groups.filter((g) => g.roleSlug === 'verifier').every((g) => g.additives.length === 0)
-		).toBe(true);
+		// Every group that exists carries one — the exception proves the rule.
+		expect(groups.filter((g) => g.additives.length === 0)).toEqual([]);
 	});
 
 	it('leaves the Essential meters untouched when an add-on is selected', () => {
@@ -159,5 +161,82 @@ describe('obligationsByWorkflow', () => {
 			'credential-presentation'
 		]);
 		expect(byWorkflow.flatMap((w) => w.obligations).length).toBe(oid4.result.obligations.length);
+	});
+});
+
+describe('completionGroupsForProfile — an additive profile', () => {
+	/**
+	 * M15 P7: an additive's own page renders one card per `(base profile, role)`,
+	 * because that triple is what an add-on badge is keyed to. It used to render
+	 * one card per *role*, aggregating across every base profile — right when a
+	 * single add-on badge spanned them, and wrong once that badge stopped existing.
+	 */
+	const dicGroups = () =>
+		completionGroupsForProfile({
+			profileSlug: 'data-integrity-cryptosuites',
+			profileName: 'Data Integrity Cryptosuites',
+			runs: {}
+		});
+
+	it('renders one card per (base profile, role), not one per role', () => {
+		const groups = dicGroups();
+		expect(groups.map((g) => `${g.profileSlug}:${g.roleSlug}`)).toEqual([
+			'vcalm:issuer',
+			'vcalm:wallet',
+			'vcalm:verifier',
+			'oid4:issuer',
+			'oid4:wallet',
+			'oid4:verifier',
+			'ob3-direct-delivery:issuer',
+			'ob3-direct-delivery:verifier'
+		]);
+	});
+
+	it('marks every card as an add-on slice, so it claims the add-on badge', () => {
+		for (const group of dicGroups()) {
+			expect(group.addOn, `${group.profileSlug}:${group.roleSlug}`).toEqual({
+				slug: 'data-integrity-cryptosuites',
+				name: 'Data Integrity Cryptosuites'
+			});
+			// An add-on card nests no slices of its own — that would list the same
+			// scenarios twice on the additive's own page.
+			expect(group.additives).toEqual([]);
+		}
+	});
+
+	it('scopes each card to its own protocol’s share', () => {
+		const groups = dicGroups();
+		const slugsOf = (profile: string, role: string) =>
+			groups
+				.find((g) => g.profileSlug === profile && g.roleSlug === role)!
+				.result.obligations.flatMap((o) =>
+					o.obligation.kind === 'scenario' ? [o.obligation.scenario.slug] : []
+				);
+
+		const vcalm = slugsOf('vcalm', 'wallet');
+		const oid4 = slugsOf('oid4', 'wallet');
+		expect(vcalm.every((slug) => slug.startsWith('vcalm-'))).toBe(true);
+		expect(oid4.every((slug) => slug.startsWith('oid4-'))).toBe(true);
+		// Disjoint — the point of per-base-profile keying.
+		expect(vcalm.filter((slug) => oid4.includes(slug))).toEqual([]);
+	});
+
+	it('omits a (base profile, role) the additive does not reach', () => {
+		// `ob3-direct-delivery` has no wallet scenarios at all, so there is no
+		// slice to show and a 0/0 meter would be noise rather than information.
+		expect(
+			dicGroups().some((g) => g.profileSlug === 'ob3-direct-delivery' && g.roleSlug === 'wallet')
+		).toBe(false);
+	});
+
+	it('still renders a BASE profile one card per role, unchanged', () => {
+		const groups = completionGroupsForProfile({
+			profileSlug: 'oid4',
+			profileName: 'OID4 Profile',
+			runs: {}
+		});
+		expect(groups.map((g) => g.roleSlug)).toEqual(['issuer', 'wallet', 'verifier']);
+		expect(groups.every((g) => g.profileSlug === 'oid4')).toBe(true);
+		expect(groups.every((g) => g.addOn === undefined)).toBe(true);
 	});
 });

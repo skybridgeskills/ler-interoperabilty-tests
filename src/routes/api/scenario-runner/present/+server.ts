@@ -1,12 +1,7 @@
 import { json } from '@sveltejs/kit';
 
-import { cannotServeMessage } from '$lib/interop/scenarios/index.js';
 import { appContext } from '$lib/server/app-context.js';
-import {
-	allRecipeIds,
-	recipeById,
-	resolveIssuingContext
-} from '$lib/server/domain/scenario-runner/index.js';
+import { allRecipeIds, recipeById } from '$lib/server/domain/scenario-runner/index.js';
 import { PresentInputError } from '$lib/server/domain/verifier-present/index.js';
 import {
 	WALLET_CRYPTOSUITES,
@@ -37,7 +32,7 @@ export const POST = async ({ request }: { request: Request }) => {
 			{
 				code: 400,
 				message: 'Unrecognised present request',
-				hint: 'Send { credential, interactionUrl, transport: "vcalm" | "oid4vp", tamper? }.'
+				hint: 'Send { credential, interactionUrl, transport: "vcalm" | "oid4vp", tamper?, cryptosuite? }.'
 			},
 			{ status: 400 }
 		);
@@ -56,22 +51,19 @@ export const POST = async ({ request }: { request: Request }) => {
 		);
 	}
 
-	// The suite presents as holder, but it still signs the credential it presents,
-	// so it resolves the deployment's own crypto axis exactly as deliver-direct
-	// does. A `present-to-verifier` action pins no intent — the suite chooses.
-	const issuing = resolveIssuingContext(exchangeRunnerConfig, undefined);
-	if (!issuing.ok) {
-		return json(
-			{ code: 400, message: cannotServeMessage(issuing.reason), reason: issuing.reason },
-			{ status: 400 }
-		);
-	}
+	// The suite presents as holder, but it still signs the credential it presents —
+	// with locally-generated keys, exactly as `deliver-direct` does. So the action's
+	// own cryptosuite is always servable and no tenant resolution happens here; see
+	// `LocallySignedSuite`. Absent means the deployment's configured default.
+	const cryptosuite = action.cryptosuite ?? exchangeRunnerConfig.cryptosuite;
 
-	if (!isSignableSuite(issuing.cryptosuite)) {
+	// A different failure entirely from an unservable tenant: a DEPLOYMENT
+	// configured with a suite `wallet-crypto` cannot sign at all.
+	if (!isSignableSuite(cryptosuite)) {
 		return json(
 			{
 				code: 400,
-				message: `This deployment's cryptosuite "${issuing.cryptosuite}" cannot be signed locally.`,
+				message: `Cryptosuite "${cryptosuite}" cannot be signed locally.`,
 				hint: `Presenting signs with one of: ${WALLET_CRYPTOSUITES.join(', ')}.`
 			},
 			{ status: 400 }
@@ -86,7 +78,7 @@ export const POST = async ({ request }: { request: Request }) => {
 		} = await scenarioRunner.present({
 			// A fresh credential id per present, matching the issue/deliver-direct discipline.
 			doc: recipe.build({ credentialId: `urn:uuid:${idService.uuid()}` }),
-			cryptosuite: issuing.cryptosuite,
+			cryptosuite,
 			...(action.tamper ? { tamper: action.tamper } : {}),
 			transport: action.transport,
 			interactionUrl: action.interactionUrl

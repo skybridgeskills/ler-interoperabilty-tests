@@ -5,13 +5,15 @@ import {
 import { Scenario } from './scenario-schema.js';
 
 /**
- * Open Skill Alignment over the **direct paste** transport — one of the three
- * members of the `osa-issuer-payload` group.
+ * Open Skill Alignment over the **direct paste** transport — one of three
+ * siblings, one per transport, sharing `issuerSkillsDataRequirements` verbatim.
  *
- * The additive's question is about the *payload*, not the protocol: the same
- * item completes whether the credential arrived over VCALM, over OID4VCI, or as
- * a paste. That is what `{ oneOf }` expresses here, and why all three members
- * declare identical requirement ids.
+ * The additive's question is about the *payload*, not the protocol, so all three
+ * ask exactly the same nine things. Until M15 they formed an `osa-issuer-payload`
+ * `oneOf` group and any one of them completed the item; M15 re-keyed the add-on
+ * badge to `(additive, base profile, role)`, so each is now plain `required` in
+ * the additive and each protocol has its **own** Open Skill Alignment badge. The
+ * shared requirement module is what keeps the three from drifting apart.
  *
  * `ob3-direct-delivery: additive-only` — the base profile names this scenario
  * because direct delivery is the protocol it runs over, and claims **none** of
@@ -26,12 +28,12 @@ export const ob3DirectIssuerSkillsData = Scenario({
 	slug: 'ob3-direct-issuer-skills-data',
 	name: 'Deliver skills data in a credential you issue',
 	blurb:
-		'Issue a credential carrying a performance scale and a learner result, and paste it here. Passing this over any one protocol completes the skills-data item.',
+		'Issue a credential carrying a performance scale and a learner result, and paste it here. It counts toward this protocol’s Open Skill Alignment add-on badge.',
 	role: 'issuer',
 	workflow: 'direct-credential-issuance',
 	memberships: [
 		{ profile: 'ob3-direct-delivery', level: 'additive-only' },
-		{ profile: 'open-skill-alignment', level: { oneOf: 'osa-issuer-payload' } }
+		{ profile: 'open-skill-alignment', level: 'required' }
 	],
 	steps: [
 		{

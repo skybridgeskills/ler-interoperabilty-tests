@@ -1,13 +1,9 @@
 import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 
-import { cannotServeMessage } from '$lib/interop/scenarios/index.js';
+import { LocallySignedSuite } from '$lib/interop/scenarios/index.js';
 import { appContext } from '$lib/server/app-context.js';
-import {
-	allRecipeIds,
-	recipeById,
-	resolveIssuingContext
-} from '$lib/server/domain/scenario-runner/index.js';
+import { allRecipeIds, recipeById } from '$lib/server/domain/scenario-runner/index.js';
 import {
 	WALLET_CRYPTOSUITES,
 	type WalletCryptosuite
@@ -19,7 +15,7 @@ import { ZodFactory } from '$lib/util/zod-factory.js';
  * operator downloads and hands to the system under test.
  *
  * This is the direct-delivery sibling of `POST /api/exchange-runner/create`:
- * same recipe registry and same `resolveIssuingContext` seam, but no exchange.
+ * same recipe registry, but no exchange and no tenant — it signs locally.
  * `issue` and `request-presentation` mint through the transaction service;
  * `deliver-direct` has none, so the suite signs locally (ephemeral did:key).
  * It therefore needs **no DCC services running** — only the deployment's
@@ -29,7 +25,7 @@ const DeliverDirectRequest = ZodFactory(
 	z.object({
 		credential: z.string().min(1),
 		tamper: z.enum(['proof', 'claim']).optional(),
-		intent: z.object({ cryptosuite: z.string(), didMethod: z.string() }).optional()
+		cryptosuite: LocallySignedSuite.schema.optional()
 	})
 );
 
@@ -42,7 +38,7 @@ export const POST = async ({ request }: { request: Request }) => {
 			{
 				code: 400,
 				message: 'Unrecognised deliver-direct request',
-				hint: 'Send { credential, tamper?, intent? }.'
+				hint: 'Send { credential, tamper?, cryptosuite? }.'
 			},
 			{ status: 400 }
 		);
@@ -61,21 +57,20 @@ export const POST = async ({ request }: { request: Request }) => {
 		);
 	}
 
-	// The seam, exactly as the create route uses it: an unservable pin is a
-	// request this deployment cannot honour — 400, not a service failure.
-	const issuing = resolveIssuingContext(exchangeRunnerConfig, action.intent);
-	if (!issuing.ok) {
-		return json(
-			{ code: 400, message: cannotServeMessage(issuing.reason), reason: issuing.reason },
-			{ status: 400 }
-		);
-	}
+	// No tenant resolution here. `deliver-direct` signs with locally-generated
+	// keys, and `wallet-crypto` serves both bundle suites unconditionally, so the
+	// action's own choice is always servable — see `LocallySignedSuite`. Only
+	// `issue` is tenant-bound, because it is the only action the transaction
+	// service mints. Absent means the deployment's configured default.
+	const cryptosuite = action.cryptosuite ?? exchangeRunnerConfig.cryptosuite;
 
-	if (!isSignableSuite(issuing.cryptosuite)) {
+	// A different failure entirely from an unservable tenant: a DEPLOYMENT
+	// configured with a suite `wallet-crypto` cannot sign at all.
+	if (!isSignableSuite(cryptosuite)) {
 		return json(
 			{
 				code: 400,
-				message: `This deployment's cryptosuite "${issuing.cryptosuite}" cannot be signed locally.`,
+				message: `Cryptosuite "${cryptosuite}" cannot be signed locally.`,
 				hint: `Direct delivery signs with one of: ${WALLET_CRYPTOSUITES.join(', ')}.`
 			},
 			{ status: 400 }
@@ -86,7 +81,7 @@ export const POST = async ({ request }: { request: Request }) => {
 		const credential = await scenarioRunner.deliverDirect({
 			// A fresh credential id per delivery, matching the issue path's discipline.
 			doc: recipe.build({ credentialId: `urn:uuid:${idService.uuid()}` }),
-			cryptosuite: issuing.cryptosuite,
+			cryptosuite,
 			...(action.tamper ? { tamper: action.tamper } : {})
 		});
 		return json({ credential });

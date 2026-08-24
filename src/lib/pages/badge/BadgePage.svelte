@@ -96,13 +96,13 @@
 	// score the base meter. The tier picks which numbers drive claimability and
 	// which ride in the award narrative; both come from `claimable.ts` so the page
 	// and the meter cannot disagree.
-	const isComplete = $derived(badge.tier === 'complete');
+	const isExpanded = $derived(badge.tier === 'expanded');
 	const claimable = $derived(
-		result ? (isComplete ? isExpandedClaimable(result) : isClaimable(result)) : false
+		result ? (isExpanded ? isExpandedClaimable(result) : isClaimable(result)) : false
 	);
 	const tierTotals = $derived(
 		result
-			? isComplete
+			? isExpanded
 				? completeTotals(result)
 				: { met: result.met, total: result.total }
 			: { met: 0, total: 0 }
@@ -220,7 +220,7 @@
 		<div class="flex flex-col gap-1">
 			<Button type="button" class="w-fit" onclick={startClaim}>Claim badge</Button>
 			<span class="text-label-md text-muted-foreground">
-				Your {isComplete ? 'expanded' : 'required'} set is complete — claim this badge into your wallet.
+				Your {isExpanded ? 'expanded' : 'required'} set is complete — claim this badge into your wallet.
 			</span>
 		</div>
 	{/if}

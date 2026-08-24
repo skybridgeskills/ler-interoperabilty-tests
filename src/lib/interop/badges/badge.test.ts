@@ -66,9 +66,9 @@ const {
 	BadgeDefinition,
 	badgeBySlug,
 	badgeFingerprint,
-	badgeFor,
+	essentialBadgeFor,
 	claimSnapshot,
-	completeBadgeFor,
+	expandedBadgeFor,
 	criteriaNarrative,
 	newSince,
 	requirementIdsBehindBadge,
@@ -116,26 +116,32 @@ afterEach(() => {
 	catalog.list = baseList;
 });
 
-const badge = () => badgeBySlug('oid4-wallet')!;
+const badge = () => badgeBySlug('oid4-wallet-essential')!;
 
 describe('badge registry', () => {
 	it('resolves oid4-wallet from its completion key', () => {
-		expect(badgeFor('oid4', 'wallet')?.slug).toBe('oid4-wallet');
+		expect(essentialBadgeFor('oid4', 'wallet')?.slug).toBe('oid4-wallet-essential');
 	});
 
 	it('has no badge for a key with no registered badge', () => {
-		expect(badgeFor('oid4', 'issuer')).toBeUndefined();
-		expect(badgeFor('vcalm', 'wallet')).toBeUndefined();
+		// M15 P7 filled the registry, so every (base profile, role) with scenarios
+		// now HAS an Essential badge. What still has none is a pair with no
+		// scenarios at all, and an additive slug — which since M15 has no single
+		// badge spanning its base profiles, only one per base profile.
+		expect(essentialBadgeFor('ob3-direct-delivery', 'wallet')).toBeUndefined();
+		expect(essentialBadgeFor('data-integrity-cryptosuites', 'wallet')).toBeUndefined();
 	});
 
 	it('looks a badge up by slug, and returns undefined for an unknown one', () => {
-		expect(badgeBySlug('oid4-wallet')?.name).toBe('OID4 Wallet');
-		expect(badgeBySlug('oid4-wallet-complete')?.name).toBe('OID4 Wallet — Complete');
+		expect(badgeBySlug('oid4-wallet-essential')?.name).toBe('OID4 Wallet — Essential');
+		expect(badgeBySlug('oid4-wallet-expanded')?.name).toBe('OID4 Wallet — Expanded');
 		expect(badgeBySlug('no-such-badge')).toBeUndefined();
 	});
 
 	it('registers both tiers of the oid4/wallet bundle', () => {
-		expect(allBadgeSlugs()).toEqual(['oid4-wallet', 'oid4-wallet-complete']);
+		// Both tiers of the oid4/wallet bundle are registered, among the rest.
+		expect(allBadgeSlugs()).toContain('oid4-wallet-essential');
+		expect(allBadgeSlugs()).toContain('oid4-wallet-expanded');
 	});
 });
 
@@ -148,16 +154,16 @@ describe('scenariosBehindBadge', () => {
 });
 
 describe('badge tiers', () => {
-	// The remodel (M14): a badge scores the sub-set its tier names within a
-	// (profile, role) — base the required floor, complete the same base profile's
-	// optional set, additive the whole additive set.
+	// The remodel (M14, re-keyed in M15): a badge scores the sub-set its tier names
+	// — `essential` the required floor, `expanded` that floor plus the same base
+	// profile's optional set, `add-on` one additive's work within ONE base profile.
 	const complete = () =>
 		BadgeDefinition({
-			slug: 'oid4-wallet-complete',
-			tier: 'complete',
+			slug: 'oid4-wallet-expanded',
+			tier: 'expanded',
 			baseProfile: 'oid4',
 			role: 'wallet',
-			name: 'OID4 Wallet — Complete',
+			name: 'OID4 Wallet — Expanded',
 			description: 'x',
 			criteriaSummary: 'x'
 		});
@@ -210,32 +216,71 @@ describe('badge tiers', () => {
 		expect(scenariosBehindBadge(complete()).map((s) => s.slug)).not.toContain('oid4-wallet-ecdsa');
 	});
 
-	it('base and complete key to the same base profile-role', () => {
-		// The registry holds both tiers; badgeFor returns the primary (base), never
-		// the complete one, and completeBadgeFor returns the expanded tier.
-		expect(badgeFor('oid4', 'wallet')?.slug).toBe('oid4-wallet');
-		expect(completeBadgeFor('oid4', 'wallet')?.slug).toBe('oid4-wallet-complete');
+	it('essential and expanded key to the same base profile-role', () => {
+		// The registry holds both tiers; `essentialBadgeFor` returns the floor badge,
+		// never the expanded one, and `expandedBadgeFor` returns the cumulative tier.
+		expect(essentialBadgeFor('oid4', 'wallet')?.slug).toBe('oid4-wallet-essential');
+		expect(expandedBadgeFor('oid4', 'wallet')?.slug).toBe('oid4-wallet-expanded');
 	});
 
-	it('additive scores the whole additive set, single tier', () => {
+	/**
+	 * A realistically-shaped additive scenario: `additive-only` in its base
+	 * profile, claimed by the additive. `mkScenario` alone names no base profile at
+	 * all, which violates catalog rule 4 and — since M15 — makes an add-on badge
+	 * unable to place the scenario under any protocol.
+	 */
+	const addOnScenario = (slug: string, base: string, level: string, reqId: string) => ({
+		...mkScenario(slug, 'data-integrity-cryptosuites', level, reqId),
+		memberships: [
+			{ profile: base, level: 'additive-only' },
+			{ profile: 'data-integrity-cryptosuites', level }
+		]
+	});
+
+	it('add-on scores the whole additive set, single tier, within ONE base profile', () => {
 		catalog.list = [
 			...baseList,
-			mkScenario('oid4-wallet-di', 'data-integrity-cryptosuites', 'required', 'di-1'),
-			mkScenario('oid4-wallet-di-opt', 'data-integrity-cryptosuites', 'optional', 'di-2')
+			addOnScenario('oid4-wallet-di', 'oid4', 'required', 'di-1'),
+			addOnScenario('oid4-wallet-di-opt', 'oid4', 'optional', 'di-2')
 		];
-		const additive = BadgeDefinition({
-			slug: 'di-cryptosuites-wallet',
-			tier: 'additive',
+		const addOn = BadgeDefinition({
+			slug: 'dic-oid4-wallet',
+			tier: 'add-on',
 			additiveProfile: 'data-integrity-cryptosuites',
+			baseProfile: 'oid4',
 			role: 'wallet',
 			name: 'x',
 			description: 'x',
 			criteriaSummary: 'x'
 		});
-		expect(scenariosBehindBadge(additive).map((s) => s.slug)).toEqual([
+		expect(scenariosBehindBadge(addOn).map((s) => s.slug)).toEqual([
 			'oid4-wallet-di',
 			'oid4-wallet-di-opt'
 		]);
+	});
+
+	it('an add-on badge EXCLUDES the same additive’s work under another base profile', () => {
+		// The whole of M15's re-keying, asserted directly. Before it, one badge
+		// spanned every base profile and this exclusion did not exist.
+		catalog.list = [
+			...baseList,
+			addOnScenario('oid4-wallet-di', 'oid4', 'required', 'di-1'),
+			addOnScenario('vcalm-wallet-di', 'vcalm', 'required', 'di-2')
+		];
+		const forOid4 = (baseProfile: 'oid4' | 'vcalm') =>
+			BadgeDefinition({
+				slug: `dic-${baseProfile}-wallet`,
+				tier: 'add-on',
+				additiveProfile: 'data-integrity-cryptosuites',
+				baseProfile,
+				role: 'wallet',
+				name: 'x',
+				description: 'x',
+				criteriaSummary: 'x'
+			});
+
+		expect(scenariosBehindBadge(forOid4('oid4')).map((s) => s.slug)).toEqual(['oid4-wallet-di']);
+		expect(scenariosBehindBadge(forOid4('vcalm')).map((s) => s.slug)).toEqual(['vcalm-wallet-di']);
 	});
 });
 
@@ -308,7 +353,7 @@ describe('narrative', () => {
 describe('claimSnapshot', () => {
 	it('carries a sorted requirement-id set and the badge fingerprint at claim time', () => {
 		const snapshot = claimSnapshot(badge(), '2026-08-03T09:00:00.000Z');
-		expect(snapshot.badgeSlug).toBe('oid4-wallet');
+		expect(snapshot.badgeSlug).toBe('oid4-wallet-essential');
 		expect(snapshot.claimedAt).toBe('2026-08-03T09:00:00.000Z');
 		expect(snapshot.requirementIds).toEqual(['aaa-refused', 'stored']);
 		expect(snapshot.fingerprint).toBe(badgeFingerprint(badge()));

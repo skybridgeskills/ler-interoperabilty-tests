@@ -66,7 +66,7 @@
 			roleName="Wallet"
 			result={fullResult}
 			runs={fullRuns}
-			claimHref="/badges/oid4-wallet"
+			claimHref="/badges/oid4-wallet-essential"
 		/>
 	</div>
 </Story>
@@ -79,7 +79,7 @@
 			roleName="Wallet"
 			result={fullResult}
 			runs={fullRuns}
-			claimHref="/badges/oid4-wallet"
+			claimHref="/badges/oid4-wallet-essential"
 			claim={{ claimedAt: '2026-08-03T09:00:00.000Z', requirementCount: 11, newSince: 2 }}
 		/>
 	</div>
@@ -109,8 +109,8 @@
 			result={optionalResult}
 			runs={optionalRuns}
 			baseBadgeName="OID4 Wallet"
-			completeBadgeName="OID4 Wallet — Complete"
-			claimHref="/badges/oid4-wallet"
+			expandedBadgeName="OID4 Wallet — Complete"
+			claimHref="/badges/oid4-wallet-essential"
 			expandedClaimHref="/badges/oid4-wallet-complete"
 		/>
 	</div>
@@ -125,8 +125,8 @@
 			result={twoTierFullResult}
 			runs={twoTierFullRuns}
 			baseBadgeName="OID4 Wallet"
-			completeBadgeName="OID4 Wallet — Complete"
-			claimHref="/badges/oid4-wallet"
+			expandedBadgeName="OID4 Wallet — Complete"
+			claimHref="/badges/oid4-wallet-essential"
 			expandedClaimHref="/badges/oid4-wallet-complete"
 			claim={{ claimedAt: '2026-08-12T09:00:00.000Z', requirementCount: 4, newSince: 0 }}
 		/>
@@ -143,8 +143,8 @@
 				result={optionalResult}
 				runs={optionalRuns}
 				baseBadgeName="OID4 Wallet"
-				completeBadgeName="OID4 Wallet — Complete"
-				claimHref="/badges/oid4-wallet"
+				expandedBadgeName="OID4 Wallet — Complete"
+				claimHref="/badges/oid4-wallet-essential"
 				expandedClaimHref="/badges/oid4-wallet-complete"
 			/>
 		</div>
@@ -156,8 +156,8 @@
 					result={twoTierFullResult}
 					runs={twoTierFullRuns}
 					baseBadgeName="OID4 Wallet"
-					completeBadgeName="OID4 Wallet — Complete"
-					claimHref="/badges/oid4-wallet"
+					expandedBadgeName="OID4 Wallet — Complete"
+					claimHref="/badges/oid4-wallet-essential"
 					expandedClaimHref="/badges/oid4-wallet-complete"
 					claim={{ claimedAt: '2026-08-12T09:00:00.000Z', requirementCount: 4, newSince: 0 }}
 				/>
@@ -180,8 +180,8 @@
 			runs={optionalRuns}
 			additives={[additiveSlice]}
 			baseBadgeName="OID4 Wallet"
-			completeBadgeName="OID4 Wallet — Complete"
-			claimHref="/badges/oid4-wallet"
+			expandedBadgeName="OID4 Wallet — Complete"
+			claimHref="/badges/oid4-wallet-essential"
 			expandedClaimHref="/badges/oid4-wallet-complete"
 		/>
 	</div>
@@ -197,8 +197,8 @@
 			runs={optionalRuns}
 			additives={[secondAdditiveSlice, additiveSlice]}
 			baseBadgeName="OID4 Wallet"
-			completeBadgeName="OID4 Wallet — Complete"
-			claimHref="/badges/oid4-wallet"
+			expandedBadgeName="OID4 Wallet — Complete"
+			claimHref="/badges/oid4-wallet-essential"
 			expandedClaimHref="/badges/oid4-wallet-complete"
 		/>
 	</div>
@@ -217,7 +217,7 @@
 			runs={partialRuns}
 			additives={[additiveSlice]}
 			baseBadgeName="VCALM Verifier"
-			claimHref="/badges/oid4-wallet"
+			claimHref="/badges/oid4-wallet-essential"
 		/>
 	</div>
 </Story>
@@ -233,8 +233,8 @@
 				runs={optionalRuns}
 				additives={[additiveSlice]}
 				baseBadgeName="OID4 Wallet"
-				completeBadgeName="OID4 Wallet — Complete"
-				claimHref="/badges/oid4-wallet"
+				expandedBadgeName="OID4 Wallet — Complete"
+				claimHref="/badges/oid4-wallet-essential"
 				expandedClaimHref="/badges/oid4-wallet-complete"
 			/>
 		</div>
@@ -247,11 +247,30 @@
 					runs={optionalRuns}
 					additives={[additiveSlice]}
 					baseBadgeName="OID4 Wallet"
-					completeBadgeName="OID4 Wallet — Complete"
-					claimHref="/badges/oid4-wallet"
+					expandedBadgeName="OID4 Wallet — Complete"
+					claimHref="/badges/oid4-wallet-essential"
 					expandedClaimHref="/badges/oid4-wallet-complete"
 				/>
 			</div>
 		</div>
+	</div>
+</Story>
+
+<!--
+	An ADD-ON card, as the additive's own page renders it since M15: one card per
+	(base profile, role), single-tier, claiming the add-on badge for that triple
+	rather than the base profile's Essential badge. `additives` is empty — nesting
+	slices inside an add-on card would list the same scenarios twice.
+-->
+<Story name="Add-on card (additive page)" asChild>
+	<div class="max-w-2xl bg-background p-6">
+		<CompletionGroup
+			profileName="VCALM Profile"
+			roleName="Wallet"
+			result={fullResult}
+			runs={fullRuns}
+			claimHref="/badges/data-integrity-cryptosuites-vcalm-wallet"
+			baseBadgeName="Data Integrity Cryptosuites — VCALM Wallet"
+		/>
 	</div>
 </Story>

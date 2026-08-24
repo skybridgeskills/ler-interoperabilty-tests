@@ -9,8 +9,13 @@ import { scenarioFingerprint } from './scenario-fingerprint.js';
 import { allScenarios, scenarioBySlug } from './index.js';
 
 /**
- * The three `*-issuer-skills-data` scenarios (M11 P6) and the
- * `osa-issuer-payload` group they share — the additive's first real scoring.
+ * The three `*-issuer-skills-data` scenarios (M11 P6), and what they became when
+ * M15 re-keyed add-on badges to `(additive, base profile, role)`.
+ *
+ * They used to form an `osa-issuer-payload` `oneOf` group — one obligation, met
+ * by whichever protocol the operator ran. Now each is plain `required` in the
+ * additive, so OSA's issuer meter reads **three** obligations and each protocol
+ * has its own Open Skill Alignment badge.
  */
 
 const SLUGS = [
@@ -54,7 +59,7 @@ describe('the three *-issuer-skills-data scenarios', () => {
 		}
 	});
 
-	it('are `additive-only` in their base profile and `{oneOf}` in open-skill-alignment', () => {
+	it('are `additive-only` in their base profile and `required` in open-skill-alignment', () => {
 		for (const slug of SLUGS) {
 			const scenario = scenarioBySlug(slug)!;
 			const base = scenario.memberships.find((m) => m.profile !== 'open-skill-alignment')!;
@@ -63,7 +68,9 @@ describe('the three *-issuer-skills-data scenarios', () => {
 			// claims none of it — so neither the Essential meter nor the cumulative
 			// Complete meter moves. `optional` would put add-on work into Complete.
 			expect(base.level, slug).toBe('additive-only');
-			expect(osa.level, slug).toEqual({ oneOf: 'osa-issuer-payload' });
+			// `required`, not a `oneOf` group: M15 keys the add-on badge per base
+			// profile, so each protocol's OSA badge asks for its own scenario.
+			expect(osa.level, slug).toBe('required');
 		}
 	});
 
@@ -93,7 +100,7 @@ describe('the three *-issuer-skills-data scenarios', () => {
 		);
 	});
 
-	it('declare identical requirement ids — catalog rule 5, asserted by name so a failure says which group', () => {
+	it('declare identical requirement ids — by construction now, since rule 5 no longer applies', () => {
 		const idsOf = (slug: string) => scenarioBySlug(slug)!.steps[0].requirements.map((r) => r.id);
 		const expected = [
 			'result-description-present',
@@ -106,7 +113,10 @@ describe('the three *-issuer-skills-data scenarios', () => {
 			'numeric-value-in-range',
 			'achieved-level-matches'
 		];
-		for (const slug of SLUGS) expect(idsOf(slug), `osa-issuer-payload / ${slug}`).toEqual(expected);
+		// With the group gone nothing validates this parity any more: the shared
+		// `issuerSkillsDataRequirements` module IS the guarantee, and this test is
+		// what notices if someone inlines it.
+		for (const slug of SLUGS) expect(idsOf(slug), slug).toEqual(expected);
 	});
 
 	it('name nine registered checks, and only `ctdl-alignment` is a SHOULD', () => {
@@ -124,61 +134,61 @@ describe('the three *-issuer-skills-data scenarios', () => {
 		}
 	});
 
-	it('keeps the whole catalog valid, including rule 5 on the group', () => {
+	it('keeps the whole catalog valid', () => {
 		expect(validateCatalog(allScenarios)).toEqual([]);
 	});
 });
 
-describe('the osa-issuer-payload obligation', () => {
-	it('reads as one obligation before anything is run', () => {
+describe('OSA’s issuer meter', () => {
+	it('reads three obligations — one per protocol, not one shared', () => {
 		const result = evaluateCompletion({
 			profile: 'open-skill-alignment',
 			role: 'issuer',
 			runs: {}
 		});
-		// One obligation, nine requirements — the group contributes its id set
-		// once, not once per member (evaluate.ts rule 2).
-		expect(result.obligations).toHaveLength(1);
-		expect(result.obligations[0].obligation.kind).toBe('oneOf');
-		expect(result.total).toBe(9);
+		// Three plain `required` memberships. Before M15 this was ONE `oneOf`
+		// obligation of 9; each protocol now carries its own nine.
+		expect(result.obligations).toHaveLength(3);
+		expect(result.obligations.map((o) => o.obligation.kind)).toEqual([
+			'scenario',
+			'scenario',
+			'scenario'
+		]);
+		expect(result.total).toBe(27);
 		expect(result.met).toBe(0);
 	});
 
-	it('is met by one passing member, whichever protocol it was', () => {
+	it('credits one protocol at a time — running VCALM does not fill OID4', () => {
 		for (const slug of SLUGS) {
 			const result = evaluateCompletion({
 				profile: 'open-skill-alignment',
 				role: 'issuer',
 				runs: { [slug]: fullRun(slug) }
 			});
-			expect(result.obligations, slug).toHaveLength(1);
-			expect(result.total, slug).toBe(9);
+			expect(result.total, slug).toBe(27);
+			// Nine of twenty-seven: this protocol's share, and no other's. That is
+			// the whole point of per-base-profile add-on badges.
 			expect(result.met, slug).toBe(9);
 		}
 	});
 
-	it('does not count three times when every member passes', () => {
+	it('fills only when every protocol has been run', () => {
 		const result = evaluateCompletion({
 			profile: 'open-skill-alignment',
 			role: 'issuer',
 			runs: Object.fromEntries(SLUGS.map((slug) => [slug, fullRun(slug)]))
 		});
-		expect(result.obligations).toHaveLength(1);
-		expect(result.total).toBe(9);
-		expect(result.met).toBe(9);
+		expect(result.met).toBe(result.total);
+		expect(result.total).toBe(27);
 	});
 
-	it('names all three scenarios as members of the one group', () => {
-		const [progress] = evaluateCompletion({
+	it('names each scenario as its own obligation, in catalog order', () => {
+		const { obligations } = evaluateCompletion({
 			profile: 'open-skill-alignment',
 			role: 'issuer',
 			runs: {}
-		}).obligations;
-		expect(progress.obligation.kind).toBe('oneOf');
-		if (progress.obligation.kind === 'oneOf') {
-			expect(progress.obligation.group).toBe('osa-issuer-payload');
-			expect(progress.obligation.members.map((m) => m.slug).sort()).toEqual([...SLUGS].sort());
-		}
+		});
+		expect(obligations.map((o) => scenarioOf(o).slug).sort()).toEqual([...SLUGS].sort());
 	});
 
 	it('leaves each base profile’s Essential *and* Complete meters untouched', () => {

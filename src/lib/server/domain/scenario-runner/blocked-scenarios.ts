@@ -66,8 +66,18 @@ export function blockedScenarios(
 /**
  * The pinned intent a step carries, if its action kind carries one at all.
  *
- * `issue` and `deliver-direct` are the two that mint; every other action kind
- * consumes something the operator produced, so there is nothing to pin.
+ * **`issue` is the only one, and the distinction is *who* mints, not whether
+ * anything is minted.** `deliver-direct` and `present-to-verifier` mint too —
+ * the suite signs what it hands over — but with locally-generated keys that
+ * `wallet-crypto` can always produce, so their cryptosuite is never unservable
+ * and they carry a plain `cryptosuite` rather than an `IssuingIntent`. Only
+ * `issue` goes through the **transaction service**, whose tenant map a
+ * deployment may genuinely lack an entry in.
+ *
+ * That distinction is worth stating precisely because the naive version —
+ * "blocked-ness follows minting" — is what put `deliver-direct` on this path
+ * until M15, where a locally-signed ECDSA deliverable rendered *disabled* on a
+ * deployment that could serve it perfectly well.
  */
 function intentOf(step: ScenarioStep): IssuingIntent | undefined {
 	return step.action && 'intent' in step.action ? step.action.intent : undefined;

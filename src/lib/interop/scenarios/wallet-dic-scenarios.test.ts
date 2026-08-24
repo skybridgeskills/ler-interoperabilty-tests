@@ -1,29 +1,65 @@
 import { describe, expect, it } from 'vitest';
 
 import { completeTotals, evaluateCompletion } from '$lib/interop/completion/index.js';
-import { checkById } from '$lib/interop/scenario-run/index.js';
+import { checkById, type ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
 import { type CannotServe } from '$lib/interop/scenarios/index.js';
 
 import { validateCatalog } from './catalog-validation.js';
+import { scenarioFingerprint } from './scenario-fingerprint.js';
 
 import { allScenarios, scenarioBySlug } from './index.js';
 
 /**
- * The eight `data-integrity-cryptosuites` wallet scenarios (M12 P7) and the four
- * `oneOf` groups they form — the catalog's first genuinely **pinned** scenarios,
- * beside four observed ones that mirror them.
+ * The eight `data-integrity-cryptosuites` wallet scenarios (M12 P7) — the
+ * catalog's first genuinely **pinned** scenarios, beside four observed ones that
+ * mirror them.
+ *
+ * M12 shipped them in four cross-protocol `oneOf` groups. M15 re-keyed the add-on
+ * badge to `(additive, base profile, role)` and dropped the groups, so each is
+ * plain `required` in the additive: *DIC VCALM Wallet* asks for all four VCALM
+ * scenarios, *DIC OID4 Wallet* for all four OID4 ones.
+ *
+ * The **pairs** below are no longer obligations — they are the two protocols
+ * asking the same question, and several tests still assert their parity because
+ * a reader comparing an OID4 result with a VCALM one must be comparing like with
+ * like. Nothing validates that parity any more; these tests are the guarantee.
  */
 
-const GROUPS = {
-	'dic-wallet-present-eddsa': ['oid4-wallet-present-eddsa', 'vcalm-wallet-present-eddsa'],
-	'dic-wallet-present-ecdsa': ['oid4-wallet-present-ecdsa', 'vcalm-wallet-present-ecdsa'],
-	'dic-wallet-accept-eddsa': ['oid4-wallet-accept-eddsa', 'vcalm-wallet-accept-eddsa'],
-	'dic-wallet-accept-ecdsa': ['oid4-wallet-accept-ecdsa', 'vcalm-wallet-accept-ecdsa']
+const PAIRS = {
+	'present-eddsa': ['oid4-wallet-present-eddsa', 'vcalm-wallet-present-eddsa'],
+	'present-ecdsa': ['oid4-wallet-present-ecdsa', 'vcalm-wallet-present-ecdsa'],
+	'accept-eddsa': ['oid4-wallet-accept-eddsa', 'vcalm-wallet-accept-eddsa'],
+	'accept-ecdsa': ['oid4-wallet-accept-ecdsa', 'vcalm-wallet-accept-ecdsa']
 } as const;
 
-const PRESENT = [...GROUPS['dic-wallet-present-eddsa'], ...GROUPS['dic-wallet-present-ecdsa']];
-const ACCEPT = [...GROUPS['dic-wallet-accept-eddsa'], ...GROUPS['dic-wallet-accept-ecdsa']];
+const PRESENT = [...PAIRS['present-eddsa'], ...PAIRS['present-ecdsa']];
+const ACCEPT = [...PAIRS['accept-eddsa'], ...PAIRS['accept-ecdsa']];
 const ALL = [...PRESENT, ...ACCEPT];
+
+/** A record marking every requirement of a scenario passed. */
+function fullRun(slug: string): ScenarioRunRecord {
+	const scenario = scenarioBySlug(slug)!;
+	return {
+		scenarioSlug: slug,
+		ranAt: '2026-08-22T00:00:00.000Z',
+		fingerprint: scenarioFingerprint(scenario),
+		status: 'passed',
+		attempts: 1,
+		outcomes: Object.fromEntries(
+			scenario.steps.flatMap((step) =>
+				step.requirements.map((r) => [
+					r.id,
+					{
+						requirementId: r.id,
+						level: r.level,
+						status: 'pass' as const,
+						source: 'automated' as const
+					}
+				])
+			)
+		)
+	};
+}
 
 /** Requirement ids of a single-step scenario, in authored order. */
 function requirementIds(slug: string): string[] {
@@ -58,27 +94,27 @@ describe('the eight DIC wallet scenarios', () => {
 		}
 	});
 
-	it('are `additive-only` in their base profile and `{oneOf}` in their suite group', () => {
-		for (const [group, slugs] of Object.entries(GROUPS)) {
-			for (const slug of slugs) {
-				const scenario = scenarioBySlug(slug)!;
-				const base = scenario.memberships.find((m) => m.profile !== 'data-integrity-cryptosuites')!;
-				const dic = scenario.memberships.find((m) => m.profile === 'data-integrity-cryptosuites')!;
-				// NOT `optional`: that is the base profile's Expanded tier, and Complete
-				// is cumulative, so it would put add-on work into every base badge.
-				expect(base.level, slug).toBe('additive-only');
-				expect(dic.level, slug).toEqual({ oneOf: group });
-			}
+	it('are `additive-only` in their base profile and `required` in the additive', () => {
+		for (const slug of ALL) {
+			const scenario = scenarioBySlug(slug)!;
+			const base = scenario.memberships.find((m) => m.profile !== 'data-integrity-cryptosuites')!;
+			const dic = scenario.memberships.find((m) => m.profile === 'data-integrity-cryptosuites')!;
+			// NOT `optional`: that is the base profile's Expanded tier, and Complete
+			// is cumulative, so it would put add-on work into every base badge.
+			expect(base.level, slug).toBe('additive-only');
+			// `required`, not a `oneOf` group — M15 keys add-on badges per base profile.
+			expect(dic.level, slug).toBe('required');
 		}
 	});
 
-	it('declare identical requirement ids within each group — catalog rule 5, asserted directly', () => {
-		// Stated here rather than left to `assertValidCatalog` alone, because a
-		// reader of this test should see the invariant, not just its enforcement.
-		for (const [group, slugs] of Object.entries(GROUPS)) {
+	it('declare identical requirement ids across each protocol pair — nothing validates this now', () => {
+		// Until M15 catalog rule 5 enforced it, because each pair was a `oneOf`
+		// group. The group is gone, so this test IS the guarantee that the two
+		// protocols keep asking the same question.
+		for (const [pair, slugs] of Object.entries(PAIRS)) {
 			const [first, ...rest] = slugs;
 			for (const slug of rest) {
-				expect(requirementIds(slug), `${group} / ${slug}`).toEqual(requirementIds(first));
+				expect(requirementIds(slug), `${pair} / ${slug}`).toEqual(requirementIds(first));
 			}
 		}
 
@@ -130,11 +166,11 @@ describe('the eight DIC wallet scenarios', () => {
 	});
 
 	it('uses the per-suite checks, which rule 5 permits — it compares ids, not checks', () => {
-		for (const slug of GROUPS['dic-wallet-present-eddsa']) {
+		for (const slug of PAIRS['present-eddsa']) {
 			expect(checkOf(slug, 'vp-cryptosuite')).toBe('wallet-vp-cryptosuite-eddsa');
 			expect(checkOf(slug, 'key-type-matches')).toBe('wallet-holder-key-type-eddsa');
 		}
-		for (const slug of GROUPS['dic-wallet-present-ecdsa']) {
+		for (const slug of PAIRS['present-ecdsa']) {
 			expect(checkOf(slug, 'vp-cryptosuite')).toBe('wallet-vp-cryptosuite-ecdsa');
 			expect(checkOf(slug, 'key-type-matches')).toBe('wallet-holder-key-type-ecdsa');
 		}
@@ -144,45 +180,63 @@ describe('the eight DIC wallet scenarios', () => {
 		}
 		// `issued-suite` reuses M11's producer checks unchanged, reading the credential
 		// off `StepEvidence.artifact`.
-		for (const slug of GROUPS['dic-wallet-accept-eddsa']) {
+		for (const slug of PAIRS['accept-eddsa']) {
 			expect(checkOf(slug, 'issued-suite')).toBe('credential-di-proof-eddsa');
 		}
-		for (const slug of GROUPS['dic-wallet-accept-ecdsa']) {
+		for (const slug of PAIRS['accept-ecdsa']) {
 			expect(checkOf(slug, 'issued-suite')).toBe('credential-di-proof-ecdsa');
 		}
 	});
 
-	it('authors no DIC **issuer** consumer requirement — that axis is M15’s, deliberately', () => {
+	it('authors no DIC **issuer** consumer requirement — that axis is the issuer family’s', () => {
 		const ids = ALL.flatMap(requirementIds).join(' ');
 		expect(ids).not.toMatch(/verify-vp|resolve-holder/);
 	});
 
-	it('says in the blurb that one protocol is enough, so eight do not read as eight obligations', () => {
+	it('says in the blurb which protocol’s add-on badge it counts toward', () => {
+		// The M12 copy promised cross-protocol completion, which M15 made false.
 		for (const slug of ALL) {
-			expect(scenarioBySlug(slug)!.blurb, slug).toMatch(/either protocol/i);
+			expect(scenarioBySlug(slug)!.blurb, slug).toMatch(/this protocol's Data Integrity/i);
+			expect(scenarioBySlug(slug)!.blurb, slug).not.toMatch(/either protocol/i);
 		}
 	});
 
-	it('keeps the whole catalog valid, including rule 5 on all four groups', () => {
+	it('keeps the whole catalog valid', () => {
 		expect(validateCatalog(allScenarios)).toEqual([]);
 	});
 });
 
 describe('DIC’s wallet meter', () => {
-	it('reads four obligations, not eight', () => {
+	it('reads eight obligations — one per (protocol × suite × axis)', () => {
 		const result = evaluateCompletion({
 			profile: 'data-integrity-cryptosuites',
 			role: 'wallet',
 			runs: {}
 		});
 
-		expect(
-			result.obligations.map((p) =>
-				p.obligation.kind === 'oneOf' ? p.obligation.group : p.obligation.scenario.slug
+		// Before M15: four `oneOf` obligations totalling 10. Now eight plain ones
+		// totalling 20 — each protocol's DIC badge asks for its own four.
+		expect(result.obligations).toHaveLength(8);
+		expect(result.obligations.map((o) => o.obligation.kind)).not.toContain('oneOf');
+		expect(result.total).toBe(20);
+	});
+
+	it('credits one protocol at a time — running VCALM does not fill the OID4 share', () => {
+		const result = evaluateCompletion({
+			profile: 'data-integrity-cryptosuites',
+			role: 'wallet',
+			runs: Object.fromEntries(
+				['vcalm-wallet-present-eddsa', 'vcalm-wallet-present-ecdsa'].map((slug) => [
+					slug,
+					fullRun(slug)
+				])
 			)
-		).toEqual(Object.keys(GROUPS));
-		// 3 + 3 + 2 + 2 requirements, counted once per group rather than per member.
-		expect(result.total).toBe(10);
+		});
+
+		// Six of twenty: the two VCALM present scenarios, three requirements each.
+		// Their OID4 siblings are untouched, which is the whole change.
+		expect(result.met).toBe(6);
+		expect(result.total).toBe(20);
 	});
 
 	it('leaves every base profile’s Essential *and* Complete meters unchanged', () => {
@@ -202,19 +256,17 @@ describe('DIC’s wallet meter', () => {
 	});
 
 	it('does NOT shrink the denominator when a pinned scenario is blocked', () => {
-		// The invariant the whole pinning design rests on. A deployment with no ECDSA
-		// tenant cannot run either member of `dic-wallet-accept-ecdsa`; the obligation
-		// stays at its full size and the badge is blocked instead. A shrinking
-		// denominator would let two deployments issue badges that look identical and
-		// mean different things.
+		// The invariant the whole pinning design rests on, and it is unaffected by
+		// dropping the groups. A deployment with no ECDSA tenant cannot run the two
+		// ECDSA accept scenarios; their requirements stay in `total` and the badge
+		// is blocked instead. A shrinking denominator would let two deployments
+		// issue badges that look identical and mean different things.
 		const reason: CannotServe = {
 			kind: 'cryptosuite-unavailable',
 			requested: 'ecdsa-rdfc-2019',
 			available: ['eddsa-rdfc-2022']
 		};
-		const blocked = Object.fromEntries(
-			GROUPS['dic-wallet-accept-ecdsa'].map((slug) => [slug, reason])
-		);
+		const blocked = Object.fromEntries(PAIRS['accept-ecdsa'].map((slug) => [slug, reason]));
 
 		const open = evaluateCompletion({
 			profile: 'data-integrity-cryptosuites',
@@ -231,11 +283,15 @@ describe('DIC’s wallet meter', () => {
 		expect(gated.total).toBe(open.total);
 		expect(gated.obligations).toHaveLength(open.obligations.length);
 
-		const ecdsa = gated.obligations.find(
-			(p) => p.obligation.kind === 'oneOf' && p.obligation.group === 'dic-wallet-accept-ecdsa'
-		)!;
-		expect(ecdsa.blocked).toEqual(reason);
-		expect(ecdsa.met).toBe(0);
-		expect(ecdsa.total).toBe(2);
+		// Both members are now separately blocked, one per protocol, rather than one
+		// group carrying the reason for both.
+		for (const slug of PAIRS['accept-ecdsa']) {
+			const progress = gated.obligations.find(
+				(p) => p.obligation.kind === 'scenario' && p.obligation.scenario.slug === slug
+			)!;
+			expect(progress.blocked, slug).toEqual(reason);
+			expect(progress.met, slug).toBe(0);
+			expect(progress.total, slug).toBe(2);
+		}
 	});
 });
