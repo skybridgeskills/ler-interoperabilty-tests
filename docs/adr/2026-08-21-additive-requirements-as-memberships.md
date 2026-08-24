@@ -153,3 +153,37 @@ presentation-producer scenarios, because the wallet's DIDAuth key-proof suite is
 the exchange (M12 `notes.md` F14). The consequence: a wallet that only ever accepts and never
 presents cannot fill the DIC producer obligation. That is a real gap in coverage, not a modelling
 choice, and it is recorded here so a later reader does not mistake it for one.
+
+## Amendment (2026-08-24, M15 — `oneOf`'s cross-protocol use is withdrawn, and the successor is declined)
+
+**The `additive-only` invariant this ADR establishes survives unchanged, and is
+load-bearing.** _An additive gives a base profile a companion badge, never a
+harder denominator_ — every scenario M15 authored across three new axes is
+`additive-only` in its base profile for exactly the reason recorded here. Nothing
+below repudiates the decision; what changes is one mechanism it chose, and one
+successor it predicted.
+
+**`oneOf`'s cross-protocol use is withdrawn.** The seven groups
+(`dic-issuer-{eddsa,ecdsa}`, the DIC wallet pairs, and the OSA skills-data
+groups) are now plain `required` memberships in their additive. They existed to
+serve an add-on badge that spanned every base profile; M15 keys add-on badges
+`(additive, base profile, role)` instead, and inside one base profile's slice a
+cross-protocol group has exactly one member — the "any one of, containing one
+row" this ADR itself complains about. **The primitive stays** in `Membership`,
+catalog rule 5 still guards it, and it is **dormant**: no scenario uses it as of
+M15. See [`2026-08-24-add-on-badges-per-base-profile`](2026-08-24-add-on-badges-per-base-profile.md).
+
+**The multi-protocol run interface is declined, not deferred.** This ADR's
+Alternatives calls it "the likely successor […] the M15 sibling effort,
+scheduled after M12". M15 ran and **decided against it**, along with the
+base-less memberships and the `Membership`/rule-4 change it would have required.
+A later reader must not go looking for the successor: per-protocol badges
+satisfy the same requirement without a run interface. The owner's reasoning is
+quoted in the M15 ADR.
+
+**The recorded consequence is resolved by removing the groups, not by a new
+renderer.** This ADR records, as its strongest open problem, that _a
+cross-protocol group cannot be rendered honestly from inside one base profile's
+card_. That is true, and it stays true — which is why the groups are gone. The
+add-on card now shows a slice that **is** the badge key, so the fraction it
+renders is the fraction its own badge scores.

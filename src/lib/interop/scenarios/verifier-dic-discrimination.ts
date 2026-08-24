@@ -144,7 +144,6 @@ function pass(
 function discriminationScenario(transport: Transport, suite: Suite) {
 	const host = HOST[transport];
 	const name = SUITE_NAME[suite];
-	const carrier = transport === 'direct' ? 'credential' : 'presentation';
 
 	return Scenario({
 		slug: `${host.profile === 'ob3-direct-delivery' ? 'ob3-direct' : host.profile}-verifier-${suite}`,

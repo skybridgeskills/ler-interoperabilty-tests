@@ -11,6 +11,7 @@ import {
 	essentialBadgeFor,
 	expandedBadgeFor
 } from './badge-registry.js';
+import { BadgeTier } from './badge-schema.js';
 
 /**
  * The registry against the catalog (M15 P7).
@@ -74,6 +75,17 @@ describe('every registered badge is well-formed', () => {
 		const slugs = all.map((b) => b.slug);
 		expect(new Set(slugs).size).toBe(slugs.length);
 		for (const slug of slugs) expect(slug, slug).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+	});
+
+	it('uses only the Essential / Expanded / add-on tier vocabulary', () => {
+		// M15's acceptance criterion 8, pinned. `base`/`complete`/`additive` were the
+		// M8–M14 names and survive in no definition; the enum makes a stale one a
+		// compile error, and this makes a stale one a test failure too, which is the
+		// half a `git grep` cannot give you.
+		expect(BadgeTier.schema.options).toEqual(['essential', 'expanded', 'add-on']);
+		for (const badge of all) {
+			expect(['essential', 'expanded', 'add-on'], badge.slug).toContain(badge.tier);
+		}
 	});
 
 	it('carries copy that says what it is and what the bar was', () => {

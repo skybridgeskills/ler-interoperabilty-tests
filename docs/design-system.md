@@ -187,11 +187,11 @@ and are reused by the completion group.
 The completion group distinguishes its tiers with a coloured dot and label in each
 header row, echoed by a matching left rule on each body section:
 
-| Tier                | Token      | Hue             |
-| ------------------- | ---------- | --------------- |
-| Essential           | `primary`  | blue, h217      |
-| Complete / Expanded | `accent`   | violet, h261    |
-| Add-ons             | `additive` | cyan-teal, h188 |
+| Tier      | Token      | Hue             |
+| --------- | ---------- | --------------- |
+| Essential | `primary`  | blue, h217      |
+| Expanded  | `accent`   | violet, h261    |
+| Add-ons   | `additive` | cyan-teal, h188 |
 
 All three sit at the **cool** end, and that is the constraint, not a preference:
 warm `progress`/`live` is spoken for by in-flight runtime, green `success` by
@@ -199,17 +199,18 @@ finished success, red by failures, and amber `warning` by "can't tell". A tier
 label is a _chooser_, not an outcome, so the cool end is the only part of the
 palette it can safely claim.
 
-The two base tiers (M14) reused `primary` and `accent` — the Complete tier borrows
-the violet the palette already defined, so Core reads as the everyday bar and
-Complete as the stretch one. The **Add-ons tier is the one that needed a new
-token**; it rendered in the warm `live` flame until 2026-08-21, which contradicted
+The two base tiers (M14) reused `primary` and `accent` — Expanded borrows the
+violet the palette already defined, so Essential reads as the everyday bar and
+Expanded as the stretch one. (M15 renamed the tiers from `base`/`complete`/`additive`
+to **Essential / Expanded / Add-on**; the tokens and hues are unchanged.) The
+**Add-ons tier is the one that needed a new token**; it rendered in the warm `live` flame until 2026-08-21, which contradicted
 that family's meaning and failed AA in light mode.
 [ADR 2026-08-21](adr/2026-08-21-additive-requirement-layer-colour.md) has the
 reasoning and the rejected alternatives.
 
 The header meters use `CompletionMeter`'s dense `showPercent` readout
 (`met/total · pct%`) because each tier's own label already says
-"Core" / "Complete", making the word "requirements" redundant there.
+"Essential" / "Expanded", making the word "requirements" redundant there.
 
 Each of `success`, `result-pass`, `result-fail`, `result-incomplete`, and
 `progress` has `-soft` (surface) and `-border` companions for chip styling;

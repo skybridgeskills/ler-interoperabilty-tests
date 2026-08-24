@@ -269,6 +269,46 @@
 			roleName="Wallet"
 			result={fullResult}
 			runs={fullRuns}
+			coreResult={fullResult}
+			claimHref="/badges/data-integrity-cryptosuites-vcalm-wallet"
+			baseBadgeName="Data Integrity Cryptosuites — VCALM Wallet"
+		/>
+	</div>
+</Story>
+
+<!--
+	The gate, and the reason `coreResult` exists. The add-on's own slice is FULL —
+	every DIC scenario over VCALM has passed — but the VCALM Wallet Essentials
+	badge underneath is unearned, so the control stays disabled and says which of
+	the two problems the reader actually has. Before M15 P8 this rendered a live
+	"Claim badge" control: the slice was full and nothing consulted core.
+-->
+<Story name="Add-on card — blocked on core" asChild>
+	<div class="max-w-2xl bg-background p-6">
+		<CompletionGroup
+			profileName="VCALM Profile"
+			roleName="Wallet"
+			result={fullResult}
+			runs={fullRuns}
+			coreResult={emptyResult}
+			claimHref="/badges/data-integrity-cryptosuites-vcalm-wallet"
+			baseBadgeName="Data Integrity Cryptosuites — VCALM Wallet"
+		/>
+	</div>
+</Story>
+
+<!--
+	The ordinary unfinished state, for contrast: the reader's next move is more
+	add-on work, not the base profile, and the card must not say "Essentials first".
+-->
+<Story name="Add-on card — unfinished" asChild>
+	<div class="max-w-2xl bg-background p-6">
+		<CompletionGroup
+			profileName="VCALM Profile"
+			roleName="Wallet"
+			result={partialResult}
+			runs={partialRuns}
+			coreResult={fullResult}
 			claimHref="/badges/data-integrity-cryptosuites-vcalm-wallet"
 			baseBadgeName="Data Integrity Cryptosuites — VCALM Wallet"
 		/>

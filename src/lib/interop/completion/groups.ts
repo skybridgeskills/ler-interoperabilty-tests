@@ -46,6 +46,17 @@ export type CompletionGroupData = {
 	 * the add-on badge for that triple, **not** the base profile's Essential badge.
 	 */
 	addOn?: { slug: AdditiveProfileSlug; name: string };
+	/**
+	 * The Essential meter of the `(profileSlug, roleSlug)` this add-on extends.
+	 * Set **only** alongside {@link CompletionGroupData.addOn}.
+	 *
+	 * An add-on badge is claimable only once the core badge underneath it is
+	 * earned (owner: *"Addons also require core"*), and a card cannot know that
+	 * from its own slice — the slice can be full while the base profile-role is
+	 * untouched. So the core result travels with the card, and the claim control
+	 * reads `isAddOnClaimable(result, coreResult)`.
+	 */
+	coreResult?: CompletionResult;
 };
 
 /** One selected add-on's work inside one `(base profile, role)` group. */
@@ -229,7 +240,15 @@ function addOnGroupsForAdditive(args: {
 				roleName: role.name,
 				result,
 				additives: [],
-				addOn: { slug: args.additive, name: args.additiveName }
+				addOn: { slug: args.additive, name: args.additiveName },
+				// The gate. Without it a full slice renders a live claim control over
+				// an unearned core badge, which is the one thing an add-on must not do.
+				coreResult: evaluateCompletion({
+					profile: profile.slug,
+					role: role.slug,
+					runs: args.runs,
+					blocked: args.blocked
+				})
 			});
 		}
 	}

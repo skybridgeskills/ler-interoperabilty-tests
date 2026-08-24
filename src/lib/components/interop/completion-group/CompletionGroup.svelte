@@ -3,9 +3,11 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { type ClaimedInfo, formatDay } from '$lib/interop/badges/index.js';
 	import {
+		addOnClaimBlocker,
 		type AdditiveSliceData,
 		completeTotals,
 		type CompletionResult,
+		isAddOnClaimable,
 		isClaimable,
 		isExpandedClaimable,
 		obligationsByWorkflow,
@@ -53,7 +55,8 @@
 		baseBadgeName = 'badge',
 		expandedClaimHref,
 		expandedClaim,
-		expandedBadgeName = 'expanded badge'
+		expandedBadgeName = 'expanded badge',
+		coreResult
 	}: {
 		profileName: string;
 		roleName: string;
@@ -74,11 +77,33 @@
 		expandedClaim?: ClaimedInfo;
 		/** Expanded badge display name, e.g. "OID4 Wallet — Expanded". */
 		expandedBadgeName?: string;
+		/**
+		 * Present only when this card is an **add-on slice**: the Essential meter of
+		 * the profile-role it extends. Turns the claim control into a gated one —
+		 * an add-on requires core, and a full slice over an unearned core badge is
+		 * exactly the state that must not offer a claim.
+		 */
+		coreResult?: CompletionResult;
 	} = $props();
 
 	type Tone = 'essential' | 'expanded' | 'add-on';
 
-	const essentialClaimable = $derived(isClaimable(result));
+	/**
+	 * The claim predicate for this card's own control.
+	 *
+	 * An add-on card (`coreResult` present) reads `isAddOnClaimable`, which needs
+	 * **both** meters full. Every other card reads its own Essential meter, as
+	 * before.
+	 */
+	const essentialClaimable = $derived(
+		coreResult ? isAddOnClaimable(result, coreResult) : isClaimable(result)
+	);
+
+	/**
+	 * Why an add-on control is disabled, when it is. `'core'` and `'unfinished'`
+	 * are different problems for a reader to fix, so the button says which.
+	 */
+	const addOnBlocker = $derived(coreResult ? addOnClaimBlocker(result, coreResult) : undefined);
 	const expandedClaimable = $derived(isExpandedClaimable(result));
 	const complete = $derived(completeTotals(result));
 	const hasExpanded = $derived(result.optional.obligations.length > 0);
@@ -350,6 +375,17 @@
 					{#if essentialClaimable}
 						<span class="text-label-md text-muted-foreground">Claiming coming soon</span>
 					{/if}
+				{/if}
+				{#if addOnBlocker === 'core'}
+					<!--
+						A blocked-on-core control is a deliberate state, not a dead one, and
+						the difference matters: the reader's next move is the base profile's
+						own scenarios, not more add-on work.
+					-->
+					<span class="text-label-md text-muted-foreground">
+						Earn the {profileName}
+						{roleName} Essentials badge first — an add-on builds on it.
+					</span>
 				{/if}
 				{#if claim}
 					<span class="text-label-md text-muted-foreground">

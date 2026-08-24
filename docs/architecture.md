@@ -90,8 +90,13 @@ Four properties are load-bearing:
   exactly one naming a base profile. `additive-only` is what an additive
   scenario takes in its base profile: the base names it because that protocol is
   what the scenario runs over, and claims **none** of it, so add-on work never
-  enters a base profile's Essential or Complete meter. So a profile is a _derived_ set of memberships
+  enters a base profile's Essential or Expanded meter. So a profile is a _derived_ set of memberships
   (`membershipsOfProfile`), not a list stored on the profile.
+  **`{ oneOf }` is dormant as of M15** — no scenario uses it. The seven
+  cross-protocol groups it served were dissolved when add-on badges became
+  per-base-profile; the primitive and its validation rule stay for a future
+  genuinely-alternative obligation. See
+  [the add-on keying ADR](./adr/2026-08-24-add-on-badges-per-base-profile.md).
 - **Drift is derived, never declared.** There is no `version` field;
   `scenarioFingerprint()` hashes scoring-relevant content (requirement ids,
   levels, statements, answer kinds, `choose` options and right answers, step
@@ -109,9 +114,10 @@ that returns the list. Eight rules:
 2. Step ids are unique within a scenario.
 3. Requirement ids are unique within a scenario.
 4. Exactly one membership names a base profile.
-5. **Every member of a `oneOf` group declares the same requirement ids.** The
-   load-bearing one: a group is one obligation, so the completion denominator
-   must not depend on which alternative the operator ran.
+5. **Every member of a `oneOf` group declares the same requirement ids.** A
+   group is one obligation, so the completion denominator must not depend on
+   which alternative the operator ran. Guards a **dormant** primitive since M15
+   — kept because the rule is what makes reintroducing a group safe.
 6. A `choose` answer's `correct` is one of its own option values.
 7. Shuffled steps form a single contiguous run.
 8. **A scenario with any shuffled step declares `shuffleLabel`.** A shuffled
@@ -306,15 +312,66 @@ key**, which is the distinction the whole family turns on.
   tells you nothing about ECDSA by accepting one.
 
 All eight DIC scenarios are `additive-only` in their base profile, never
-`optional`. Complete is cumulative, so `optional` would quietly make "a complete
-OID4 wallet" mean "…and supports both cryptosuites".
+`optional`. Expanded is cumulative with Essential, so `optional` would quietly
+make "an expanded OID4 wallet" mean "…and supports both cryptosuites".
 
 One cost worth stating: the acceptance-_producer_ rows merged into the
 presentation-producer scenarios, because the wallet's DIDAuth key-proof suite is
 not persisted into the exchange. A wallet that only ever accepts and never
 presents therefore cannot fill the DIC producer obligation.
 
+### The M15 catalog — three axes, fourteen scenarios
+
+M15 took the catalog from 32 to 46 scenarios, closing the two roles the
+cryptosuite axis had never reached and giving the orphaned conduct checks a home.
+
+- **DIC issuer consumer** (4) — `{vcalm,oid4}-issuer-consumer-{eddsa,ecdsa}`.
+  Varies `receive-from-issuer.keyProofSuite` and asks whether the operator's
+  issuer accepts our key proof in each bundle suite. Three checks read
+  `IssuerFlowSummary`: acceptance, then `holderDid`'s `did:key` multibase prefix
+  as a **verify-what-you-got** guard proving which suite we actually used, then
+  `diVpSigningAlgs` as an OID4VCI-only SHOULD. **Live transports only** — a
+  credential pasted out of band carries no key proof to consume.
+- **DIC verifier** (6) — `{ob3-direct,vcalm,oid4}-verifier-{eddsa,ecdsa}`. The
+  role's first additive axis. **Discrimination-shaped**: two shuffled passes, one
+  valid and one whose proof was corrupted after signing, because a verifier that
+  accepts everything passes "does it accept ECDSA" and fails the question worth
+  asking. Two passes rather than the base scenarios' four — the schema and expiry
+  defects are suite-independent, so repeating them per suite doubles the
+  operator's work and measures nothing new. These are the first consumers of the
+  locally-signed `cryptosuite` field (see below).
+- **Conduct** (4) — `oid4-wallet-presentation-{pex,limited}`,
+  `oid4-wallet-discovery`, `oid4-wallet-tamper-refusal`. All `optional` in `oid4`,
+  the first real population of an Expanded tier. They carry the five `*-recorded`
+  checks the exchange-variation effort shipped with no scenario to run them.
+  They are **new siblings, not rows added to shipped scenarios**: an action is
+  inside `scenarioFingerprint`, so adding a conduct field to
+  `oid4-wallet-presentation` would have dropped every stored run of it.
+
+`oid4-wallet-tamper-refusal` deserves its own note. `tamper-recorded` protects
+the refusal-discrimination scenarios — against a deployment predating the tamper
+seam the instruction is stripped, an intact credential is delivered, the operator
+honestly answers "accepted", and a **conformant wallet fails**. But it is an
+_automatic_ row, and automatic outcomes resolve live rather than deferring to the
+end-of-run reveal, so putting it on the tampered pass alone would give that pass a
+visible row the others lack — telling the operator exactly which credential is
+corrupted, which is what the shuffle exists to prevent. So it gets a
+**non-shuffled** home: a deliberately weaker scenario whose value is the
+precondition it establishes for the stronger one.
+
 ### Pinned issuing, and the tenant map
+
+**Only `issue` is tenant-bound.** It is the one action the transaction service
+mints, so it is the one action whose crypto axis a deployment can fail to serve.
+`deliver-direct` and `present-to-verifier` sign locally with `wallet-crypto`,
+which serves both bundle suites unconditionally, so they carry a plain
+`LocallySignedSuite` and are **never blocked** — `receive-from-issuer.keyProofSuite`
+had already stated this for itself and now shares the type. Until M15 P2 both
+resolved through the tenant map, which meant a locally-signed ECDSA hand-off
+would have rendered disabled on a deployment that could serve it perfectly well;
+nothing exercised it, which is why it survived. The distinction is not _whether_
+something is minted but _who mints it_. See
+[the tenant-binding ADR](./adr/2026-08-24-only-issue-is-tenant-bound.md).
 
 A scenario pins its issuing crypto with an optional `IssuingIntent`
 (`{ cryptosuite, didMethod }`) on an `issue` action. **Absent means elective** —
@@ -348,24 +405,28 @@ profile detail page (one group per role, scoped to that profile).
 
 A base profile-role reads as up to **three kinds of category**, in this order:
 
-1. **Essential interoperability** — the profile's `required` + `oneOf` scenarios →
-   the base badge, e.g. _OID4 Wallet_.
+1. **Essential interoperability** — the profile's `required` scenarios → the
+   Essential badge, e.g. _OID4 Wallet Essentials_.
 2. **Expanded interoperability** — the _same_ profile's `optional` scenarios.
-   Together with Essential these form the **Complete** tier → the _"— Complete"_
-   badge. Complete is **cumulative**: its meter counts Essential ∪ Expanded, so it
-   spans two body sections. That is why **every category heading carries its own
-   count** — `8/13 + 0/4 = 8/17` has to be a sum the reader can do from the rows on
-   screen, or a cumulative meter is unauditable.
+   Together with Essential these form the **Expanded** tier → the Expanded badge.
+   Expanded is **cumulative**: its meter counts Essential ∪ Expanded, so it spans
+   two body sections. That is why **every category heading carries its own count**
+   — `8/13 + 0/4 = 8/17` has to be a sum the reader can do from the rows on
+   screen, or a cumulative meter is unauditable. An Expanded badge is registered
+   **only where the optional set is non-empty** (today `oid4:wallet` alone); over
+   an empty tier it would be claimable the instant Essential was.
 3. **Add-ons** — one section per selected additive profile that reaches this
    `(profile, role)`, counted toward **neither** base tier. An additive layers work
    many implementers will never want; a denominator they cannot opt out of would
-   put Complete beyond their reach. The section shows a **slice** —
-   `evaluateAdditiveSlice`, this base profile's share of an additive whose badge
-   spans several — so it carries **no claim control**; claiming happens on the
-   additive's own page.
+   put Expanded beyond their reach. The section shows a **slice** —
+   `evaluateAdditiveSlice`, this base profile's share of the additive — and since
+   M15 that slice **is** the add-on badge's key, so the fraction the card renders
+   is the fraction its own badge scores. The card carries no claim control;
+   claiming happens on the additive's own page, which renders **one card per
+   `(base profile, role)`**, each with its own control.
 
-Tier colour is cued on the dot, label and rule (Essential = primary, Complete and
-Expanded = accent, add-on = `additive`), never on the bar: meter **fill** stays
+Tier colour is cued on the dot, label and rule (Essential = primary, Expanded =
+accent, add-on = `additive`), never on the bar: meter **fill** stays
 semantic everywhere (green full, warm partial). Add-ons used to render in the warm
 `live` flame; that reserve is for "talking to a real service right now", and an
 additive profile is a requirement _layer_, not a runtime state — so they moved to
@@ -377,7 +438,9 @@ The level that makes category 3 possible is **`additive-only`**: a base membersh
 that names the delivery protocol a scenario runs over while placing it in neither
 of that profile's tiers. See
 [the badge award model ADR](./adr/2026-08-18-badge-award-model.md) § Amendment
-2026-08-21.
+2026-08-21, and
+[the add-on keying ADR](./adr/2026-08-24-add-on-badges-per-base-profile.md) for
+why the slice became the key.
 
 Every number the group shows comes from M4's `evaluateCompletion` in
 `src/lib/interop/completion/` — the widget **computes nothing**:
@@ -386,23 +449,26 @@ Every number the group shows comes from M4's `evaluateCompletion` in
   `4/5 requirements met`, so the meter visibly adds up from its own rows; a
   scenario with a failing SHOULD is not flattened to a bare ✗.
 - **A `oneOf` group renders as one obligation** — "any one of" siblings that
-  each stay runnable but stop gating once one passes.
+  each stay runnable but stop gating once one passes. Dormant since M15; the
+  rendering path is kept alongside the primitive.
 - **`optional` memberships render in the Expanded section**, never folded into the
   Essential meter — including them would mean Essential could never fill. They
-  _are_ counted by the cumulative Complete meter above them.
+  _are_ counted by the cumulative Expanded meter above them.
 - **`additive-only` memberships are not the base profile's work at all** and
   appear in neither Essential nor Expanded — only in the add-on's own section.
 - **A blocked scenario renders disabled with its `CannotServe` reason and still
   counts in the denominator** — the badge is blocked, not made easier.
-- **Each tier's meter fills exactly when _its_ badge is claimable.** Essential
-  comes from `isClaimable(result)` (the `required` meter), Complete from
-  `isExpandedClaimable(result)` over `completeTotals(result)` — both sets full, and
-  never claimable with an empty Expanded set; a tier's meter fill and
-  its `[Claim …]` control both read that one predicate, so a header cannot lie.
-  Each control links to its own `/badges/[slug]` (base via `badgeFor`, Complete via
-  `completeBadgeFor`) or stays disabled where no badge is registered. Once claimed,
-  each tier shows its own _"Claimed 3 Aug against N requirements · k new since"_
-  line (see **§ Badges**).
+- **Each tier's meter fills exactly when _its_ badge is claimable.** A tier's
+  meter fill and its `[Claim …]` control read the same predicate, so a header
+  cannot lie. Each control links to its own `/badges/[slug]` — Essential via
+  `essentialBadgeFor`, Expanded via `expandedBadgeFor`, add-on via
+  `addOnBadgeFor(additive, baseProfile, role)`. **An add-on is additionally gated
+  on core**: `isAddOnClaimable(addOn, core)` needs both meters full, and
+  `addOnClaimBlocker` distinguishes `'unfinished'` (the add-on's own work) from
+  `'core'` (the Essential badge underneath), because those are different things
+  for a reader to fix. A blocked-on-core control is a deliberate state, not a
+  dead one. Once claimed, each tier shows its own _"Claimed 3 Aug against N
+  requirements · k new since"_ line (see **§ Badges**).
 
 Run records are browser-only (`localStorage`), so both surfaces hydrate them in
 `onMount` and render a zeroed meter during SSR. There is deliberately **no
@@ -773,16 +839,24 @@ Badges 3.0 recognition credential. The full rationale is
 (with the M14 tier-keying amendment); the shape of it:
 
 - **The domain is pure and client-safe** (`interop/badges/`): a `BadgeDefinition`
-  whose `tier` decides _which sub-set_ of a `(profile, role)` it scores — `base`
-  the `required` + `oneOf` floor, `complete` the same base profile's `optional`
-  set, `additive` an additive profile's whole (single-tier) set. `scenariosBehindBadge`
-  is the one seam that applies this filter; the fingerprint, the `BadgeClaimSnapshot`,
-  the `newSince` diff, and the criteria page all read through it, so a base badge and
-  a complete badge for one `(profile, role)` are two different sets. `badgeKey` keys
-  base/complete to the base profile and additive to the additive profile — the base
-  badge never changes meaning when the Complete set grows. Both tiers of the
-  `oid4/wallet` bundle are registered (`oid4-wallet`, `oid4-wallet-complete`);
-  additive badges stay unregistered (dormant) until additive scenarios exist.
+  whose `tier` decides _which sub-set_ of a `(profile, role)` it scores —
+  `essential` the `required` floor, `expanded` the same base profile's `optional`
+  set, `add-on` **one base profile's slice** of an additive. `scenariosBehindBadge`
+  is the one seam that applies this filter; the fingerprint, the
+  `BadgeClaimSnapshot`, the `newSince` diff, and the criteria page all read through
+  it, so an Essential badge and an Expanded badge for one `(profile, role)` are two
+  different sets. The Essential badge never changes meaning when the Expanded set
+  grows.
+- **An add-on badge is keyed `(additive, base profile, role)`**, so its arm of
+  `BadgeDefinition` carries **both** profiles. _DIC VCALM Wallet_ and _DIC OID4
+  Wallet_ are different badges over disjoint sets, each naming its protocol in its
+  own copy — a wallet that never touched OID4 should not hold a credential that
+  declines to say so. Add-ons are **gated on core**. The registry holds **20**
+  definitions in `badge-definitions.ts` (8 Essential, 1 Expanded, 11 add-on),
+  derived from the catalog with hand-written copy; a test walks every renderable
+  group and fails on any without a badge, which is what stops the registry falling
+  behind the catalog the way it did between M8 and M15. See
+  [the add-on keying ADR](./adr/2026-08-24-add-on-badges-per-base-profile.md).
 - **The credential is a plain OB3** built server-side in
   `server/domain/badges/badge-recipe.ts` — a module apart from the test recipes,
   importing nothing from `scenario-runner/recipes/` and imported by nothing

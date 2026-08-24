@@ -142,14 +142,22 @@ acceptance pair, `verify` for the presentation pair. No runnable page route in
 the suite is reachable any more.
 
 A **badge** is what a full completion set earns: a self-attested Open Badges 3.0
-recognition credential you claim into your own wallet when a `(profile, role)`
-required set is complete, from `/badges/[slug]`. It is **not** third-party
-certification, and it is **not** un-earnable — the live meter can drop as the
-catalog grows, but a claimed badge is a historical fact and stays claimed. The
-same page serves a stranger who follows the credential's `criteria.id`. Today
-one badge is registered, `oid4-wallet`. See
-[`docs/architecture.md`](docs/architecture.md) § Badges and
-[`docs/adr/2026-08-18-badge-award-model.md`](docs/adr/2026-08-18-badge-award-model.md).
+recognition credential you claim into your own wallet when a set is complete,
+from `/badges/[slug]`. It is **not** third-party certification, and it is **not**
+un-earnable — the live meter can drop as the catalog grows, but a claimed badge
+is a historical fact and stays claimed. The same page serves a stranger who
+follows the credential's `criteria.id`.
+
+Badges come in three tiers. **Essential** is a `(profile, role)`'s required set —
+_OID4 Wallet Essentials_. **Expanded** adds that same profile's optional
+scenarios, and is registered only where there are any. **Add-on** is one
+protocol's slice of an additive profile — _DIC VCALM Wallet_ and _DIC OID4
+Wallet_ are separate badges, each naming the protocol it covers — and an add-on
+is claimable only once the Essential badge underneath it is earned. Twenty are
+registered. See [`docs/architecture.md`](docs/architecture.md) § Badges,
+[`docs/adr/2026-08-18-badge-award-model.md`](docs/adr/2026-08-18-badge-award-model.md)
+and
+[`docs/adr/2026-08-24-add-on-badges-per-base-profile.md`](docs/adr/2026-08-24-add-on-badges-per-base-profile.md).
 
 ## Moving results between machines
 
