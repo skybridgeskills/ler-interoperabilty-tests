@@ -59,6 +59,12 @@
 		radial-gradient(circle at 12% 38%, hsl(305 75% 90% / 0.95), transparent 45%),
 		radial-gradient(circle at 88% 28%, hsl(196 100% 87% / 0.95), transparent 48%),
 		linear-gradient(135deg, hsl(300 40% 97%), hsl(200 60% 97%));
+	/* The compact hero's field: the same hues, blooms smaller and pushed into the corners so the
+	   title and chips sit on the pale centre. */
+	--hero-field-compact:
+		radial-gradient(circle at 6% 20%, hsl(305 75% 90% / 0.95), transparent 40%),
+		radial-gradient(circle at 96% 10%, hsl(196 100% 87% / 0.95), transparent 42%),
+		linear-gradient(135deg, hsl(300 40% 97%), hsl(200 60% 97%));
 	/* Success (green) — a completed/passed outcome. Reused for run-result "pass". */
 	--success: hsl(142 60% 33%);
 	--success-foreground: hsl(0 0% 100%);
@@ -144,6 +150,10 @@
 		--hero-field:
 			radial-gradient(circle at 12% 38%, hsl(305 45% 26% / 0.9), transparent 45%),
 			radial-gradient(circle at 88% 28%, hsl(196 55% 24% / 0.9), transparent 48%),
+			linear-gradient(135deg, var(--background), var(--background));
+		--hero-field-compact:
+			radial-gradient(circle at 6% 20%, hsl(305 45% 26% / 0.9), transparent 40%),
+			radial-gradient(circle at 96% 10%, hsl(196 55% 24% / 0.9), transparent 42%),
 			linear-gradient(135deg, var(--background), var(--background));
 		/* Success (green) — dark surface. result-pass aliases resolve per-scope. */
 		--success: hsl(142 52% 62%);
@@ -286,8 +296,13 @@
 	background: var(--hero-field);
 }
 
+@utility bg-hero-field-compact {
+	background: var(--hero-field-compact);
+}
+
 @media print {
-	.bg-hero-field {
+	.bg-hero-field,
+	.bg-hero-field-compact {
 		background: none;
 	}
 }
