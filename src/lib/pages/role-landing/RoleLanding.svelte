@@ -11,11 +11,11 @@
 	/**
 	 * The scenarios measuring one workflow in this role.
 	 *
-	 * This page used to list the profiles that declared a legacy list for each
-	 * `(role, workflow)`. M13 deleted the profiles' legacy requirement lists, so the catalog answers
+	 * This page used to list the profiles that declared a pre-scenario checklist for each
+	 * `(role, workflow)`. M13 deleted the profiles' pre-scenario checklists, so the catalog answers
 	 * the same question directly — and more honestly, since a profile with no
 	 * scenario for a workflow was previously indistinguishable from one with a
-	 * legacy list nobody could run.
+	 * pre-scenario checklist nobody could run.
 	 */
 	const scenariosFor = (workflow: string) =>
 		allScenarios.filter((s) => s.role === roleSlug && s.workflow === workflow);

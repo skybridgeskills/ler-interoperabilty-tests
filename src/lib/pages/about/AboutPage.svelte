@@ -7,8 +7,8 @@
 	<p class="max-w-prose text-body-md text-muted-foreground">
 		The LER Interoperability Test Suite is an always-available, self-help kit for teams building
 		Learning &amp; Employment Record systems — wallets, verifiers, and issuers working with Open
-		Badges 3.0 and related standards. Pick the roles and profiles you care about, run the legacy
-		lists, and get an honest read on whether your implementation actually interoperates with the
+		Badges 3.0 and related standards. Pick the roles and Standard Profiles you care about, run the
+		scenarios, and get an honest read on whether your implementation actually interoperates with the
 		rest of the ecosystem — not just whether it follows a specification on paper.
 	</p>
 </section>
@@ -65,14 +65,13 @@
 <section class="mt-12 space-y-4">
 	<h2 class="text-headline-md">How this tool helps</h2>
 	<p class="max-w-prose text-body-md text-foreground">
-		The <a href={resolve('/profiles')} class="text-primary hover:underline"
-			>interoperability profiles</a
-		> in this suite exist precisely because “OB 3.0 compliant” is not enough. Each profile pins down the
-		exact choices that make or break interoperability — credential format, exchange protocol, and proof
-		cryptosuite — so that “interoperable” means something concrete.
+		The <a href={resolve('/profiles')} class="text-primary hover:underline">Standard Profiles</a> in this
+		suite exist precisely because “OB 3.0 compliant” is not enough. Each one is an interoperability profile:
+		it pins down the exact choices that make or break interoperability — credential format, exchange protocol,
+		and proof cryptosuite — so that “interoperable” means something concrete.
 	</p>
 	<p class="max-w-prose text-body-md text-muted-foreground">
-		Pick the profiles you must interoperate with, run their legacy lists, and prove real
+		Pick the Standard Profiles you must interoperate with, run their scenarios, and prove real
 		interoperability instead of spec conformance on paper.
 	</p>
 	<p class="max-w-prose text-body-md">

@@ -28,7 +28,9 @@ describe('/+page.svelte', () => {
 		// that states its own selection; an untouched dimension reads "Any" rather
 		// than rendering blank.
 		await expect.element(page.getByRole('button', { name: 'Roles Any' })).toBeInTheDocument();
-		await expect.element(page.getByRole('button', { name: 'Profiles Any' })).toBeInTheDocument();
+		await expect
+			.element(page.getByRole('button', { name: 'Standard Profiles Any' }))
+			.toBeInTheDocument();
 
 		// Add-ons are absent until a relevant role is selected — an additive layers
 		// on a base profile *in a role*, so it is not offered before one is picked.
@@ -39,14 +41,6 @@ describe('/+page.svelte', () => {
 		await expect
 			.element(page.getByRole('link', { name: 'Accept a well-formed credential over OID4VCI' }))
 			.toHaveAttribute('href', '/scenarios/oid4-wallet-acceptance');
-
-		// The "Not yet migrated" section is GONE. It held the parallel surface —
-		// combinations with no scenario yet, counting toward no meter — and it
-		// shrank with each migration; the wallet pages were the last three, so it
-		// now renders nothing. The section markup is M13's to delete along with
-		// the profiles' legacy requirement lists; this asserts it is already empty, which is the
-		// signal that M13 is unblocked.
-		await expect.element(page.getByText('Not yet migrated')).not.toBeInTheDocument();
 	});
 
 	it('opens the roles panel with the role toggles and their docs links', async () => {
@@ -105,14 +99,14 @@ describe('/+page.svelte', () => {
 		expect(unblocked.textContent).not.toContain('Unavailable here');
 	});
 
-	it('opens the profiles panel with the profile toggles', async () => {
+	it('opens the Standard Profiles panel with the profile toggles', async () => {
 		render(Page, { data: { blocked: {} } });
 
-		await page.getByRole('button', { name: 'Profiles Any' }).click();
+		await page.getByRole('button', { name: 'Standard Profiles Any' }).click();
 
 		await expect
-			.element(page.getByRole('heading', { name: 'Interoperability profiles' }))
+			.element(page.getByRole('heading', { name: 'Standard Profiles' }))
 			.toBeInTheDocument();
-		await expect.element(page.getByRole('switch', { name: /OID4 Profile/ })).toBeInTheDocument();
+		await expect.element(page.getByRole('switch', { name: /^OID4/ })).toBeInTheDocument();
 	});
 });

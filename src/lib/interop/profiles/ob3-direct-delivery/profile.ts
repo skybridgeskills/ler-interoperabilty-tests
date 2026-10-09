@@ -4,7 +4,7 @@ import type { ProfileKeyComponent } from '../../profile-schema.js';
 export const ob3DirectDeliveryProfileMeta = {
 	id: 'ob3-direct-delivery-v1',
 	slug: 'ob3-direct-delivery' as const,
-	name: 'OB 3.0 Direct Delivery Profile',
+	name: 'OB 3.0 Direct Delivery',
 	version: '0.1',
 	status: "Editor's Draft",
 	url: 'https://interoperability.learningmobilitycollaborative.org/profiles/ob-3.0-direct-delivery/',
@@ -31,6 +31,6 @@ export const ob3DirectDeliveryProfileMeta = {
 	],
 	notes: [
 		'Recipients may lose access to the email address bound to a credential — for example, college email accounts often deactivate within ~6 months of graduation, and former employer addresses are typically inaccessible after employment ends. Strong proof of control may not be possible in those cases.',
-		'When strong proof of control is required, prefer a profile that uses verifiable presentations.'
+		'When strong proof of control is required, prefer a Standard Profile that uses verifiable presentations.'
 	]
 };

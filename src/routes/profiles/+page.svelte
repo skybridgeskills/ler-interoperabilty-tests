@@ -5,10 +5,11 @@
 </script>
 
 <section class="space-y-4">
-	<h1 class="text-display-lg">Interoperability profiles</h1>
+	<h1 class="text-display-lg">Standard Profiles</h1>
 	<p class="max-w-prose text-body-md text-muted-foreground">
-		Each profile bundles a specific combination of credential format, exchange protocol, and
-		cryptographic suite into a complete end-to-end set of interoperable workflows.
+		A Standard Profile is an interoperability profile: a fixed set of standards and options that two
+		products must share to work together. Each one bundles a credential format, an exchange protocol
+		and a cryptographic suite into a complete set of workflows.
 	</p>
 </section>
 
@@ -20,10 +21,10 @@
 
 {#if allAdditiveProfiles.length > 0}
 	<section class="mt-16 space-y-4">
-		<h2 class="text-display-md">Additive profiles</h2>
+		<h2 class="text-display-md">Add-ons</h2>
 		<p class="max-w-prose text-body-md text-muted-foreground">
-			Additive profiles layer extra requirements and credential-payload data on top of one or more
-			base profiles. They are not run standalone.
+			An add-on layers extra requirements, such as skills data or a pinned cryptosuite, onto a
+			Standard Profile. It never runs alone.
 		</p>
 	</section>
 

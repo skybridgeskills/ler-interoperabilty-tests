@@ -38,7 +38,7 @@ const panel = () => document.getElementById('filter-panel');
 const rolesTrigger = () => page.getByRole('button', { name: /^Roles/ });
 /** Exact name: the backdrop's label is "Close filter panel", and must not match. */
 const closeControl = () => page.getByRole('button', { name: 'Close', exact: true });
-const profilesTrigger = () => page.getByRole('button', { name: /^Profiles/ });
+const profilesTrigger = () => page.getByRole('button', { name: /^Standard Profiles/ });
 
 /**
  * The three Vitest projects run in parallel, two driving a real browser, and
@@ -227,7 +227,7 @@ describe('FilterBar panel focus', UNDER_LOAD, () => {
 
 		await profilesTrigger().click();
 
-		await expect.poll(() => panel()?.getAttribute('aria-label')).toBe('Profiles filter');
+		await expect.poll(() => panel()?.getAttribute('aria-label')).toBe('Standard Profiles filter');
 		await expect.poll(() => document.activeElement).toBe(panel());
 	});
 });

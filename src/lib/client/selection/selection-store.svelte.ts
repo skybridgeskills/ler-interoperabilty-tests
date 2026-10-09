@@ -32,8 +32,8 @@ export function createSelectionStore() {
 	/**
 	 * Drop any selected additive whose last relevant role has been deselected.
 	 *
-	 * An additive is only offered once a role it declares a legacy list for is
-	 * selected, so leaving one selected after that role goes away would keep a
+	 * An additive is only offered once a role with a scenario naming the additive
+	 * (`rolesOfAdditiveProfile`) is selected, so leaving one selected after that role goes away would keep a
 	 * filter switched on that nothing on the page can show — invisible state that
 	 * silently narrows the console. Pruning keeps the rule true in the data, not
 	 * just in the bar's visibility.

@@ -9,7 +9,7 @@ export const openSkillAlignmentMeta = {
 	status: "Editor's Draft",
 	lastUpdated: '2026-05-15',
 	description:
-		'Additive profile that adds machine-readable skill-alignment data to an OpenBadgeCredential ' +
+		'Adds machine-readable skill-alignment data to an OpenBadgeCredential ' +
 		'using credentialSubject.result[] and credentialSubject.achievement.resultDescription[]. ' +
 		'Alignment target URLs SHOULD point at CTDL resources in the Credential Registry. Supported ' +
 		'resultType values: RawScore, Percent, RubricCriterionLevel.',

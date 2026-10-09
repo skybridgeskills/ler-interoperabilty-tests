@@ -41,6 +41,25 @@ codebase evolves.
 
 ## Scenarios
 
+### Vocabulary
+
+User copy and code name some concepts differently. The copy terms are the only
+user-facing labels; the code identifiers, slugs and URLs stay as they are.
+
+| Term (user copy)     | Meaning                                                                                     | Code (unchanged)                            |
+| -------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| **Perspective**      | Builder or Evaluator; how the reader is using the suite (added in this release)             | `Perspective`                               |
+| **Role**             | issuer / wallet / verifier, the product's job                                               | `RoleSlug`                                  |
+| **Standard Profile** | an _interoperability profile_: a fixed set of standards and options two products must share | `Profile`, base profile, `/profiles/[slug]` |
+| **Add-on**           | layers extra requirements onto a Standard Profile; never runs alone                         | `AdditiveProfile`                           |
+| **Standard**         | an external published spec a Standard Profile is built on                                   | `standards.ts` register                     |
+
+Never use "role" for Perspective, and never use "Additive" or "Interoperability
+profile" as a label — "interoperability profile" is the _definition_ of a
+Standard Profile, stated in longer copy.
+
+### The scenario model
+
 A **scenario** is the suite's runnable unit: one small, subtle measurement made of
 ordered steps, each with an optional action and its own fine-grained
 requirements. It replaces the combination `(role, workflow, profile)` as the
@@ -57,7 +76,7 @@ in it imports from `src/lib/server/`:
 | `membership.ts`           | `Membership`, `MembershipLevel`, `OneOfGroup`                                                               |
 | `scenario-fingerprint.ts` | `scenarioFingerprint()` — drift detection                                                                   |
 | `catalog-validation.ts`   | `validateCatalog()` / `assertValidCatalog()`                                                                |
-| `accessors.ts`            | `scenarioBySlug`, `scenariosFor`, `membershipsOfProfile` (`scenarioHref` is in `checklist-href.ts`)         |
+| `accessors.ts`            | `scenarioBySlug`, `scenariosFor`, `membershipsOfProfile` (`scenarioHref` is in `route-hrefs.ts`)            |
 | `all-scenarios.ts`        | the registry, validated at module evaluation                                                                |
 
 Four properties are load-bearing:
@@ -273,10 +292,11 @@ are the worked example of authoring one as data — no code, no bespoke page:
   (`minimal-ob3`, elective), two automatic MUSTs (the exchange completed, the
   holder proved a DID), one attested MUST the wire cannot see (the credential
   landed in the list), and a SHOULD characterising what the wallet drew.
-  `/wallet/credential-acceptance/oid4` is a query-preserving `308` redirect to
-  it, so attach links keep working. Its VCALM sibling
+  `/wallet/credential-acceptance/oid4` used to be a query-preserving `308`
+  redirect to it, as were the routes for its VCALM sibling
   (`vcalm-wallet-acceptance`) and the two presentation scenarios
-  (`{oid4,vcalm}-wallet-presentation`) redirect the same way.
+  (`{oid4,vcalm}-wallet-presentation`); all four were removed in this release.
+  Attach links now open the scenario directly.
 - **`oid4-wallet-refusal-discrimination`** — three `shuffle: true` passes (valid
   control, `ob3-expired`, `minimal-ob3` + `tamper: 'proof'`) that permute
   together. Every pass carries an **identical** requirement shape — a weak
@@ -562,11 +582,11 @@ exchange against the DCC transaction service. There are two ways in, and the
 read path is identical afterwards.
 
 (The four `/wallet/credential-{acceptance,presentation}/{vcalm,oid4}` routes used
-to be where this happened. They are now query-preserving `308` redirects to their
-scenarios — **redirect iff the route carries documented attach links** is the rule
-the whole migration followed, which is why the verifier and issuer routes, which
-carried none, were deleted outright instead. M13 deleted the legacy page
-components and the engine behind them.)
+to be where this happened. The migration turned them into query-preserving `308`
+redirects to their scenarios, and M13 deleted the page components and the engine
+behind them. The redirects themselves were removed in this release, so old attach
+links to those routes 404; the working attach form is
+`/scenarios/<slug>?exchangeId=…&workflow=claim|verify`.)
 
 **Mint** (the default). The page `POST`s **a scenario action** to
 `/api/exchange-runner/create`, takes the one protocol link its profile speaks
@@ -669,10 +689,7 @@ adopts it by id:
   mint) and no `onReset` (its only exit is minting) reach
   `ExchangeRunnerPanel`; with no `onInitiate` the panel replaces its idle CTA
   with an explanation instead of rendering a control that cannot work.
-- Attach renders **observations, not verdicts** — the per-step display and the
-  run record are unchanged, and `deriveRunStateFromExchange` maps steps
-  positionally, so a probe whose step shape differs from the checklist's will
-  show approximate per-step states.
+- Attach renders **observations, not verdicts** — the run record is unchanged.
 
 The adopt endpoint is a separate route from the poll endpoint on purpose: the
 poller ticks every 2s and does not need protocols, which never change. It

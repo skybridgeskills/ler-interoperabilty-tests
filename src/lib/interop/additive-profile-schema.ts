@@ -4,7 +4,7 @@ import { ZodFactory } from '$lib/util/zod-factory.js';
 
 import { ProfileSlug } from './profile-schema.js';
 
-/** URL slug for an additive interoperability profile. */
+/** URL slug for an additive interoperability profile (user-facing label: Add-on). */
 export const AdditiveProfileSlug = ZodFactory(
 	z.enum(['open-skill-alignment', 'data-integrity-cryptosuites'])
 );
@@ -12,7 +12,7 @@ export type AdditiveProfileSlug = ReturnType<typeof AdditiveProfileSlug>;
 
 /**
  * An interoperability profile that layers on top of one or more base
- * profiles. Additive profiles cannot be run alone: they declare which base
+ * profiles (user-facing label: Add-on). Additive profiles cannot be run alone: they declare which base
  * profile slugs they apply to via `appliesToBaseProfiles`.
  *
  * They used to contribute extra requirements through their own per-(role,

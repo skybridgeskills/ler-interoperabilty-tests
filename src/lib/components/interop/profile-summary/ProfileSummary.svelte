@@ -7,7 +7,7 @@
 <section class="mt-8 grid gap-8 md:grid-cols-3">
 	<dl class="space-y-2 text-body-md md:col-span-1">
 		<div class="flex flex-col">
-			<dt class="text-label-md text-muted-foreground">Profile ID</dt>
+			<dt class="text-label-md text-muted-foreground">ID</dt>
 			<dd class="font-mono text-foreground">{profile.id}</dd>
 		</div>
 		<div class="flex flex-col">
@@ -16,7 +16,7 @@
 		</div>
 		{#if profile.url}
 			<div class="flex flex-col">
-				<dt class="text-label-md text-muted-foreground">Profile URL</dt>
+				<dt class="text-label-md text-muted-foreground">Published profile</dt>
 				<dd>
 					<a
 						class="break-all text-primary hover:underline"

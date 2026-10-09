@@ -119,7 +119,7 @@
 			<span
 				class="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-label-md text-primary"
 			>
-				Additive profile
+				Add-on
 			</span>
 		{/if}
 		<h1 class="text-display-lg">{data.profile.name}</h1>
@@ -130,7 +130,7 @@
 {#if data.kind === 'additive'}
 	<dl class="mt-8 space-y-2 text-body-md">
 		<div class="flex flex-col">
-			<dt class="text-label-md text-muted-foreground">Profile ID</dt>
+			<dt class="text-label-md text-muted-foreground">ID</dt>
 			<dd class="font-mono text-foreground">{data.profile.id}</dd>
 		</div>
 		<div class="flex flex-col">
@@ -139,7 +139,7 @@
 		</div>
 		{#if data.profile.url}
 			<div class="flex flex-col">
-				<dt class="text-label-md text-muted-foreground">Profile URL</dt>
+				<dt class="text-label-md text-muted-foreground">Published profile</dt>
 				<dd>
 					<a
 						class="break-all text-primary hover:underline"
@@ -168,8 +168,8 @@
 			</div>
 		{:else}
 			<p class="text-body-md text-muted-foreground">
-				No scenarios are registered for this profile yet. Every profile the suite ships has them —
-				this state is reachable only for a profile added without a catalog entry.
+				No scenarios are registered for this Standard Profile yet. Every Standard Profile the suite
+				ships has them — this state is reachable only for one added without a catalog entry.
 			</p>
 		{/if}
 	</section>
@@ -195,8 +195,8 @@
 			</div>
 		{:else}
 			<p class="text-body-md text-muted-foreground">
-				No scenarios name this additive profile yet. When they do, this is where its own requirement
-				meter appears.
+				No scenarios name this add-on yet. When they do, this is where its own requirement meter
+				appears.
 			</p>
 		{/if}
 	</section>

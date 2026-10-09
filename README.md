@@ -99,7 +99,7 @@ src/
     ├── health/+server.ts         # GET /health → { status, version }
     ├── version/+server.ts        # GET /version → { name, version, … }
     ├── scenarios/[slug]/         # the generic scenario runner (no bespoke pages)
-    ├── wallet/…                  # role landing + redirects to wallet scenarios
+    ├── wallet/…                  # role landing
     ├── verifier/…                # role landing
     └── issuer/…                  # role landing
 ```
@@ -121,9 +121,10 @@ Full palette + semantic tokens: [`docs/design-system.md`](docs/design-system.md)
 system, request context, the exchange runner (minting **and attach
 mode**), theme system, and test harness.
 
-The four wallet routes redirect to their scenarios preserving the query, so an
-exchange minted outside the suite is still adopted by
-`?exchangeId=…&workflow=claim|verify` — the scenario page does the adopting now. During a probe sitting,
+An exchange minted outside the suite is adopted by opening its scenario with
+`/scenarios/<slug>?exchangeId=…&workflow=claim|verify` — the scenario page does
+the adopting. (The four legacy wallet routes that used to redirect there were
+removed in this release; old attach links to them now 404.) During a probe sitting,
 `TRANSACTION_SERVICE_URL` must point at the transaction service that **actually
 minted** the exchange. `pnpm dev:services:local` builds it from the sibling
 checkout, so the composed service is the branch build; `pnpm dev:services` runs
@@ -136,10 +137,10 @@ Two prove the architecture on `credential-acceptance × oid4`:
 `oid4-wallet-acceptance` (the migrated happy path) and
 `oid4-wallet-refusal-discrimination` (three shuffled passes — valid, expired,
 tampered — that ask the operator to tell a good credential from a bad one).
-All four runnable wallet routes now **redirect** to their scenario, preserving
-any `?exchangeId=…&workflow=` so attach mode keeps working — `claim` for the
-acceptance pair, `verify` for the presentation pair. No runnable page route in
-the suite is reachable any more.
+Attach mode lives on the scenario page itself: `?exchangeId=…&workflow=` with
+`claim` for the acceptance scenarios and `verify` for the presentation ones. The
+four legacy wallet redirect routes were removed in this release, so no runnable
+page route remains outside `/scenarios/[slug]`.
 
 A **badge** is what a full completion set earns: a self-attested Open Badges 3.0
 recognition credential you claim into your own wallet when a set is complete,

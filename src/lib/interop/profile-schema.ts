@@ -22,7 +22,7 @@ export const WorkflowSlug = ZodFactory(
 );
 export type WorkflowSlug = ReturnType<typeof WorkflowSlug>;
 
-/** URL slug for one of the three interoperability profiles. */
+/** URL slug for one of the three interoperability profiles (user-facing label: Standard Profile). */
 export const ProfileSlug = ZodFactory(z.enum(['vcalm', 'oid4', 'ob3-direct-delivery']));
 export type ProfileSlug = ReturnType<typeof ProfileSlug>;
 
@@ -31,7 +31,8 @@ export const ProfileKeyComponent = ZodFactory(z.object({ label: z.string(), valu
 export type ProfileKeyComponent = ReturnType<typeof ProfileKeyComponent>;
 
 /**
- * A complete interoperability profile: identity + key technical choices.
+ * A complete interoperability profile (user-facing label: Standard Profile):
+ * identity + key technical choices.
  *
  * It used to carry a per-(role, workflow) requirement list, which is what
  * defined the combinations a profile supported. M13 deleted that field and its

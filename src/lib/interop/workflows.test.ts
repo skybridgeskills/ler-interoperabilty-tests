@@ -20,14 +20,6 @@ describe('allWorkflows', () => {
 			])
 		);
 	});
-
-	it('each workflow points to its conceptual pair (when applicable)', () => {
-		for (const w of allWorkflows) {
-			if (!w.pairedWith) continue;
-			const partner = workflowBySlug(w.pairedWith);
-			expect(partner?.pairedWith).toBe(w.slug);
-		}
-	});
 });
 
 describe('workflowBySlug', () => {

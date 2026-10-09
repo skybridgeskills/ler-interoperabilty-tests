@@ -120,7 +120,7 @@ export type VcalmIssuerSummary = IssuerFlowCommon & {
 	/**
 	 * The participation (interaction) endpoint answered. Derived from the same
 	 * single driver probe as {@link VcalmIssuerSummary.interactionFetched} — two
-	 * legacy rows over one observation, and both checks say so.
+	 * pre-scenario checklist rows over one observation, and both checks say so.
 	 */
 	participationOk: boolean;
 	/** The advertised protocols included a `vcapi` exchange endpoint. */

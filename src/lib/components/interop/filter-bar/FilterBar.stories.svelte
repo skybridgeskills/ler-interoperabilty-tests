@@ -75,7 +75,7 @@
 	</div>
 </Story>
 
-<Story name="Profiles panel open" asChild>
+<Story name="Standard Profiles panel open" asChild>
 	<div class="min-h-[40rem] bg-background px-4 py-6">
 		<FilterBar {...profilesOpen} matched={1} hidden={3} open="profiles" />
 	</div>

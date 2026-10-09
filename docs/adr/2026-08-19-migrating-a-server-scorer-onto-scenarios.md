@@ -257,3 +257,13 @@ what the ported checks implement, so each carries a dated note pointing here
 rather than a status change. An ADR whose reasoning still holds but whose code
 has moved is not a reversed decision, and marking it superseded would lose the
 reasoning that explains the checks.
+
+## Amendment (2026-10-09 — the four redirects are deleted)
+
+The route rule above still explains why the four wallet routes were redirected
+rather than deleted during the migration. For the next major release they were
+deleted too: the twelve files under
+`src/routes/wallet/credential-{acceptance,presentation}/{oid4,vcalm}/` are gone,
+and old attach links to them now 404. The working attach form is the scenario
+page itself, `/scenarios/<slug>?exchangeId=…&workflow=claim|verify`. The rule is
+not reversed — it governed a migration that is now finished.

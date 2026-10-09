@@ -6,9 +6,5 @@
  * An issuer that merely responds badly is **evidence** (`delivered: false` with
  * a reason, returned 200), never this error. This is only for input the suite
  * cannot even attempt, where no measurement happened at all.
- *
- * Deliberately independent of the legacy `issuer-runner` / `wallet-runner`
- * engines: this shared leaf is one `scenario-runner` can import without pulling
- * in either standing engine, both of which retire in M13.
  */
 export class ReceiveInputError extends Error {}

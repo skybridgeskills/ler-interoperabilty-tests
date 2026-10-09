@@ -14,7 +14,6 @@
 		additiveItems,
 		profileItems,
 		roleItems,
-		shortProfileName,
 		unofferedAdditiveNote
 	} from './filter-panel-items.js';
 	import FilterPanel from './FilterPanel.svelte';
@@ -27,15 +26,15 @@
 	 *
 	 * Replaces the three stacked chooser sections with one compact row whose
 	 * **closed state states the whole filter** — `Roles · Wallets, Verifiers`,
-	 * `Profiles · OID4`, the match count, and a Clear. Each dimension opens a
+	 * `Standard Profiles · OID4`, the match count, and a Clear. Each dimension opens a
 	 * full-width {@link FilterPanel} that carries the educational content those
 	 * sections used to spend the top half of the page on.
 	 *
 	 * Two rules the bar exists to make visible:
 	 *
 	 * 1. **Add-ons appear with a role.** The Add-ons dimension is absent entirely
-	 *    until a role some additive declares a legacy list for is selected — an
-	 *    additive layers on a base profile *in a role*, so offering one earlier
+	 *    until a role with a scenario naming the additive is selected
+	 *    (`rolesOfAdditiveProfile`) — an additive layers on a base profile *in a role*, so offering one earlier
 	 *    asks a question with nowhere to put the answer. `selectionStore` prunes a
 	 *    stale additive out of state to match; this component only decides what to
 	 *    show.
@@ -177,10 +176,10 @@
 
 	const roleLabels = $derived(allRoles.map((r) => ({ slug: r.slug as string, label: r.plural })));
 	const profileLabels = $derived(
-		allProfiles.map((p) => ({ slug: p.slug as string, label: shortProfileName(p) }))
+		allProfiles.map((p) => ({ slug: p.slug as string, label: p.name }))
 	);
 	const additiveLabels = $derived(
-		offeredAdditives.map((a) => ({ slug: a.slug as string, label: shortProfileName(a) }))
+		offeredAdditives.map((a) => ({ slug: a.slug as string, label: a.name }))
 	);
 
 	const dimensions = $derived<
@@ -201,7 +200,7 @@
 		},
 		{
 			key: 'profiles',
-			label: 'Profiles',
+			label: 'Standard Profiles',
 			summary: summarise(profiles, profileLabels, 'Any'),
 			active: profiles.size > 0
 		},
@@ -379,28 +378,28 @@
 				/>
 			{:else if open === 'profiles'}
 				<FilterPanel
-					heading="Interoperability profiles"
-					description="A profile is a set of standards and options — every parameter you need to do one thing with credentials."
+					heading="Standard Profiles"
+					description="A Standard Profile is an interoperability profile: a fixed set of standards and options that two products must share to work together."
 					items={panelItems.profiles}
-					builderNote="Cover the profiles your product needs to interoperate with."
-					evaluatorNote="Pick the profiles your ecosystem requires, then ask the platform or implementation to demonstrate them."
+					builderNote="Cover the Standard Profiles your product needs to interoperate with."
+					evaluatorNote="Pick the Standard Profiles your ecosystem requires, then ask the platform or implementation to demonstrate them."
 					overviewHref={profilesOverviewHref}
-					overviewLabel="All profiles"
+					overviewLabel="All Standard Profiles"
 					onToggle={(slug) => onToggleProfile(slug as ProfileSlug)}
 					onClose={() => close()}
 					{tone}
 				/>
 			{:else}
 				<FilterPanel
-					heading="Add-on profiles"
-					description="Additive profiles layer extra requirements on top of a base profile. They are never run alone — selecting one adds its requirements to every scenario set it applies to."
+					heading="Add-ons"
+					description="An add-on layers extra requirements, such as skills data or a pinned cryptosuite, onto a Standard Profile. It never runs alone — selecting one adds its requirements to every scenario set it applies to."
 					items={panelItems.additives}
 					columns={2}
 					footnote={additiveNote}
-					builderNote="Layer the add-ons your ecosystem mandates on top of the base profiles you already cover."
+					builderNote="Layer the add-ons your ecosystem mandates on top of the Standard Profiles you already cover."
 					evaluatorNote="Add the data or crypto requirements your procurement asks for, and see them inside each scenario set."
 					overviewHref={profilesOverviewHref}
-					overviewLabel="All add-on profiles"
+					overviewLabel="All add-ons"
 					onToggle={(slug) => onToggleAdditive(slug as AdditiveProfileSlug)}
 					onClose={() => close()}
 					{tone}

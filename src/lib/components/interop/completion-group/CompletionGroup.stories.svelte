@@ -27,19 +27,14 @@
 
 <Story name="Empty (nothing run)" asChild>
 	<div class="max-w-2xl bg-background p-6">
-		<CompletionGroup
-			profileName="OID4 Profile"
-			roleName="Wallet"
-			result={emptyResult}
-			runs={emptyRuns}
-		/>
+		<CompletionGroup profileName="OID4" roleName="Wallet" result={emptyResult} runs={emptyRuns} />
 	</div>
 </Story>
 
 <Story name="Partial (some passed, some not)" asChild>
 	<div class="max-w-2xl bg-background p-6">
 		<CompletionGroup
-			profileName="OID4 Profile"
+			profileName="OID4"
 			roleName="Wallet"
 			result={partialResult}
 			runs={partialRuns}
@@ -49,12 +44,7 @@
 
 <Story name="Full (badge ready)" asChild>
 	<div class="max-w-2xl bg-background p-6">
-		<CompletionGroup
-			profileName="OID4 Profile"
-			roleName="Wallet"
-			result={fullResult}
-			runs={fullRuns}
-		/>
+		<CompletionGroup profileName="OID4" roleName="Wallet" result={fullResult} runs={fullRuns} />
 	</div>
 </Story>
 
@@ -62,7 +52,7 @@
 <Story name="Full — claimable (badge wired)" asChild>
 	<div class="max-w-2xl bg-background p-6">
 		<CompletionGroup
-			profileName="OID4 Profile"
+			profileName="OID4"
 			roleName="Wallet"
 			result={fullResult}
 			runs={fullRuns}
@@ -75,7 +65,7 @@
 <Story name="Claimed — k new since" asChild>
 	<div class="max-w-2xl bg-background p-6">
 		<CompletionGroup
-			profileName="OID4 Profile"
+			profileName="OID4"
 			roleName="Wallet"
 			result={fullResult}
 			runs={fullRuns}
@@ -88,7 +78,7 @@
 <Story name="Blocked member" asChild>
 	<div class="max-w-2xl bg-background p-6">
 		<CompletionGroup
-			profileName="OID4 Profile"
+			profileName="OID4"
 			roleName="Wallet"
 			result={blockedResult}
 			runs={blockedRuns}
@@ -104,7 +94,7 @@
 <Story name="Essential full · Complete not claimable" asChild>
 	<div class="max-w-3xl bg-background p-6">
 		<CompletionGroup
-			profileName="OID4 Profile"
+			profileName="OID4"
 			roleName="Wallet"
 			result={optionalResult}
 			runs={optionalRuns}
@@ -120,7 +110,7 @@
 <Story name="Both tiers claimable" asChild>
 	<div class="max-w-3xl bg-background p-6">
 		<CompletionGroup
-			profileName="OID4 Profile"
+			profileName="OID4"
 			roleName="Wallet"
 			result={twoTierFullResult}
 			runs={twoTierFullRuns}
@@ -138,7 +128,7 @@
 	<div class="grid gap-4 xl:grid-cols-2">
 		<div class="bg-background p-6">
 			<CompletionGroup
-				profileName="OID4 Profile"
+				profileName="OID4"
 				roleName="Wallet"
 				result={optionalResult}
 				runs={optionalRuns}
@@ -151,7 +141,7 @@
 		<div class="dark">
 			<div class="bg-background p-6">
 				<CompletionGroup
-					profileName="OID4 Profile"
+					profileName="OID4"
 					roleName="Wallet"
 					result={twoTierFullResult}
 					runs={twoTierFullRuns}
@@ -174,7 +164,7 @@
 <Story name="With one add-on" asChild>
 	<div class="max-w-3xl bg-background p-6">
 		<CompletionGroup
-			profileName="OID4 Profile"
+			profileName="OID4"
 			roleName="Wallet"
 			result={optionalResult}
 			runs={optionalRuns}
@@ -191,7 +181,7 @@
 <Story name="With two add-ons" asChild>
 	<div class="max-w-3xl bg-background p-6">
 		<CompletionGroup
-			profileName="OID4 Profile"
+			profileName="OID4"
 			roleName="Wallet"
 			result={optionalResult}
 			runs={optionalRuns}
@@ -211,7 +201,7 @@
 <Story name="Add-on with no expanded set" asChild>
 	<div class="max-w-3xl bg-background p-6">
 		<CompletionGroup
-			profileName="VCALM Profile"
+			profileName="VCALM"
 			roleName="Verifier"
 			result={partialResult}
 			runs={partialRuns}
@@ -227,7 +217,7 @@
 	<div class="grid gap-4 xl:grid-cols-2">
 		<div class="bg-background p-6">
 			<CompletionGroup
-				profileName="OID4 Profile"
+				profileName="OID4"
 				roleName="Wallet"
 				result={optionalResult}
 				runs={optionalRuns}
@@ -241,7 +231,7 @@
 		<div class="dark">
 			<div class="bg-background p-6">
 				<CompletionGroup
-					profileName="OID4 Profile"
+					profileName="OID4"
 					roleName="Wallet"
 					result={optionalResult}
 					runs={optionalRuns}
@@ -265,7 +255,7 @@
 <Story name="Add-on card (additive page)" asChild>
 	<div class="max-w-2xl bg-background p-6">
 		<CompletionGroup
-			profileName="VCALM Profile"
+			profileName="VCALM"
 			roleName="Wallet"
 			result={fullResult}
 			runs={fullRuns}
@@ -286,7 +276,7 @@
 <Story name="Add-on card — blocked on core" asChild>
 	<div class="max-w-2xl bg-background p-6">
 		<CompletionGroup
-			profileName="VCALM Profile"
+			profileName="VCALM"
 			roleName="Wallet"
 			result={fullResult}
 			runs={fullRuns}
@@ -304,7 +294,7 @@
 <Story name="Add-on card — unfinished" asChild>
 	<div class="max-w-2xl bg-background p-6">
 		<CompletionGroup
-			profileName="VCALM Profile"
+			profileName="VCALM"
 			roleName="Wallet"
 			result={partialResult}
 			runs={partialRuns}

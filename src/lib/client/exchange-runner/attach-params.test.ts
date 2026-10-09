@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { attachParamsFromUrl } from './attach-params.js';
 
 const params = (search: string) =>
-	attachParamsFromUrl(new URL(`http://localhost/wallet/credential-acceptance/vcalm${search}`));
+	attachParamsFromUrl(new URL(`http://localhost/scenarios/vcalm-wallet-acceptance${search}`));
 
 describe('attachParamsFromUrl', () => {
 	it('is empty for a plain (minting) route URL', () => {

@@ -12,7 +12,6 @@ import {
 	allAdditiveProfiles,
 	allProfiles,
 	allRoles,
-	type Profile,
 	type ProfileSlug,
 	profileHref,
 	roleHref,
@@ -21,14 +20,6 @@ import {
 } from '$lib/interop/index.js';
 
 import type { FilterPanelItem } from './filter-panel-item.js';
-
-/**
- * A profile's name without the trailing "Profile" — the bar has one line, and
- * "VCALM Profile, OID4 Profile" spends most of it saying "Profile" twice.
- */
-export function shortProfileName(profile: Profile | AdditiveProfile): string {
-	return profile.name.replace(/\s+Profile$/, '');
-}
 
 export function roleItems(selected: Set<RoleSlug>): FilterPanelItem[] {
 	return allRoles.map((role) => ({
@@ -47,7 +38,7 @@ export function profileItems(selected: Set<ProfileSlug>): FilterPanelItem[] {
 		title: profile.name,
 		body: profile.description,
 		docHref: profileHref(profile.slug),
-		docLabel: 'Read the profile',
+		docLabel: 'Read the Standard Profile',
 		selected: selected.has(profile.slug)
 	}));
 }
@@ -64,7 +55,7 @@ export function additiveItems(
 		docLabel: 'Read the add-on',
 		meta: `For ${rolesOfAdditiveProfile(additive).join(', ')} · layers on ${
 			additive.appliesToBaseProfiles.length
-		} base profiles`,
+		} Standard Profiles`,
 		selected: selected.has(additive.slug)
 	}));
 }

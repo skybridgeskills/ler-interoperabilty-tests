@@ -17,9 +17,9 @@ import type { ProfileSlug } from '../../profile-schema.js';
  *
  * The bundle layers on the `vcalm` and `oid4` exchange profiles (across
  * their 4 shared workflows) and on the `ob3-direct-delivery` profile's
- * issuer direct-issuance operation (producer-only). Additive requirement lists
- * are matched to a base profile by (role, workflow), not by the
- * legacy list's own `profile` field.
+ * issuer direct-issuance operation (producer-only). It claims its work by
+ * being named in scenario `memberships`, never by a requirement list of its
+ * own.
  */
 export const dataIntegrityCryptosuitesMeta = {
 	id: 'data-integrity-cryptosuites-v1',
@@ -29,7 +29,7 @@ export const dataIntegrityCryptosuitesMeta = {
 	status: "Editor's Draft",
 	lastUpdated: '2026-05-16',
 	description:
-		'Additive profile that bundles two complete Data Integrity cryptosuite options for ' +
+		'Bundles two complete Data Integrity cryptosuite options for ' +
 		'OB 3.0 credentials and the verifiable presentations that carry them: EdDSA ' +
 		'(eddsa-rdfc-2022 + Ed25519) and ECDSA (ecdsa-rdfc-2019 + P-256). Issuer and holder ' +
 		'identifiers MUST use did:web or did:key with a verification method matching the ' +

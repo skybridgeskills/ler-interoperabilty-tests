@@ -23,8 +23,7 @@ const CRYPTOSUITE_BUNDLE = ['eddsa-rdfc-2022', 'ecdsa-rdfc-2019'];
  *
  * As with the VCALM leaf, this adds **no protocol code** —
  * `Oid4IssuerFlowDriver` already does all of it — and owns only the projection
- * into the client-safe {@link Oid4IssuerSummary}, independently of the legacy
- * `wallet-runner` engine.
+ * into the client-safe {@link Oid4IssuerSummary}.
  *
  * **Intake semantics: parse-fail throws, protocol-fail is scored.** Only a blank
  * paste throws; a malformed offer link, unreachable metadata, a refused token or

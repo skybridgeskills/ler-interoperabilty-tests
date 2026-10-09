@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
 	additiveProfileBySlug,
-	additiveProfilesForBaseProfile,
 	roleBySlug,
 	rolesOfAdditiveProfile,
 	workflowBySlug,
@@ -62,20 +61,5 @@ describe('additive profile accessors', () => {
 
 	it('returns undefined for an unknown slug', () => {
 		expect(additiveProfileBySlug('not-a-slug')).toBeUndefined();
-	});
-
-	it('lists both additives as applicable to ob3-direct-delivery', () => {
-		const list = additiveProfilesForBaseProfile('ob3-direct-delivery').map((p) => p.slug);
-		expect(list).toEqual(['open-skill-alignment', 'data-integrity-cryptosuites']);
-	});
-
-	it('lists both additives as applicable to vcalm', () => {
-		const list = additiveProfilesForBaseProfile('vcalm').map((p) => p.slug);
-		expect(list).toEqual(['open-skill-alignment', 'data-integrity-cryptosuites']);
-	});
-
-	it('lists both additives as applicable to oid4', () => {
-		const list = additiveProfilesForBaseProfile('oid4').map((p) => p.slug);
-		expect(list).toEqual(['open-skill-alignment', 'data-integrity-cryptosuites']);
 	});
 });

@@ -18,14 +18,14 @@ export const GET = async ({ params, url }: { params: { exchangeId: string }; url
 		);
 	}
 
-	// `?stepCount=` is supplied by the page so derived per-step states match
-	// the visible left-column step count. Defaults to 5 (the wallet
-	// acceptance × VCALM legacy step count); other runnable pages override.
+	// `?stepCount=` sizes the derived per-step array. Every live caller passes 1
+	// and reads only the overall run state; the default of 5 is a holdover from
+	// the pre-scenario multi-step pages.
 	const stepCount = clampStepCount(url.searchParams.get('stepCount'), 5);
 
 	// Which workflow this exchange belongs to. The page carries it back from the
 	// create result; unknown/absent values fall back to the issuance (`claim`)
-	// path so existing acceptance-page polls keep working.
+	// path.
 	const workflow = WorkflowId.schema.catch('claim').parse(url.searchParams.get('workflow'));
 
 	try {

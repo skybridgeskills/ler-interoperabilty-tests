@@ -20,10 +20,7 @@
 	 * | attested, answered, revealed | the statement, the ATTESTED pill, and a {@link RevealStrip} |
 	 *
 	 * Purely presentational: it takes an outcome, it never scores one. The layout
-	 * follows `RequirementStatusRow` — dot, level badge, text, trailing label —
-	 * deliberately matching its visual language without importing it, because
-	 * that component takes the legacy `RequirementStatus` shape which is
-	 * removed at M13.
+	 * is dot, level badge, text, trailing label.
 	 *
 	 * **Attested reveals defer to end-of-run.** An answered attested requirement
 	 * shows only a neutral echo of what was picked until `revealed` is set — the

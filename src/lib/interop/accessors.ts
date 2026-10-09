@@ -32,18 +32,6 @@ export function additiveProfileBySlug(slug: string): AdditiveProfile | undefined
 }
 
 /**
- * Additive profiles that apply to the given base profile slug. The
- * argument is a plain `string` so route loaders can call this without
- * pre-parsing the slug — the comparison still narrows internally via
- * the typed `appliesToBaseProfiles` array.
- */
-export function additiveProfilesForBaseProfile(base: string): AdditiveProfile[] {
-	return allAdditiveProfiles.filter((p) =>
-		(p.appliesToBaseProfiles as readonly string[]).includes(base)
-	);
-}
-
-/**
  * The roles an additive profile can be demonstrated in — the distinct roles of
  * the scenarios that name it, in catalog role order.
  *

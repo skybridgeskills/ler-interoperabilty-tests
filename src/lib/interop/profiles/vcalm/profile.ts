@@ -12,7 +12,7 @@ import type { ProfileKeyComponent } from '../../profile-schema.js';
 export const vcalmProfileMeta = {
 	id: 'vcalm-v1',
 	slug: 'vcalm' as const,
-	name: 'VCALM Profile',
+	name: 'VCALM',
 	version: '0.2',
 	status: "Editor's Draft",
 	url: 'https://interoperability.learningmobilitycollaborative.org/profiles/vcalm-eddsa/',
@@ -20,17 +20,17 @@ export const vcalmProfileMeta = {
 	description:
 		'Browser-based credential exchange using VCALM Exchanges over Open Badges 3.0 credentials. ' +
 		'The cryptosuite, key type, and DID-method options are declared by the ' +
-		'data-integrity-cryptosuites additive profile.',
+		'Data Integrity Cryptosuites add-on.',
 	keyComponents: [
 		{ label: 'Exchange Protocol', value: 'VCALM Exchanges' },
 		{
 			label: 'Cryptographic Suite',
-			value: 'See data-integrity-cryptosuites additive (EdDSA or ECDSA)'
+			value: 'See the Data Integrity Cryptosuites add-on (EdDSA or ECDSA)'
 		},
 		{
 			label: 'Key Proof of Possession',
 			value:
-				'DIDAuthentication verifiablePresentation secured with a Data Integrity proof (proofPurpose: authentication); cryptosuite per the data-integrity-cryptosuites additive.'
+				'DIDAuthentication verifiablePresentation secured with a Data Integrity proof (proofPurpose: authentication); cryptosuite per the Data Integrity Cryptosuites add-on.'
 		},
 		{ label: 'Credential Format', value: 'W3C Verifiable Credentials Data Model 2.0' },
 		{ label: 'Credential Schema', value: 'Open Badges 3.0' },

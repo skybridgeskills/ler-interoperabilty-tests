@@ -232,7 +232,7 @@ describe('completionGroupsForProfile — an additive profile', () => {
 	it('still renders a BASE profile one card per role, unchanged', () => {
 		const groups = completionGroupsForProfile({
 			profileSlug: 'oid4',
-			profileName: 'OID4 Profile',
+			profileName: 'OID4',
 			runs: {}
 		});
 		expect(groups.map((g) => g.roleSlug)).toEqual(['issuer', 'wallet', 'verifier']);

@@ -28,7 +28,7 @@
 					</div>
 				{/each}
 			</dl>
-			<p class="mt-4 text-label-md text-primary">View profile →</p>
+			<p class="mt-4 text-label-md text-primary">Open the Standard Profile →</p>
 		</CardContent>
 	</Card>
 </a>

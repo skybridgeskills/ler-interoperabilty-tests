@@ -16,9 +16,8 @@ import type { ReceiveFromIssuerResult } from './types.js';
  *
  * This adds **no protocol code** — `VcalmIssuerFlowDriver` already does all of
  * it. What this leaf owns is the boundary: projecting the driver's observations
- * into the client-safe {@link VcalmIssuerSummary} the `automatic` checks read,
- * independently of the legacy `wallet-runner` scoring engine (which stays
- * standing until M13 and is deliberately not imported here). It is the exact
+ * into the client-safe {@link VcalmIssuerSummary} the `automatic` checks read.
+ * It is the exact
  * inverse of `verifier-present/present-to-vcalm-verifier.ts`.
  *
  * **Intake semantics: parse-fail throws, protocol-fail is scored.** A blank or
@@ -54,9 +53,9 @@ export async function receiveFromVcalmIssuer(args: {
 	const { observations } = await args.flow.runIssuerFlow(url, args.keyProofSuite);
 	const { interaction, didAuth, delivery, verify, holder } = observations;
 
-	// One driver probe answers two legacy rows — the interaction URL resolved
+	// One driver probe answers two pre-scenario checklist rows — the interaction URL resolved
 	// and the participation endpoint answered are the same observation. Both are
-	// kept (faithful to the legacy list) and both checks say so.
+	// kept (faithful to the pre-scenario checklist) and both checks say so.
 	const interactionFetched = !!interaction?.ok && !!interaction.protocols;
 
 	const credential = delivery?.credential;
