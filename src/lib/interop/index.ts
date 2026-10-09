@@ -10,5 +10,6 @@ export * from './scenario-run/index.js';
 export * from './completion/index.js';
 export * from './badges/index.js';
 export * from './selection/index.js';
+export * from './perspective/index.js';
 export { allProfiles } from './profiles/all-profiles.js';
 export { allAdditiveProfiles } from './additive-profiles/all-additive-profiles.js';

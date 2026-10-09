@@ -46,6 +46,19 @@
 	--additive-foreground: hsl(0 0% 100%);
 	--additive-soft: hsl(188 55% 90%);
 	--additive-border: hsl(188 45% 55%);
+	/* Perspective (orchid) — "you, the reader": the Builder / Evaluator controls and markers, the
+	   hero bloom and the hero's own action (its About button). Never content, links or CTAs.
+	   See ADR 2026-10-09. */
+	--perspective: hsl(305 55% 38%);
+	--perspective-foreground: hsl(0 0% 100%);
+	--perspective-soft: hsl(305 60% 93%);
+	--perspective-border: hsl(305 40% 70%);
+	/* Hero field — decorative only, and the ONE place sky (h196) may appear. Exposed as the
+	   `bg-hero-field` utility, not a colour token. */
+	--hero-field:
+		radial-gradient(circle at 12% 38%, hsl(305 75% 90% / 0.95), transparent 45%),
+		radial-gradient(circle at 88% 28%, hsl(196 100% 87% / 0.95), transparent 48%),
+		linear-gradient(135deg, hsl(300 40% 97%), hsl(200 60% 97%));
 	/* Success (green) — a completed/passed outcome. Reused for run-result "pass". */
 	--success: hsl(142 60% 33%);
 	--success-foreground: hsl(0 0% 100%);
@@ -122,6 +135,16 @@
 		--additive-foreground: hsl(234 16% 13%);
 		--additive-soft: hsl(188 32% 18%);
 		--additive-border: hsl(188 42% 40%);
+		/* Perspective (orchid) — dark surface. */
+		--perspective: hsl(305 62% 76%);
+		--perspective-foreground: hsl(234 16% 13%);
+		--perspective-soft: hsl(305 30% 21%);
+		--perspective-border: hsl(305 35% 45%);
+		/* Hero field — same geometry, deeper blooms over the page background. */
+		--hero-field:
+			radial-gradient(circle at 12% 38%, hsl(305 45% 26% / 0.9), transparent 45%),
+			radial-gradient(circle at 88% 28%, hsl(196 55% 24% / 0.9), transparent 48%),
+			linear-gradient(135deg, var(--background), var(--background));
 		/* Success (green) — dark surface. result-pass aliases resolve per-scope. */
 		--success: hsl(142 52% 62%);
 		--success-foreground: hsl(234 16% 13%);
@@ -179,6 +202,10 @@
 	--color-additive-foreground: var(--additive-foreground);
 	--color-additive-soft: var(--additive-soft);
 	--color-additive-border: var(--additive-border);
+	--color-perspective: var(--perspective);
+	--color-perspective-foreground: var(--perspective-foreground);
+	--color-perspective-soft: var(--perspective-soft);
+	--color-perspective-border: var(--perspective-border);
 	--color-success: var(--success);
 	--color-success-foreground: var(--success-foreground);
 	--color-success-soft: var(--success-soft);
@@ -252,6 +279,17 @@
 
 @utility shadow-ambient {
 	box-shadow: 0 12px 32px hsl(234 16% 5% / 0.4);
+}
+
+/* The hero's decorative wash. Print goes plain, like every other print surface. */
+@utility bg-hero-field {
+	background: var(--hero-field);
+}
+
+@media print {
+	.bg-hero-field {
+		background: none;
+	}
 }
 
 @layer base {

@@ -12,67 +12,75 @@ Tailwind utilities (`bg-background`, `text-foreground`, etc.).
 
 ### Light mode
 
-| Token                  | Value                     |
-| ---------------------- | ------------------------- |
-| `--background`         | `hsl(220 23% 95%)`        |
-| `--foreground`         | `hsl(234 16% 13%)`        |
-| `--card`               | `hsl(220 22% 92%)`        |
-| `--popover`            | `hsl(220 22% 92%)`        |
-| `--primary`            | `hsl(217 87% 45%)`        |
-| `--primary-foreground` | `hsl(0 0% 100%)`          |
-| `--secondary`          | `hsl(220 16% 86%)`        |
-| `--muted`              | `hsl(220 16% 88%)`        |
-| `--muted-foreground`   | `hsl(232 10% 35%)`        |
-| `--accent`             | `hsl(261 60% 55%)`        |
-| `--warning`            | `hsl(35 75% 40%)`         |
-| `--warning-soft`       | `hsl(35 75% 92%)`         |
-| `--warning-border`     | `hsl(35 58% 62%)`         |
-| `--destructive`        | `hsl(350 70% 45%)`        |
-| `--live`               | `hsl(20 92% 48%)`         |
-| `--live-soft`          | `hsl(20 90% 92%)`         |
-| `--requirement`        | `hsl(217 87% 45%)`        |
-| `--requirement-soft`   | `hsl(217 80% 92%)`        |
-| `--additive`           | `hsl(188 72% 28%)`        |
-| `--additive-soft`      | `hsl(188 55% 90%)`        |
-| `--result-pass`        | `hsl(142 60% 33%)`        |
-| `--result-pass-soft`   | `hsl(142 48% 90%)`        |
-| `--result-fail`        | `var(--destructive)`      |
-| `--result-fail-soft`   | `hsl(350 70% 93%)`        |
-| `--result-incomplete`  | `var(--muted-foreground)` |
-| `--progress`           | `var(--live)`             |
-| `--border` / `--input` | `hsl(220 13% 78%)`        |
-| `--ring`               | `hsl(217 87% 45%)`        |
+| Token                  | Value                                                            |
+| ---------------------- | ---------------------------------------------------------------- |
+| `--background`         | `hsl(220 23% 95%)`                                               |
+| `--foreground`         | `hsl(234 16% 13%)`                                               |
+| `--card`               | `hsl(220 22% 92%)`                                               |
+| `--popover`            | `hsl(220 22% 92%)`                                               |
+| `--primary`            | `hsl(217 87% 45%)`                                               |
+| `--primary-foreground` | `hsl(0 0% 100%)`                                                 |
+| `--secondary`          | `hsl(220 16% 86%)`                                               |
+| `--muted`              | `hsl(220 16% 88%)`                                               |
+| `--muted-foreground`   | `hsl(232 10% 35%)`                                               |
+| `--accent`             | `hsl(261 60% 55%)`                                               |
+| `--warning`            | `hsl(35 75% 40%)`                                                |
+| `--warning-soft`       | `hsl(35 75% 92%)`                                                |
+| `--warning-border`     | `hsl(35 58% 62%)`                                                |
+| `--destructive`        | `hsl(350 70% 45%)`                                               |
+| `--live`               | `hsl(20 92% 48%)`                                                |
+| `--live-soft`          | `hsl(20 90% 92%)`                                                |
+| `--requirement`        | `hsl(217 87% 45%)`                                               |
+| `--requirement-soft`   | `hsl(217 80% 92%)`                                               |
+| `--additive`           | `hsl(188 72% 28%)`                                               |
+| `--additive-soft`      | `hsl(188 55% 90%)`                                               |
+| `--perspective`        | `hsl(305 55% 38%)`                                               |
+| `--perspective-soft`   | `hsl(305 60% 93%)`                                               |
+| `--perspective-border` | `hsl(305 40% 70%)`                                               |
+| `--hero-field`         | orchid + sky blooms over `hsl(300 40% 97%)` → `hsl(200 60% 97%)` |
+| `--result-pass`        | `hsl(142 60% 33%)`                                               |
+| `--result-pass-soft`   | `hsl(142 48% 90%)`                                               |
+| `--result-fail`        | `var(--destructive)`                                             |
+| `--result-fail-soft`   | `hsl(350 70% 93%)`                                               |
+| `--result-incomplete`  | `var(--muted-foreground)`                                        |
+| `--progress`           | `var(--live)`                                                    |
+| `--border` / `--input` | `hsl(220 13% 78%)`                                               |
+| `--ring`               | `hsl(217 87% 45%)`                                               |
 
 ### Dark mode (primary)
 
-| Token                  | Value              |
-| ---------------------- | ------------------ |
-| `--background`         | `hsl(234 16% 13%)` |
-| `--foreground`         | `hsl(230 73% 86%)` |
-| `--card`               | `hsl(232 17% 17%)` |
-| `--popover`            | `hsl(232 17% 17%)` |
-| `--primary`            | `hsl(217 87% 73%)` |
-| `--primary-foreground` | `hsl(234 16% 13%)` |
-| `--secondary`          | `hsl(231 13% 23%)` |
-| `--muted`              | `hsl(231 12% 20%)` |
-| `--muted-foreground`   | `hsl(229 28% 70%)` |
-| `--accent`             | `hsl(261 84% 78%)` |
-| `--warning`            | `hsl(35 65% 64%)`  |
-| `--warning-soft`       | `hsl(35 35% 20%)`  |
-| `--warning-border`     | `hsl(35 48% 45%)`  |
-| `--destructive`        | `hsl(350 89% 71%)` |
-| `--live`               | `hsl(22 95% 64%)`  |
-| `--live-soft`          | `hsl(20 50% 18%)`  |
-| `--requirement`        | `hsl(217 87% 73%)` |
-| `--requirement-soft`   | `hsl(217 42% 22%)` |
-| `--additive`           | `hsl(188 62% 66%)` |
-| `--additive-soft`      | `hsl(188 32% 18%)` |
-| `--result-pass`        | `hsl(142 52% 62%)` |
-| `--result-pass-soft`   | `hsl(142 28% 18%)` |
-| `--result-fail-soft`   | `hsl(350 38% 22%)` |
-| `--result-fail-border` | `hsl(350 48% 48%)` |
-| `--border` / `--input` | `hsl(231 12% 25%)` |
-| `--ring`               | `hsl(217 87% 73%)` |
+| Token                  | Value                                   |
+| ---------------------- | --------------------------------------- |
+| `--background`         | `hsl(234 16% 13%)`                      |
+| `--foreground`         | `hsl(230 73% 86%)`                      |
+| `--card`               | `hsl(232 17% 17%)`                      |
+| `--popover`            | `hsl(232 17% 17%)`                      |
+| `--primary`            | `hsl(217 87% 73%)`                      |
+| `--primary-foreground` | `hsl(234 16% 13%)`                      |
+| `--secondary`          | `hsl(231 13% 23%)`                      |
+| `--muted`              | `hsl(231 12% 20%)`                      |
+| `--muted-foreground`   | `hsl(229 28% 70%)`                      |
+| `--accent`             | `hsl(261 84% 78%)`                      |
+| `--warning`            | `hsl(35 65% 64%)`                       |
+| `--warning-soft`       | `hsl(35 35% 20%)`                       |
+| `--warning-border`     | `hsl(35 48% 45%)`                       |
+| `--destructive`        | `hsl(350 89% 71%)`                      |
+| `--live`               | `hsl(22 95% 64%)`                       |
+| `--live-soft`          | `hsl(20 50% 18%)`                       |
+| `--requirement`        | `hsl(217 87% 73%)`                      |
+| `--requirement-soft`   | `hsl(217 42% 22%)`                      |
+| `--additive`           | `hsl(188 62% 66%)`                      |
+| `--additive-soft`      | `hsl(188 32% 18%)`                      |
+| `--perspective`        | `hsl(305 62% 76%)`                      |
+| `--perspective-soft`   | `hsl(305 30% 21%)`                      |
+| `--perspective-border` | `hsl(305 35% 45%)`                      |
+| `--hero-field`         | orchid + sky blooms over `--background` |
+| `--result-pass`        | `hsl(142 52% 62%)`                      |
+| `--result-pass-soft`   | `hsl(142 28% 18%)`                      |
+| `--result-fail-soft`   | `hsl(350 38% 22%)`                      |
+| `--result-fail-border` | `hsl(350 48% 48%)`                      |
+| `--border` / `--input` | `hsl(231 12% 25%)`                      |
+| `--ring`               | `hsl(217 87% 73%)`                      |
 
 ### Live state — warm flame
 
@@ -138,6 +146,39 @@ for the UI label "Add-ons".
 Measured **4.93:1** light and **8.42:1** dark as text on `popover` — the bar
 the warm flame failed (2.96:1 in light), and the reason the add-on layer got a
 token of its own rather than continuing to borrow `live`.
+
+### Perspective — orchid
+
+The `perspective` family (orchid, h305) means **you, the reader**: the Builder /
+Evaluator choice. Named for the domain term (`Perspective`). Builder and
+Evaluator share the hue and are told apart by icon and label.
+
+| Class                         | Where to use                                                          |
+| ----------------------------- | --------------------------------------------------------------------- |
+| `text-perspective`            | Perspective control and marker text; the hero's About button label.   |
+| `bg-perspective`              | A chosen Perspective control (solid).                                 |
+| `text-perspective-foreground` | Foreground on `bg-perspective`.                                       |
+| `bg-perspective-soft`         | Soft Perspective surfaces — the framing block, a chosen chip.         |
+| `border-perspective-border`   | Edge of soft Perspective surfaces, and the framing block's left rule. |
+
+**Permitted uses only:** the Perspective controls and markers, the hero bloom,
+and the hero's own action (its About button). **Never** on content (scenario,
+requirement, role or profile surfaces), general links or CTAs — those stay
+`primary` blue or neutral. Measured as text on `popover`: **5.68:1** light,
+**7.33:1** dark; a chip (`text-perspective` on `bg-perspective-soft`) 5.67 / 6.38;
+a button (`perspective-foreground` on `perspective`) 6.90 / 8.19. See
+[ADR 2026-10-09](adr/2026-10-09-perspective-and-hero-field-colour.md).
+
+### Hero field — the sky exemption
+
+`--hero-field` is the page hero's decorative wash, exposed as the
+`bg-hero-field` utility (it is not a colour token): an orchid bloom and a sky
+(h196) bloom over a pale base. **It is the only place sky may appear** — never
+as text, chips, borders or controls. The exemption is narrow and by name: pale
+soft surfaces carry meaning elsewhere in this system (`live-soft`,
+`warning-soft`, the tier softs), so there is no general "washes don't count"
+rule. The field never varies by page or by Perspective, and it goes plain in
+print.
 
 ### Success, run result + progress
 

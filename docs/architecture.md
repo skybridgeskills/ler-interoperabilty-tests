@@ -737,7 +737,7 @@ on subsequent navigations and OS-preference changes.
 
 ## Client-side persistence
 
-The app keeps two pieces of state in `localStorage`, isolated under
+The app keeps three pieces of state in `localStorage`, isolated under
 `src/lib/client/`:
 
 - **Selection** (`client/selection/selection-store.svelte.ts`) — the user's
@@ -757,6 +757,21 @@ The app keeps two pieces of state in `localStorage`, isolated under
   on, or _"k new since"_ could not be said. Writes are idempotent on
   `(badgeSlug, claimedAt)`. Both stores feed M9's `{ results, badges }` export
   bundle verbatim — `results` from the run store, `badges` from this one.
+
+One more piece of state is a **cookie**, not `localStorage`: the reader's
+**Perspective** (Builder / Evaluator). `lits.perspective` holds `builder`,
+`evaluator` or `dismissed` (the reader said "Not now" to the first-visit gate),
+first-party, `Max-Age` one year, `Path=/`, `SameSite=Lax`, readable by script
+(not `HttpOnly`), `Secure` on https. It is a cookie because Perspective changes
+**server-rendered copy**: the root `+layout.server.ts` reads it on every request
+(nothing is prerendered, so this is safe everywhere) and `+layout.svelte` seeds a
+per-request store from it, so SSR renders the chosen copy with no flash. The
+store (`client/perspective/`, `createPerspectiveStore`) is provided through
+Svelte context (`setPerspectiveStore` / `perspectiveStore()`) rather than a module
+singleton, because on the server a module-scope instance would share one reader's
+choice with every request; it writes the cookie back on every change. The value
+model and cookie vocabulary live in the client-safe `interop/perspective/`. The
+Perspective is never put in a URL.
 
 The record is a flat map keyed by scenario slug, **not** an array per bucket:
 

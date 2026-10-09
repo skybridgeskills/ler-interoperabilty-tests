@@ -156,6 +156,35 @@
 		</section>
 
 		<section class="space-y-4">
+			<h2 class="text-headline-md text-foreground">Perspective (orchid) + hero field</h2>
+			<p class="max-w-prose text-body-md text-muted-foreground">
+				The <code class="font-mono">perspective</code> family means
+				<strong>you, the reader</strong>: the Builder / Evaluator controls and markers, the hero's
+				bloom and the hero's own action. It is never used on content, general links or CTAs. The
+				decorative
+				<code class="font-mono">bg-hero-field</code> wash pairs an orchid bloom with a sky bloom; it is
+				the only place sky (h196) may appear, and it goes plain in print.
+			</p>
+			<div class="grid gap-4 md:grid-cols-2">
+				<div
+					class="flex items-center justify-between gap-3 rounded-md border border-border bg-perspective p-4 text-perspective-foreground"
+				>
+					<span class="text-body-md">perspective</span>
+					<span class="text-label-md opacity-80">perspective-foreground</span>
+				</div>
+				<div
+					class="flex items-center justify-between gap-3 rounded-md border border-perspective-border bg-perspective-soft p-4 text-perspective"
+				>
+					<span class="text-body-md">perspective-soft</span>
+					<span class="text-label-md opacity-80">perspective (text)</span>
+				</div>
+			</div>
+			<div class="h-32 rounded-lg border border-border p-4 bg-hero-field">
+				<span class="text-label-md text-foreground">bg-hero-field</span>
+			</div>
+		</section>
+
+		<section class="space-y-4">
 			<h2 class="text-headline-md text-foreground">Success, run result + progress</h2>
 			<p class="max-w-prose text-body-md text-muted-foreground">
 				<code class="font-mono">success</code> (green) marks anything completed + successful — a
