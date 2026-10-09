@@ -60,7 +60,7 @@ export function acceptedKeyProofResult(
 		return {
 			met: false,
 			detail:
-				'A pasted credential carries no holder key proof, so this scenario cannot measure whether your issuer verified one.'
+				'A pasted credential carries no holder key proof, so this scenario cannot measure whether the issuer verified one.'
 		};
 	}
 
@@ -71,7 +71,7 @@ export function acceptedKeyProofResult(
 	return delivered
 		? {
 				met: true,
-				detail: `Your issuer accepted our ${proofName} signed with \`${cryptosuite}\` and issued the credential.`
+				detail: `The issuer accepted our ${proofName} signed with \`${cryptosuite}\` and issued the credential.`
 			}
 		: {
 				met: false,
@@ -159,10 +159,10 @@ export function advertisesKeyProofSuiteResult(
 	return flow.diVpSigningAlgs.includes(cryptosuite)
 		? {
 				met: true,
-				detail: `Your issuer advertises \`${cryptosuite}\` for \`di_vp\` key proofs.`
+				detail: `The issuer advertises \`${cryptosuite}\` for \`di_vp\` key proofs.`
 			}
 		: {
 				met: false,
-				detail: `Your issuer advertises ${flow.diVpSigningAlgs.map((a) => `\`${a}\``).join(', ')} for \`di_vp\` key proofs, not \`${cryptosuite}\`. A wallet choosing from that list would never offer this cryptosuite.`
+				detail: `The issuer advertises ${flow.diVpSigningAlgs.map((a) => `\`${a}\``).join(', ')} for \`di_vp\` key proofs, not \`${cryptosuite}\`. A wallet choosing from that list would never offer this cryptosuite.`
 			};
 }

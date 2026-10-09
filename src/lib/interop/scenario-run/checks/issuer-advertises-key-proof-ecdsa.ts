@@ -9,6 +9,6 @@ import { advertisesKeyProofSuiteResult } from './issuer-key-proof.js';
  */
 export const issuerAdvertisesKeyProofEcdsa: AutomaticCheck = {
 	id: 'issuer-advertises-key-proof-ecdsa',
-	summary: 'Your issuer advertises `ecdsa-rdfc-2019` for `di_vp` key proofs.',
+	summary: 'The issuer advertises `ecdsa-rdfc-2019` for `di_vp` key proofs.',
 	run: ({ stepId, evidence }) => advertisesKeyProofSuiteResult(evidence, stepId, 'ecdsa-rdfc-2019')
 };

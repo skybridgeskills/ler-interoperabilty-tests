@@ -13,7 +13,7 @@ import { issuerFlowForStep } from '../evidence.js';
  */
 export const oid4IssuerDiVpAccepted: AutomaticCheck = {
 	id: 'oid4-issuer-di-vp-accepted',
-	summary: 'Your issuer accepted our Data Integrity (`di_vp`) key proof.',
+	summary: 'The issuer accepted our Data Integrity (`di_vp`) key proof.',
 	run: ({ stepId, evidence }) => {
 		const flow = issuerFlowForStep(evidence, stepId);
 		if (!flow) return { met: false, detail: 'This step received nothing from an issuer.' };
@@ -23,11 +23,11 @@ export const oid4IssuerDiVpAccepted: AutomaticCheck = {
 			? {
 					met: true,
 					detail:
-						'Your issuer accepted our `di_vp` key proof — bound to the issued `c_nonce` and your domain — and issued against it. Rejecting a malformed proof is not negatively probed.'
+						'The issuer accepted our `di_vp` key proof — bound to the issued `c_nonce` and the issuer’s own domain — and issued against it. Rejecting a malformed proof is not negatively probed.'
 				}
 			: {
 					met: false,
-					detail: 'Your issuer issued nothing in response to our `di_vp` key proof.'
+					detail: 'The issuer issued nothing in response to our `di_vp` key proof.'
 				};
 	}
 };

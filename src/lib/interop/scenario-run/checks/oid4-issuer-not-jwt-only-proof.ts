@@ -12,7 +12,7 @@ import { issuerFlowForStep } from '../evidence.js';
  */
 export const oid4IssuerNotJwtOnlyProof: AutomaticCheck = {
 	id: 'oid4-issuer-not-jwt-only-proof',
-	summary: 'Your issuer does not require a JWT-only key proof.',
+	summary: 'The issuer does not require a JWT-only key proof.',
 	run: ({ stepId, evidence }) => {
 		const flow = issuerFlowForStep(evidence, stepId);
 		if (!flow) return { met: false, detail: 'This step received nothing from an issuer.' };
@@ -22,7 +22,7 @@ export const oid4IssuerNotJwtOnlyProof: AutomaticCheck = {
 			? {
 					met: true,
 					detail:
-						'A `di_vp` key-proof type is offered, so your issuer does not require a JWT-only proof.'
+						'A `di_vp` key-proof type is offered, so the issuer does not require a JWT-only proof.'
 				}
 			: {
 					met: false,

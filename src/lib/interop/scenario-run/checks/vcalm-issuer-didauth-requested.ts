@@ -14,14 +14,14 @@ import { issuerFlowForStep } from '../evidence.js';
  */
 export const vcalmIssuerDidauthRequested: AutomaticCheck = {
 	id: 'vcalm-issuer-didauth-requested',
-	summary: 'Your issuer requested DID authentication before issuing.',
+	summary: 'The issuer requested DID authentication before issuing.',
 	run: ({ stepId, evidence }) => {
 		const flow = issuerFlowForStep(evidence, stepId);
 		if (!flow) return { met: false, detail: 'This step received nothing from an issuer.' };
 		if (flow.transport !== 'vcalm')
 			return { met: false, detail: 'This step did not receive over VCALM.' };
 		if (!flow.didAuthRequested) {
-			return { met: false, detail: 'Your issuer returned no DID-authentication challenge.' };
+			return { met: false, detail: 'The issuer returned no DID-authentication challenge.' };
 		}
 		if (flow.didAuthQueryMissing) {
 			return {
@@ -32,7 +32,7 @@ export const vcalmIssuerDidauthRequested: AutomaticCheck = {
 		}
 		return {
 			met: true,
-			detail: 'Your issuer returned a `DIDAuthentication` request with a challenge before issuing.'
+			detail: 'The issuer returned a `DIDAuthentication` request with a challenge before issuing.'
 		};
 	}
 };

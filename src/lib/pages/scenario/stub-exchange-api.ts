@@ -133,7 +133,7 @@ export function stubExchangeApi(behaviour: StubBehaviour): () => void {
 				trace,
 				delivered: !miss,
 				...(miss
-					? { error: { message: 'Your issuer delivered no credential.' } }
+					? { error: { message: 'The issuer delivered no credential.' } }
 					: {
 							credential: {
 								type: ['VerifiableCredential', 'OpenBadgeCredential'],

@@ -29,7 +29,7 @@ export async function receiveDirect(args: {
 }): Promise<ReceiveFromIssuerResult> {
 	const text = args.input.trim();
 	if (text === '') {
-		throw new ReceiveInputError('Paste the credential your issuer produced.');
+		throw new ReceiveInputError('Paste the credential the issuer produced.');
 	}
 
 	let parsed: unknown;

@@ -19,7 +19,7 @@ import { descriptionsOf, upstreamMissing } from './osa-shape.js';
  */
 export const osaCtdlAlignment: AutomaticCheck = {
 	id: 'osa-ctdl-alignment',
-	summary: 'Your result descriptions carry CTDL Credential Registry alignments.',
+	summary: 'The result descriptions carry CTDL Credential Registry alignments.',
 	run: ({ stepId, evidence }) => {
 		const descriptions = descriptionsOf(artifactForStep(evidence, stepId));
 		if (!descriptions || descriptions.length === 0) {
@@ -32,7 +32,7 @@ export const osaCtdlAlignment: AutomaticCheck = {
 		if (urls.length === 0) {
 			return {
 				met: false,
-				detail: `Your result descriptions declare no \`alignment.targetUrl\` entries. They should align to the CTDL Credential Registry (${ctdlHostAllowlist.join(', ')}); more registries may be blessed later.`
+				detail: `The result descriptions declare no \`alignment.targetUrl\` entries. They should align to the CTDL Credential Registry (${ctdlHostAllowlist.join(', ')}); more registries may be blessed later.`
 			};
 		}
 		const unparseable = urls.filter((u) => classifyTargetUrl(u) === 'unparseable');

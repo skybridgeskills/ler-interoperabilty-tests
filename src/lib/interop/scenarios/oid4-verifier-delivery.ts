@@ -32,55 +32,54 @@ import { Scenario } from './scenario-schema.js';
  */
 export const oid4VerifierDelivery = Scenario({
 	slug: 'oid4-verifier-delivery',
-	name: 'Deliver a credential to your verifier over OID4VP',
+	name: 'Deliver a credential to the verifier over OID4VP',
 	blurb:
-		'Present a well-formed credential to your verifier over OID4VP, using the authorization request it publishes. We inspect that request and check the credential reaches your response endpoint — the wire, not the verdict.',
+		'Present a well-formed credential to the verifier over OID4VP, using the authorization request it publishes. We inspect that request and check the credential reaches the verifier’s response endpoint — the wire, not the verdict.',
 	role: 'verifier',
 	workflow: 'credential-request-and-verification',
 	memberships: [{ profile: 'oid4', level: 'required' }],
 	steps: [
 		{
 			id: 'deliver',
-			title: 'Deliver a credential to your verifier over OID4VP',
+			title: 'Deliver a credential to the verifier over OID4VP',
 			summary:
-				'We will present a well-formed Open Badges credential to your verifier over OID4VP (direct_post), using the authorization request you paste.',
+				'We will present a well-formed Open Badges credential to the verifier over OID4VP (direct_post), using the authorization request you paste.',
 			action: { kind: 'present-to-verifier', credential: 'minimal-ob3', transport: 'oid4vp' },
 			requirements: [
 				{
 					id: 'request-endpoint',
-					statement: 'Your verifier produced a resolvable OID4VP authorization request.',
+					statement: 'The verifier produced a resolvable OID4VP authorization request.',
 					level: 'MUST',
 					check: { kind: 'automatic', checkId: 'oid4-request-endpoint' }
 				},
 				{
 					id: 'request-matchable',
 					statement:
-						'Your request asked for an OpenBadgeCredential via its presentation definition.',
+						'The request asked for an OpenBadgeCredential via its presentation definition.',
 					level: 'MUST',
 					check: { kind: 'automatic', checkId: 'oid4-request-matchable' }
 				},
 				{
 					id: 'request-di-vp-format',
-					statement:
-						'Your request accepts a Data Integrity verifiable presentation (not JWT-only).',
+					statement: 'The request accepts a Data Integrity verifiable presentation (not JWT-only).',
 					level: 'MUST',
 					check: { kind: 'automatic', checkId: 'oid4-request-di-vp-format' }
 				},
 				{
 					id: 'request-tls',
-					statement: 'Your request endpoint used TLS 1.2 or above.',
+					statement: 'The request endpoint used TLS 1.2 or above.',
 					level: 'SHOULD',
 					check: { kind: 'automatic', checkId: 'oid4-request-tls' }
 				},
 				{
 					id: 'response-tls',
-					statement: 'Your response endpoint used TLS 1.2 or above.',
+					statement: 'The response endpoint used TLS 1.2 or above.',
 					level: 'MUST',
 					check: { kind: 'automatic', checkId: 'oid4-response-tls' }
 				},
 				{
 					id: 'response-endpoint',
-					statement: 'The credential was submitted to your response endpoint.',
+					statement: 'The credential was submitted to the verifier’s response endpoint.',
 					level: 'MUST',
 					check: { kind: 'automatic', checkId: 'oid4-response-endpoint' }
 				}

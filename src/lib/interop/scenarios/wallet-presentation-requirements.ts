@@ -40,25 +40,25 @@ import type { Requirement } from './requirement-schema.js';
 export const walletPresentationRequirements: Requirement[] = [
 	{
 		id: 'vp-delivered',
-		statement: 'Your wallet sent a presentation to the verifier.',
+		statement: 'The wallet sent a presentation to the verifier.',
 		level: 'MUST',
 		check: { kind: 'automatic', checkId: 'wallet-vp-delivered' }
 	},
 	{
 		id: 'di-vp-not-jwt',
-		statement: 'Your wallet sent a Data Integrity presentation, not a JWT.',
+		statement: 'The wallet sent a Data Integrity presentation, not a JWT.',
 		level: 'MUST',
 		check: { kind: 'automatic', checkId: 'wallet-vp-di-not-jwt' }
 	},
 	{
 		id: 'vp-signature-valid',
-		statement: 'The presentation’s signature verified against your wallet’s key.',
+		statement: 'The presentation’s signature verified against the wallet’s key.',
 		level: 'MUST',
 		check: { kind: 'automatic', checkId: 'wallet-vp-signature-valid' }
 	},
 	{
 		id: 'proof-binding',
-		statement: 'Your wallet bound the presentation to this request, and to this verifier.',
+		statement: 'The wallet bound the presentation to this request, and to this verifier.',
 		level: 'MUST',
 		check: { kind: 'automatic', checkId: 'wallet-vp-proof-binding' }
 	},
@@ -70,13 +70,13 @@ export const walletPresentationRequirements: Requirement[] = [
 	},
 	{
 		id: 'user-consent',
-		statement: 'Your wallet asked you to confirm before it shared anything.',
+		statement: 'The wallet asked you to confirm before it shared anything.',
 		level: 'MUST',
 		check: { kind: 'attested', answer: { kind: 'affirm' } }
 	},
 	{
 		id: 'presentation-interface',
-		statement: 'Your wallet showed you which credential it was about to share.',
+		statement: 'The wallet showed you which credential it was about to share.',
 		level: 'MUST',
 		check: { kind: 'attested', answer: { kind: 'affirm' } }
 	}

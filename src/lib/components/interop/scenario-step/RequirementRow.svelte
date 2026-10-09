@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { InlineMarkup } from '$lib/components/interop/inline-markup/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import type { AttestedAnswerValue, RequirementOutcome } from '$lib/interop/scenario-run/index.js';
 	import type { Requirement } from '$lib/interop/scenarios/index.js';
@@ -76,7 +77,10 @@
 {#if pending}
 	<div class="flex items-start gap-3 opacity-60">
 		<span aria-hidden="true" class="mt-1.5 size-3 shrink-0 rounded-full bg-border"></span>
-		<span class="min-w-0 flex-1 text-body-md text-muted-foreground">{requirement.statement}</span>
+		<InlineMarkup
+			text={requirement.statement}
+			class="min-w-0 flex-1 text-body-md text-muted-foreground"
+		/>
 	</div>
 {:else}
 	<div class="flex items-start gap-3">
@@ -91,11 +95,10 @@
 			-->
 			<div class="flex flex-wrap items-baseline gap-x-2 gap-y-1 sm:flex-nowrap">
 				<Badge variant="requirement" class={levelClass}>{requirement.level}</Badge>
-				<span
+				<InlineMarkup
+					text={requirement.statement}
 					class="order-last w-full text-body-md text-foreground sm:order-none sm:w-auto sm:min-w-0 sm:flex-1"
-				>
-					{requirement.statement}
-				</span>
+				/>
 				{#if attested}
 					<span
 						class="ml-auto shrink-0 rounded-full border border-live-border bg-live-soft px-1.5 py-0.5 text-label-md font-medium whitespace-nowrap text-live sm:ml-0"

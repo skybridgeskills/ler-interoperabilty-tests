@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { InlineMarkup } from '$lib/components/interop/inline-markup/index.js';
 	import type { RequirementOutcome } from '$lib/interop/scenario-run/index.js';
 	import type { AttestedAnswer } from '$lib/interop/scenarios/index.js';
 
@@ -69,7 +70,7 @@
 	</p>
 	{#if verdict !== 'correct' && truth}
 		<p class="text-body-md text-muted-foreground">
-			What actually happened: <span class="text-foreground">{truth}</span>
+			What actually happened: <InlineMarkup text={truth} class="text-foreground" />
 		</p>
 	{/if}
 </div>

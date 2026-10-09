@@ -40,8 +40,8 @@ function producerRequirements(suite: 'eddsa' | 'ecdsa'): Requirement[] {
 			id: 'cryptosuite',
 			statement:
 				suite === 'eddsa'
-					? 'Your issuer signed the credential with `eddsa-rdfc-2022`.'
-					: 'Your issuer signed the credential with `ecdsa-rdfc-2019`.',
+					? 'The issuer signed the credential with `eddsa-rdfc-2022`.'
+					: 'The issuer signed the credential with `ecdsa-rdfc-2019`.',
 			level: 'MUST',
 			check: {
 				kind: 'automatic',
@@ -50,17 +50,17 @@ function producerRequirements(suite: 'eddsa' | 'ecdsa'): Requirement[] {
 		},
 		{
 			id: 'issuer-did-method',
-			statement: 'Your issuer is identified by a `did:web` or `did:key` DID.',
+			statement: 'The issuer is identified by a `did:web` or `did:key` DID.',
 			level: 'MUST',
 			check: { kind: 'automatic', checkId: 'credential-issuer-did-method' }
 		}
 	];
 }
 
-/** The whole instruction: configure your issuer to sign with this suite, then deliver over this transport. */
+/** The whole instruction: configure the issuer to sign with this suite, then deliver over this transport. */
 function summaryFor(suite: 'eddsa' | 'ecdsa', delivery: string): string {
 	const name = suite === 'eddsa' ? '`eddsa-rdfc-2022`' : '`ecdsa-rdfc-2019`';
-	return `Configure your issuer to sign with ${name}, then ${delivery} We read the cryptosuite off the credential's proof — the suite is yours to choose, and this is the whole of what the scenario asks.`;
+	return `Configure the issuer to sign with ${name}, then ${delivery} We read the cryptosuite off the credential's proof; this is the whole of what the scenario asks.`;
 }
 
 /** The blurb every member carries: this scenario belongs to THIS protocol's add-on badge. */

@@ -3,6 +3,7 @@
 
 	import { DeliverableCredentialPanel } from '$lib/components/interop/deliverable-credential/index.js';
 	import { ExchangeRunnerPanel } from '$lib/components/interop/exchange-runner/index.js';
+	import { InlineMarkup } from '$lib/components/interop/inline-markup/index.js';
 	import { ScenarioStepCard } from '$lib/components/interop/scenario-step/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { profileHref } from '$lib/interop/route-hrefs.js';
@@ -15,7 +16,9 @@
 	} from '$lib/interop/scenarios/index.js';
 
 	import { transportFor } from './exchange-step.js';
+	import { PRESENT_COPY, PRESENT_SETTLED_NOTE } from './present-step.js';
 	import PresentField from './PresentField.svelte';
+	import { RECEIVE_COPY, RECEIVE_SETTLED_NOTE } from './receive-step.js';
 	import ReceiveField from './ReceiveField.svelte';
 	import { createScenarioRunController } from './scenario-run-controller.svelte.js';
 
@@ -77,31 +80,12 @@
 	const activeStep = $derived(scenario.steps.find((s) => s.id === run.activeStepId));
 	const activeIndex = $derived(run.runSteps.findIndex((s) => s.id === run.activeStepId));
 	const deliverableLabel = $derived(activeStep ? run.labelFor(activeStep, activeIndex) : '');
-	/**
-	 * Per-transport copy for the receive field. One field, three pastes: the
-	 * credential itself, a fresh single-use VC-API interaction URL, or a
-	 * pre-authorized-code credential offer.
-	 */
-	const receiveCopy = $derived.by(() => {
-		const transport =
-			activeStep?.action?.kind === 'receive-from-issuer' ? activeStep.action.transport : 'direct';
-		if (transport === 'vcalm') {
-			return {
-				prompt: 'Paste a fresh interaction URL from your issuer',
-				placeholder: 'https://your-issuer.example/exchanges/…'
-			};
-		}
-		if (transport === 'oid4vci') {
-			return {
-				prompt: 'Paste an openid-credential-offer:// URL from your issuer',
-				placeholder: 'openid-credential-offer://?credential_offer_uri=…'
-			};
-		}
-		return {
-			prompt: 'Paste the credential your issuer produced',
-			placeholder: '{ "@context": […], "type": ["VerifiableCredential", "OpenBadgeCredential"], … }'
-		};
-	});
+	/** Per-transport copy for the receive field — see {@link RECEIVE_COPY}. */
+	const receiveCopy = $derived(
+		RECEIVE_COPY[
+			activeStep?.action?.kind === 'receive-from-issuer' ? activeStep.action.transport : 'direct'
+		]
+	);
 	const panelData = $derived({
 		intent: (activeStep?.action?.kind === 'request-presentation' ? 'verification' : 'issuance') as
 			| 'issuance'
@@ -130,7 +114,9 @@
 				{status}
 			</span>
 		</div>
-		<p class="max-w-prose text-body-md text-muted-foreground">{scenario.blurb}</p>
+		<p class="max-w-prose text-body-md text-muted-foreground">
+			<InlineMarkup text={scenario.blurb} />
+		</p>
 	</header>
 {/snippet}
 
@@ -154,9 +140,7 @@
 			the field gives way to a confirmation and the questions (if any) take over.
 		-->
 		{#if run.engineStateOf(activeStep.id) === 'settled'}
-			<p class="text-body-md text-muted-foreground">
-				Presented to your verifier. Report what it decided below.
-			</p>
+			<p class="text-body-md text-muted-foreground">{PRESENT_SETTLED_NOTE}</p>
 		{:else}
 			<PresentField
 				busy={run.presentBusy}
@@ -164,12 +148,8 @@
 				retry={run.presentRetry}
 				canReuse={run.presentCanReuse}
 				lastRequest={run.presentLastRequest}
-				prompt={activeStep.action.transport === 'oid4vp'
-					? 'Paste a presentation request from your verifier'
-					: 'Paste a fresh interaction URL from your verifier'}
-				placeholder={activeStep.action.transport === 'oid4vp'
-					? 'openid4vp://… (or a request_uri URL or the request JSON)'
-					: 'https://your-verifier.example/interactions/…'}
+				prompt={PRESENT_COPY[activeStep.action.transport].prompt}
+				placeholder={PRESENT_COPY[activeStep.action.transport].placeholder}
 				onPresent={(request) => run.present(request)}
 			/>
 		{/if}
@@ -181,9 +161,7 @@
 			questions (if any) take over.
 		-->
 		{#if run.engineStateOf(activeStep.id) === 'settled'}
-			<p class="text-body-md text-muted-foreground">
-				Received the credential from your issuer. Report what it offered below.
-			</p>
+			<p class="text-body-md text-muted-foreground">{RECEIVE_SETTLED_NOTE}</p>
 		{:else}
 			<ReceiveField
 				busy={run.receiveBusy}

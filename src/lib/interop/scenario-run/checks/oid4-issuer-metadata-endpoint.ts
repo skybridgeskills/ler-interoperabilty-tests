@@ -8,7 +8,7 @@ import { issuerFlowForStep } from '../evidence.js';
  */
 export const oid4IssuerMetadataEndpoint: AutomaticCheck = {
 	id: 'oid4-issuer-metadata-endpoint',
-	summary: 'Your credential-issuer metadata is reachable and names a credential endpoint.',
+	summary: 'The credential-issuer metadata is reachable and names a credential endpoint.',
 	run: ({ stepId, evidence }) => {
 		const flow = issuerFlowForStep(evidence, stepId);
 		if (!flow) return { met: false, detail: 'This step received nothing from an issuer.' };
@@ -17,12 +17,12 @@ export const oid4IssuerMetadataEndpoint: AutomaticCheck = {
 		return flow.metadataReachable
 			? {
 					met: true,
-					detail: 'Your credential-issuer metadata resolved and named a credential endpoint.'
+					detail: 'The credential-issuer metadata resolved and named a credential endpoint.'
 				}
 			: {
 					met: false,
 					detail:
-						'Your credential-issuer metadata could not be fetched from the credential offer, or named no credential endpoint.'
+						'The credential-issuer metadata could not be fetched from the credential offer, or named no credential endpoint.'
 				};
 	}
 };

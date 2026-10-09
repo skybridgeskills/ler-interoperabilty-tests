@@ -13,7 +13,7 @@ import { issuerFlowForStep } from '../evidence.js';
  */
 export const oid4IssuerTls: AutomaticCheck = {
 	id: 'oid4-issuer-tls',
-	summary: 'Your issuer’s endpoints negotiated TLS 1.2 or above.',
+	summary: 'The issuer’s endpoints negotiated TLS 1.2 or above.',
 	run: ({ stepId, evidence }) => {
 		const flow = issuerFlowForStep(evidence, stepId);
 		if (!flow) return { met: false, detail: 'This step received nothing from an issuer.' };
@@ -23,13 +23,13 @@ export const oid4IssuerTls: AutomaticCheck = {
 		return tls.atLeastTls12
 			? {
 					met: true,
-					detail: `Your issuer host negotiated ${tls.protocol ?? 'TLS 1.2+'} — the metadata, token and credential endpoints share it.`
+					detail: `The issuer host negotiated ${tls.protocol ?? 'TLS 1.2+'} — the metadata, token and credential endpoints share it.`
 				}
 			: {
 					met: false,
 					detail:
 						tls.error ??
-						`Your issuer host's TLS version (${tls.protocol ?? 'unknown'}) is below TLS 1.2. The metadata, token and credential endpoints share this host.`
+						`The issuer host's TLS version (${tls.protocol ?? 'unknown'}) is below TLS 1.2. The metadata, token and credential endpoints share this host.`
 				};
 	}
 };

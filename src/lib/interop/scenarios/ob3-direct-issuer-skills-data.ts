@@ -26,7 +26,7 @@ import { Scenario } from './scenario-schema.js';
  */
 export const ob3DirectIssuerSkillsData = Scenario({
 	slug: 'ob3-direct-issuer-skills-data',
-	name: 'Deliver skills data in a credential you issue',
+	name: 'Deliver skills data directly',
 	blurb:
 		'Issue a credential carrying a performance scale and a learner result, and paste it here. It counts toward this protocol’s Open Skill Alignment add-on badge.',
 	role: 'issuer',

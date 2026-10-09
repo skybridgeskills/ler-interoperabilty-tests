@@ -18,14 +18,14 @@ export const exchangeComplete = Requirement({
 
 export const stored = Requirement({
 	id: 'stored',
-	statement: 'The credential appears in your wallet’s list.',
+	statement: 'The credential appears in the wallet’s list.',
 	level: 'MUST',
 	check: { kind: 'attested', answer: { kind: 'affirm' } }
 });
 
 export const handled = Requirement({
 	id: 'handled',
-	statement: 'What did your wallet do with this credential?',
+	statement: 'What did the wallet do with this credential?',
 	level: 'MUST',
 	check: {
 		kind: 'attested',
@@ -43,7 +43,7 @@ export const handled = Requirement({
 
 export const displayed = Requirement({
 	id: 'displayed',
-	statement: 'Your wallet said why it refused the credential.',
+	statement: 'The wallet said why it refused the credential.',
 	level: 'SHOULD',
 	check: { kind: 'attested', answer: { kind: 'affirm' } }
 });
@@ -101,7 +101,7 @@ export const affirmAnsweredWrongly: RequirementOutcome = {
 };
 
 export const SETUP =
-	'We will offer your wallet an Open Badges credential whose validity period ended in 2024. Everything else about it is well-formed.';
+	'We will offer the wallet an Open Badges credential whose validity period ended in 2024. Everything else about it is well-formed.';
 
 /**
  * Evidence fixtures for the {@link import('./StepDetails.svelte')} panel.
@@ -127,7 +127,7 @@ export const oid4MissEvidence: StepEvidence = {
 		credentialStatus: 500,
 		issuerTls: { atLeastTls12: true, protocol: 'TLSv1.3' }
 	},
-	transport: { delivered: false, error: { message: 'Your issuer delivered no credential.' } },
+	transport: { delivered: false, error: { message: 'The issuer delivered no credential.' } },
 	trace: {
 		stages: [
 			{

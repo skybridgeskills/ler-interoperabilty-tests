@@ -76,6 +76,7 @@
 		</Button>
 	</div>
 	<p class="text-body-md text-muted-foreground">
-		“I couldn’t tell” counts against you — and it is a finding worth recording, not a mistake.
+		“I couldn’t tell” counts against the product — and it is a finding worth recording, not a
+		mistake.
 	</p>
 </div>

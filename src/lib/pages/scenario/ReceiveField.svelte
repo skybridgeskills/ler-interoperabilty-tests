@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js';
 
+	import { RECEIVE_COPY } from './receive-step.js';
+
 	/**
 	 * The paste field for a `receive-from-issuer` step: the operator's issuer
 	 * produces a credential, and they hand it — or the URL that leads to it — to
@@ -20,8 +22,8 @@
 		busy = false,
 		note,
 		retry = false,
-		prompt = 'Paste the credential your issuer produced',
-		placeholder = '{ "@context": […], "type": ["VerifiableCredential", "OpenBadgeCredential"], … }',
+		prompt = RECEIVE_COPY.direct.prompt,
+		placeholder = RECEIVE_COPY.direct.placeholder,
 		onReceive
 	}: {
 		/** Bindable operator input for this intake. */

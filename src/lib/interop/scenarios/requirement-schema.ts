@@ -109,7 +109,7 @@ export const Requirement = ZodFactory(
 		 * recorded result for that scenario.
 		 */
 		id: z.string().min(1),
-		/** Plain language, second person. Read on a phone, next to a wallet. */
+		/** Plain language, neutral third person; "you" only for the person operating the product. Read on a phone, next to a wallet. */
 		statement: z.string().min(1),
 		level: RequirementLevel.schema,
 		check: RequirementCheck.schema

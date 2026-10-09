@@ -60,19 +60,19 @@ function producerRequirements(suite: Suite): Requirement[] {
 	return [
 		{
 			id: 'vp-cryptosuite',
-			statement: `Your wallet signed the presentation with \`${SUITE_NAME[suite]}\`.`,
+			statement: `The wallet signed the presentation with \`${SUITE_NAME[suite]}\`.`,
 			level: 'MUST',
 			check: { kind: 'automatic', checkId: `wallet-vp-cryptosuite-${suite}` }
 		},
 		{
 			id: 'holder-did-method',
-			statement: 'Your wallet identified itself with a `did:key` or `did:web` DID.',
+			statement: 'The wallet identified itself with a `did:key` or `did:web` DID.',
 			level: 'MUST',
 			check: { kind: 'automatic', checkId: 'wallet-holder-did-method' }
 		},
 		{
 			id: 'key-type-matches',
-			statement: `The holder key your wallet signed with is a ${KEY_NAME[suite]} key.`,
+			statement: `The holder key the wallet signed with is a ${KEY_NAME[suite]} key.`,
 			level: 'MUST',
 			check: { kind: 'automatic', checkId: `wallet-holder-key-type-${suite}` }
 		}
@@ -87,7 +87,7 @@ function producerRequirements(suite: Suite): Requirement[] {
  * outright rather than leaving an operator to conclude the run broke.
  */
 function summaryFor(suite: Suite, protocol: Protocol): string {
-	return `We will ask your wallet for any Open Badges credential you hold, over ${TRANSPORT[protocol]}. Present it using a ${KEY_NAME[suite]} holder key, so the presentation is signed with \`${SUITE_NAME[suite]}\` — most wallets choose this in their key or DID settings. We read the cryptosuite off the presentation that arrives; a wallet that holds no ${KEY_NAME[suite]} key will fail this scenario, and that is the answer, not a fault.`;
+	return `We will ask the wallet for any Open Badges credential it holds, over ${TRANSPORT[protocol]}. Present it using a ${KEY_NAME[suite]} holder key, so the presentation is signed with \`${SUITE_NAME[suite]}\` — most wallets choose this in their key or DID settings. We read the cryptosuite off the presentation that arrives; a wallet that holds no ${KEY_NAME[suite]} key will fail this scenario, and that is the answer, not a fault.`;
 }
 
 /** The blurb every member carries: this scenario belongs to THIS protocol's add-on badge. */

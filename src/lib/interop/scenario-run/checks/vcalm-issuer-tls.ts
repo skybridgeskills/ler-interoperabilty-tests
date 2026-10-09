@@ -9,7 +9,7 @@ import { issuerFlowForStep } from '../evidence.js';
  */
 export const vcalmIssuerTls: AutomaticCheck = {
 	id: 'vcalm-issuer-tls',
-	summary: 'Your issuer’s interaction endpoint negotiated TLS 1.2 or above.',
+	summary: 'The issuer’s interaction endpoint negotiated TLS 1.2 or above.',
 	run: ({ stepId, evidence }) => {
 		const flow = issuerFlowForStep(evidence, stepId);
 		if (!flow) return { met: false, detail: 'This step received nothing from an issuer.' };

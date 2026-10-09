@@ -48,7 +48,7 @@
 
 <section class="space-y-3 rounded-md border border-border bg-muted/40 p-4">
 	<header class="space-y-1">
-		<h3 class="text-title-md text-foreground">Hand this credential to your verifier</h3>
+		<h3 class="text-title-md text-foreground">Hand this credential to the verifier</h3>
 		<p class="max-w-prose text-body-md text-muted-foreground">
 			Download or copy this credential, feed it to the tool you are testing, then report below what
 			it decided.

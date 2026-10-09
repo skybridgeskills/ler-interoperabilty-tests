@@ -167,8 +167,25 @@ describe('ScenarioStepCard', UNDER_LOAD, () => {
 			onAnswer: () => {}
 		});
 
-		await expect.element(page.getByText('What we are sending')).toBeInTheDocument();
+		// The setup text itself is the callout: no heading repeats the step title above it.
 		await expect.element(page.getByText(SETUP)).toBeInTheDocument();
+		expect(page.getByText('What we are sending').elements()).toHaveLength(0);
+	});
+
+	it('renders backtick spans in the setup callout as code chips', async () => {
+		render(ScenarioStepCard, {
+			index: 1,
+			label: 'Configure the issuer',
+			state: 'in-flight',
+			setup: 'Configure the issuer to sign with `ecdsa-rdfc-2019`.',
+			requirements,
+			outcomes: {},
+			onAnswer: () => {}
+		});
+
+		const chip = page.getByText('ecdsa-rdfc-2019', { exact: true });
+		await expect.element(chip).toBeInTheDocument();
+		expect(chip.element().tagName).toBe('CODE');
 	});
 
 	it('renders the caller-resolved label and never reaches for a step title', async () => {

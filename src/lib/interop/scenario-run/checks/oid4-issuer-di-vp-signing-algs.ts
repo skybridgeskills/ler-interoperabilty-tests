@@ -13,7 +13,7 @@ import { issuerFlowForStep } from '../evidence.js';
  */
 export const oid4IssuerDiVpSigningAlgs: AutomaticCheck = {
 	id: 'oid4-issuer-di-vp-signing-algs',
-	summary: 'Your issuer advertises a `di_vp` signing algorithm in the cryptosuite bundle.',
+	summary: 'The issuer advertises a `di_vp` signing algorithm in the cryptosuite bundle.',
 	run: ({ stepId, evidence }) => {
 		const flow = issuerFlowForStep(evidence, stepId);
 		if (!flow) return { met: false, detail: 'This step received nothing from an issuer.' };
@@ -28,11 +28,11 @@ export const oid4IssuerDiVpSigningAlgs: AutomaticCheck = {
 		return flow.diVpSigningAlgInBundle
 			? {
 					met: true,
-					detail: `Your \`di_vp\` signing algorithms include a supported cryptosuite (${flow.diVpSigningAlgs.join(', ')}).`
+					detail: `The issuer's \`di_vp\` signing algorithms include a supported cryptosuite (${flow.diVpSigningAlgs.join(', ')}).`
 				}
 			: {
 					met: false,
-					detail: `Your \`di_vp\` signing algorithms (${flow.diVpSigningAlgs.join(', ')}) list none of the data-integrity-cryptosuites bundle, so we cannot sign a key proof you would accept.`
+					detail: `The issuer's \`di_vp\` signing algorithms (${flow.diVpSigningAlgs.join(', ')}) list none of the data-integrity-cryptosuites bundle, so we cannot sign a key proof the issuer would accept.`
 				};
 	}
 };

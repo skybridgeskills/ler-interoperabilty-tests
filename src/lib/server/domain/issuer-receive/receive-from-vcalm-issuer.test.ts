@@ -72,7 +72,7 @@ describe('receiveFromVcalmIssuer', () => {
 			}
 		});
 		expect(result.delivered).toBe(false);
-		expect(result.error?.message).toMatch(/could not reach your interaction URL: Bad gateway\./);
+		expect(result.error?.message).toMatch(/could not reach the interaction URL: Bad gateway\./);
 		expect(result.flow).toMatchObject({ interactionFetched: false, participationOk: false });
 	});
 

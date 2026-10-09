@@ -29,7 +29,7 @@ export const ob3DirectIssuerDelivery = Scenario({
 	slug: 'ob3-direct-issuer-delivery',
 	name: 'Issue a credential and deliver it directly',
 	blurb:
-		'Issue an Open Badges credential from your own system and hand it to us. We verify it and read what it carries — plus two questions about how your issuer offered it to you.',
+		'Issue an Open Badges credential from the issuer and hand it to us. We verify it and read what it carries — plus two questions about how the issuer offered it to you.',
 	role: 'issuer',
 	workflow: 'direct-credential-issuance',
 	memberships: [{ profile: 'ob3-direct-delivery', level: 'required' }],
@@ -38,61 +38,61 @@ export const ob3DirectIssuerDelivery = Scenario({
 			id: 'deliver',
 			title: 'Issue a credential and paste it here',
 			summary:
-				'Issue an Open Badges 3.0 credential from your own issuer, download or copy it, and paste the credential JSON below. We verify it and read what it carries.',
+				'Issue an Open Badges 3.0 credential from the issuer, download or copy it, and paste the credential JSON below. We verify it and read what it carries.',
 			action: { kind: 'receive-from-issuer', transport: 'direct' },
 			requirements: [
 				{
 					id: 'vcdm2',
-					statement: 'Your credential declares the VC Data Model 2.0 context and type.',
+					statement: 'The credential declares the VC Data Model 2.0 context and type.',
 					level: 'MUST',
 					check: { kind: 'automatic', checkId: 'credential-vcdm2' }
 				},
 				{
 					id: 'ob3-type',
-					statement: 'Your credential’s `type` includes `OpenBadgeCredential`.',
+					statement: 'The credential’s `type` includes `OpenBadgeCredential`.',
 					level: 'MUST',
 					check: { kind: 'automatic', checkId: 'credential-ob3-type' }
 				},
 				{
 					id: 'identifier-email',
 					statement:
-						'Your credential identifies its recipient with an unhashed `emailAddress` `IdentityObject`.',
+						'The credential identifies its recipient with an unhashed `emailAddress` `IdentityObject`.',
 					level: 'MUST',
 					check: { kind: 'automatic', checkId: 'credential-subject-identifier-email' }
 				},
 				{
 					id: 'eddsa-proof',
-					statement: 'Your issuer signed the credential with `eddsa-rdfc-2022`.',
+					statement: 'The issuer signed the credential with `eddsa-rdfc-2022`.',
 					level: 'MUST',
 					check: { kind: 'automatic', checkId: 'credential-di-proof-eddsa' }
 				},
 				{
 					id: 'status-list',
-					statement: 'Your credential carries a Bitstring Status List entry.',
+					statement: 'The credential carries a Bitstring Status List entry.',
 					level: 'MUST',
 					check: { kind: 'automatic', checkId: 'credential-status-list' }
 				},
 				{
 					id: 'issuer-did',
-					statement: 'Your issuer’s DID uses a supported method and the credential verifies.',
+					statement: 'The issuer’s DID uses a supported method and the credential verifies.',
 					level: 'MUST',
 					check: { kind: 'automatic', checkId: 'credential-issuer-did' }
 				},
 				{
 					id: 'valid-until',
-					statement: 'Your credential declares an expiration date.',
+					statement: 'The credential declares an expiration date.',
 					level: 'SHOULD',
 					check: { kind: 'automatic', checkId: 'credential-valid-until' }
 				},
 				{
 					id: 'downloadable-file',
-					statement: 'Your issuer offered this credential as a downloadable JSON file.',
+					statement: 'The issuer offered this credential as a downloadable JSON file.',
 					level: 'MUST',
 					check: { kind: 'attested', answer: { kind: 'affirm' } }
 				},
 				{
 					id: 'copy-paste-text',
-					statement: 'Your issuer offered this credential as copy-paste JSON text.',
+					statement: 'The issuer offered this credential as copy-paste JSON text.',
 					level: 'MUST',
 					check: { kind: 'attested', answer: { kind: 'affirm' } }
 				}

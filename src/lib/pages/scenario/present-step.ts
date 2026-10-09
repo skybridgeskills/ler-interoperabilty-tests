@@ -4,9 +4,12 @@ import type {
 	VerifierRequestSummary,
 	WireTrace
 } from '$lib/interop/scenario-run/index.js';
-import type { ScenarioStep } from '$lib/interop/scenarios/index.js';
+import type { ScenarioAction, ScenarioStep } from '$lib/interop/scenarios/index.js';
 
 import type { RunnerError } from './exchange-step.js';
+
+/** The transports a `present-to-verifier` step may name. */
+type PresentTransport = Extract<ScenarioAction, { kind: 'present-to-verifier' }>['transport'];
 
 /** What a miss observed: the request floor, the delivery result, and the trace. */
 export type PresentMissEvidence = Pick<
@@ -31,8 +34,32 @@ export type PresentStepCallbacks = {
 	onFailed: (error: RunnerError) => void;
 };
 
-const PRESENT_HINT =
+/** The hint shown when the present route fails outright. Operator "you" only. */
+export const PRESENT_HINT =
 	'Check the server logs — the suite signs the presentation locally and submits it to the URL you pasted.';
+
+/** The miss note shown when the submission bounced and the route named no reason. */
+export const PRESENT_MISS_NOTE =
+	'The verifier did not accept the submission. Paste a fresh interaction URL and try again.';
+
+/**
+ * The present field's prompt and placeholder, per transport. VCALM takes a
+ * fresh single-use interaction URL; OID4VP takes the authorization request in
+ * any of its three forms.
+ */
+export const PRESENT_COPY: Record<PresentTransport, { prompt: string; placeholder: string }> = {
+	vcalm: {
+		prompt: 'Paste a fresh interaction URL from the verifier',
+		placeholder: 'https://verifier.example/interactions/…'
+	},
+	oid4vp: {
+		prompt: 'Paste a presentation request from the verifier',
+		placeholder: 'openid4vp://… (or a request_uri URL or the request JSON)'
+	}
+};
+
+/** The confirmation shown once the credential has been presented. */
+export const PRESENT_SETTLED_NOTE = 'Presented to the verifier. Report what it decided below.';
 
 /**
  * Drive a `present-to-verifier` step. Unlike `direct-step` (which the suite
@@ -94,15 +121,11 @@ export function startPresentStep(
 				if (stopped) return;
 
 				if (!present.submitted) {
-					callbacks.onMiss(
-						present.error?.message ??
-							'The verifier did not accept the submission. Paste a fresh interaction URL and try again.',
-						{
-							verifierRequest: request,
-							verifierPresent: present,
-							...(trace ? { trace } : {})
-						}
-					);
+					callbacks.onMiss(present.error?.message ?? PRESENT_MISS_NOTE, {
+						verifierRequest: request,
+						verifierPresent: present,
+						...(trace ? { trace } : {})
+					});
 					return;
 				}
 

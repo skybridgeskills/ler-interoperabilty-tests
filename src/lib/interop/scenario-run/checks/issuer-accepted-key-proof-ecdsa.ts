@@ -11,6 +11,6 @@ import { acceptedKeyProofResult } from './issuer-key-proof.js';
  */
 export const issuerAcceptedKeyProofEcdsa: AutomaticCheck = {
 	id: 'issuer-accepted-key-proof-ecdsa',
-	summary: 'Your issuer accepted a `ecdsa-rdfc-2019` holder key proof.',
+	summary: 'The issuer accepted a `ecdsa-rdfc-2019` holder key proof.',
 	run: ({ stepId, evidence }) => acceptedKeyProofResult(evidence, stepId, 'ecdsa-rdfc-2019')
 };

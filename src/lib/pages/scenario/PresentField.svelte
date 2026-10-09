@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js';
 
+	import { PRESENT_COPY } from './present-step.js';
+
 	/**
 	 * The paste field for a `present-to-verifier` step: the operator's verifier
 	 * hands them a fresh request, they paste it here, and the suite presents the
@@ -24,8 +26,8 @@
 		busy = false,
 		note,
 		retry = false,
-		prompt = 'Paste a fresh interaction URL from your verifier',
-		placeholder = 'https://your-verifier.example/interactions/…',
+		prompt = PRESENT_COPY.vcalm.prompt,
+		placeholder = PRESENT_COPY.vcalm.placeholder,
 		onPresent
 	}: {
 		/** Bindable freshly-pasted request (used when `reuse` is false). */

@@ -352,7 +352,7 @@ describe('ScenarioPage — a present-to-verifier step', UNDER_LOAD, () => {
 		await page.getByRole('button', { name: 'Present', exact: true }).click();
 
 		// Presented → the confirmation shows and the verdict becomes answerable.
-		await expect.element(page.getByText(/Presented to your verifier/)).toBeInTheDocument();
+		await expect.element(page.getByText(/Presented to the verifier/)).toBeInTheDocument();
 		const accepted = page.getByRole('button', { name: 'Accepted it', exact: true });
 		await expect.element(accepted).toBeInTheDocument();
 		await accepted.click();

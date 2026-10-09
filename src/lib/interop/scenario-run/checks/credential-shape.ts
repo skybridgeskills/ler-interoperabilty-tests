@@ -71,4 +71,4 @@ export function issuerIdOf(credential: Record<string, unknown>): string | undefi
 }
 
 /** The detail every credential check gives when the step received nothing to read. */
-export const NO_CREDENTIAL = 'This step received no credential from your issuer.';
+export const NO_CREDENTIAL = 'This step received no credential from the issuer.';

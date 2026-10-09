@@ -121,6 +121,10 @@ Four properties are load-bearing:
   levels, statements, answer kinds, `choose` options and right answers, step
   actions) and excludes cosmetic fields (`name`, `blurb`, `shuffleLabel`, step `id`/`title`/
   `summary`), so copy-editing never costs anyone their results.
+  The catalog copy was rewritten to neutral third person ("the wallet", never
+  "your wallet") in this release, before anything fingerprinted shipped, and
+  `scenarios/neutral-copy.test.ts` and `scenario-run/checks/neutral-detail.test.ts`
+  pin that voice.
 
 ### Catalog validation
 

@@ -25,7 +25,7 @@ export function autoRequirement(over: Partial<RequirementInput> = {}): Requireme
 export function affirmRequirement(over: Partial<RequirementInput> = {}): Requirement {
 	return Requirement({
 		id: 'stored',
-		statement: 'The credential appears in your wallet’s list.',
+		statement: 'The credential appears in the wallet’s list.',
 		level: 'MUST',
 		check: { kind: 'attested', answer: { kind: 'affirm' } },
 		...over
@@ -36,7 +36,7 @@ export function affirmRequirement(over: Partial<RequirementInput> = {}): Require
 export function chooseRequirement(over: Partial<RequirementInput> = {}): Requirement {
 	return Requirement({
 		id: 'displayed',
-		statement: 'What did your wallet display?',
+		statement: 'What did the wallet display?',
 		level: 'SHOULD',
 		check: {
 			kind: 'attested',
@@ -57,7 +57,7 @@ export function testStep(over: Partial<StepInput> = {}): ScenarioStep {
 	return ScenarioStep({
 		id: 'offer',
 		title: 'Offer the credential',
-		summary: 'We will issue your wallet a credential.',
+		summary: 'We will issue the wallet a credential.',
 		action: { kind: 'issue', credential: 'minimal-ob3' },
 		requirements: [autoRequirement(), affirmRequirement()],
 		...over

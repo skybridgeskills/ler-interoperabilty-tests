@@ -65,7 +65,7 @@ function consumerRequirements(transport: Transport, suite: Suite): Requirement[]
 	const shared: Requirement[] = [
 		{
 			id: 'accepted-key-proof',
-			statement: `Your issuer accepted our ${proof} signed with \`${name}\`.`,
+			statement: `The issuer accepted our ${proof} signed with \`${name}\`.`,
 			level: 'MUST',
 			check: { kind: 'automatic', checkId: `issuer-accepted-key-proof-${suite}` }
 		},
@@ -83,7 +83,7 @@ function consumerRequirements(transport: Transport, suite: Suite): Requirement[]
 		...shared,
 		{
 			id: 'advertises-key-proof-suite',
-			statement: `Your issuer advertises \`${name}\` for \`di_vp\` key proofs.`,
+			statement: `The issuer advertises \`${name}\` for \`di_vp\` key proofs.`,
 			level: 'SHOULD',
 			check: { kind: 'automatic', checkId: `issuer-advertises-key-proof-${suite}` }
 		}
@@ -103,12 +103,12 @@ function summaryFor(transport: Transport, suite: Suite): string {
 		transport === 'vcalm'
 			? 'create an issuance exchange and paste its interaction URL below. Each exchange is single-use, so a retry needs a fresh URL.'
 			: 'publish a pre-authorized-code credential offer and paste the `openid-credential-offer://` URL below.';
-	return `We will act as a wallet and collect a credential from your issuer, authenticating with a ${KEY_NAME[suite]} holder key so our key proof is signed with \`${name}\`. Configure your issuer to issue any Open Badges credential, then ${handoff} An issuer that cannot verify \`${name}\` will refuse at that step and nothing will arrive — that is the finding, not a fault in this harness.`;
+	return `We will act as a wallet and collect a credential from the issuer under test, authenticating with a ${KEY_NAME[suite]} holder key so our key proof is signed with \`${name}\`. Configure the issuer to issue any Open Badges credential, then ${handoff} An issuer that cannot verify \`${name}\` will refuse at that step and nothing will arrive — that is the finding, not a fault in this harness.`;
 }
 
 /** The blurb every member carries: this scenario belongs to THIS protocol's add-on badge. */
 function blurbFor(transport: Transport, suite: Suite): string {
-	return `Check that your issuer can verify a holder key proof signed with ${SUITE_NAME[suite]}, over ${PROTOCOL[transport]}. It counts toward this protocol's Data Integrity Cryptosuites add-on badge; the other protocol has its own.`;
+	return `Check that the issuer can verify a holder key proof signed with ${SUITE_NAME[suite]}, over ${PROTOCOL[transport]}. It counts toward this protocol's Data Integrity Cryptosuites add-on badge; the other protocol has its own.`;
 }
 
 function consumerScenario(transport: Transport, suite: Suite) {

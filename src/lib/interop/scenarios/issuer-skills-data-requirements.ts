@@ -17,7 +17,7 @@ import type { Requirement } from './requirement-schema.js';
 export const issuerSkillsDataRequirements: Requirement[] = [
 	{
 		id: 'result-description-present',
-		statement: 'You declared a performance scale on the achievement.',
+		statement: 'The achievement declares a performance scale.',
 		level: 'MUST',
 		check: { kind: 'automatic', checkId: 'osa-result-description-present' }
 	},
@@ -29,25 +29,25 @@ export const issuerSkillsDataRequirements: Requirement[] = [
 	},
 	{
 		id: 'percent-value-range',
-		statement: 'Your percentage scales run from 0 to 100.',
+		statement: 'Every percentage scale runs from 0 to 100.',
 		level: 'MUST',
 		check: { kind: 'automatic', checkId: 'osa-percent-value-range' }
 	},
 	{
 		id: 'rubric-levels-present',
-		statement: 'Your rubric scales declare their levels.',
+		statement: 'Every rubric scale declares its levels.',
 		level: 'MUST',
 		check: { kind: 'automatic', checkId: 'osa-rubric-levels-present' }
 	},
 	{
 		id: 'ctdl-alignment',
-		statement: 'Your result descriptions align to the CTDL Credential Registry.',
+		statement: 'The result descriptions align to the CTDL Credential Registry.',
 		level: 'SHOULD',
 		check: { kind: 'automatic', checkId: 'osa-ctdl-alignment' }
 	},
 	{
 		id: 'result-present',
-		statement: 'You reported at least one learner result.',
+		statement: 'The credential reports at least one learner result.',
 		level: 'MUST',
 		check: { kind: 'automatic', checkId: 'osa-result-present' }
 	},

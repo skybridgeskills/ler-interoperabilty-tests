@@ -21,7 +21,7 @@ export const oid4WalletFaithfulRendering = Scenario({
 	slug: 'oid4-wallet-faithful-rendering',
 	name: 'Render a decorated credential faithfully',
 	blurb:
-		'Offer your wallet a fully-decorated Open Badges credential — image, rich achievement, issuer — and confirm it shows them, not raw data.',
+		'Offer the wallet a fully-decorated Open Badges credential — image, rich achievement, issuer — and confirm it shows them, not raw data.',
 	role: 'wallet',
 	workflow: 'credential-acceptance',
 	memberships: [{ profile: 'oid4', level: 'optional' }],
@@ -30,7 +30,7 @@ export const oid4WalletFaithfulRendering = Scenario({
 			id: 'offer',
 			title: 'Offer the decorated credential',
 			summary:
-				'We will offer your wallet a well-formed Open Badges credential carrying an image, a detailed achievement, criteria and an alignment. Accepting it is correct — the questions are about how faithfully your wallet then shows it.',
+				'We will offer the wallet a well-formed Open Badges credential carrying an image, a detailed achievement, criteria and an alignment. Accepting it is correct — the questions are about how faithfully the wallet then shows it.',
 			action: { kind: 'issue', credential: 'rich-ob3' },
 			requirements: [
 				{
@@ -41,7 +41,7 @@ export const oid4WalletFaithfulRendering = Scenario({
 				},
 				{
 					id: 'image-rendered',
-					statement: 'How did your wallet show the badge image?',
+					statement: 'How did the wallet show the badge image?',
 					level: 'SHOULD',
 					check: {
 						kind: 'attested',
@@ -58,7 +58,7 @@ export const oid4WalletFaithfulRendering = Scenario({
 				},
 				{
 					id: 'achievement-legible',
-					statement: 'How did your wallet present the achievement?',
+					statement: 'How did the wallet present the achievement?',
 					level: 'SHOULD',
 					check: {
 						kind: 'attested',
@@ -76,7 +76,7 @@ export const oid4WalletFaithfulRendering = Scenario({
 				},
 				{
 					id: 'issuer-shown',
-					statement: 'Your wallet showed the issuer’s name.',
+					statement: 'The wallet showed the issuer’s name.',
 					level: 'SHOULD',
 					check: { kind: 'attested', answer: { kind: 'affirm' } }
 				}

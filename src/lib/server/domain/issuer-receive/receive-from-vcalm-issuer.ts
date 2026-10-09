@@ -38,7 +38,7 @@ export async function receiveFromVcalmIssuer(args: {
 }): Promise<ReceiveFromIssuerResult> {
 	const url = args.input.trim();
 	if (url === '') {
-		throw new ReceiveInputError('Paste the interaction URL from your issuer.');
+		throw new ReceiveInputError('Paste the interaction URL from the issuer.');
 	}
 	let parsed: URL;
 	try {
@@ -169,12 +169,12 @@ function failureReason(observations: {
 		// The driver's own error can be as bare as "fetch failed", which tells an
 		// operator nothing about which of their endpoints to look at.
 		return interaction?.error
-			? `We could not reach your interaction URL: ${interaction.error}`
-			: `Your interaction URL responded ${interaction?.status ?? 0}.`;
+			? `We could not reach the interaction URL: ${interaction.error}`
+			: `The interaction URL responded ${interaction?.status ?? 0}.`;
 	}
 	if (!interaction.vcapiUrl) {
 		return 'The interaction URL advertised no `vcapi` exchange endpoint.';
 	}
 	if (didAuth?.error) return didAuth.error;
-	return delivery?.error ?? 'Your issuer delivered no credential.';
+	return delivery?.error ?? 'The issuer delivered no credential.';
 }

@@ -38,13 +38,13 @@ function pass(
 		requirements: [
 			{
 				id: `${id}-engaged`,
-				statement: 'Your wallet fetched the offer.',
+				statement: 'The wallet fetched the offer.',
 				level: 'MUST',
 				check: { kind: 'automatic', checkId: 'offer-was-fetched' }
 			},
 			{
 				id: `${id}-handled`,
-				statement: 'What did your wallet do with this credential?',
+				statement: 'What did the wallet do with this credential?',
 				level: 'MUST',
 				check: {
 					kind: 'attested',
@@ -61,7 +61,7 @@ function pass(
 			},
 			{
 				id: `${id}-legible`,
-				statement: 'Your wallet made clear what it decided about this credential.',
+				statement: 'The wallet made clear what it decided about this credential.',
 				level: 'SHOULD',
 				check: { kind: 'attested', answer: { kind: 'affirm' } }
 			}
@@ -73,7 +73,7 @@ export const oid4WalletRefusalDiscrimination = Scenario({
 	slug: 'oid4-wallet-refusal-discrimination',
 	name: 'Tell a good credential from a bad one — over OID4VCI',
 	blurb:
-		'Three credentials, one after another, in a random order. Some are fine and some are not. After each one we ask what your wallet did — then tell you what actually happened.',
+		'Three credentials, one after another, in a random order. Some are fine and some are not. After each one we ask what the wallet did — then tell you what actually happened.',
 	role: 'wallet',
 	workflow: 'credential-acceptance',
 	memberships: [{ profile: 'oid4', level: 'required' }],
@@ -85,19 +85,19 @@ export const oid4WalletRefusalDiscrimination = Scenario({
 		pass(
 			'control',
 			{ kind: 'issue', credential: 'minimal-ob3' },
-			'We will offer your wallet a well-formed Open Badges credential over OID4VCI. Everything about this one is correct.',
+			'We will offer the wallet a well-formed Open Badges credential over OID4VCI. Everything about this one is correct.',
 			'accepted'
 		),
 		pass(
 			'expired',
 			{ kind: 'issue', credential: 'ob3-expired' },
-			'We will offer your wallet an Open Badges credential whose validity period ended in 2024. Everything else about it is well-formed.',
+			'We will offer the wallet an Open Badges credential whose validity period ended in 2024. Everything else about it is well-formed.',
 			'refused'
 		),
 		pass(
 			'tampered',
 			{ kind: 'issue', credential: 'minimal-ob3', tamper: 'proof' },
-			'We will offer your wallet an Open Badges credential whose cryptographic proof was corrupted after signing. Everything else about it is well-formed.',
+			'We will offer the wallet an Open Badges credential whose cryptographic proof was corrupted after signing. Everything else about it is well-formed.',
 			'refused'
 		)
 	]

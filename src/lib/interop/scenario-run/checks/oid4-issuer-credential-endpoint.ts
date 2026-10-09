@@ -13,7 +13,7 @@ import { issuerFlowForStep } from '../evidence.js';
  */
 export const oid4IssuerCredentialEndpoint: AutomaticCheck = {
 	id: 'oid4-issuer-credential-endpoint',
-	summary: 'Your credential endpoint delivered a credential to a Bearer-authorised request.',
+	summary: 'The credential endpoint delivered a credential to a Bearer-authorised request.',
 	run: ({ stepId, evidence }) => {
 		const flow = issuerFlowForStep(evidence, stepId);
 		if (!flow) return { met: false, detail: 'This step received nothing from an issuer.' };
@@ -23,11 +23,11 @@ export const oid4IssuerCredentialEndpoint: AutomaticCheck = {
 			? {
 					met: true,
 					detail:
-						'Your credential endpoint required a Bearer token and delivered a credential. Error handling and status codes are not negatively probed.'
+						'The credential endpoint required a Bearer token and delivered a credential. Error handling and status codes are not negatively probed.'
 				}
 			: {
 					met: false,
-					detail: `Your credential endpoint delivered no credential${flow.credentialStatus !== undefined ? ` (it responded ${flow.credentialStatus})` : ''}.`
+					detail: `The credential endpoint delivered no credential${flow.credentialStatus !== undefined ? ` (it responded ${flow.credentialStatus})` : ''}.`
 				};
 	}
 };

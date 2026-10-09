@@ -31,7 +31,7 @@ export const vcalmWalletAcceptance = Scenario({
 	slug: 'vcalm-wallet-acceptance',
 	name: 'Accept a well-formed credential over VCALM',
 	blurb:
-		'Offer your wallet a well-formed Open Badges credential over VCALM, and confirm it took it.',
+		'Offer the wallet a well-formed Open Badges credential over VCALM, and confirm it took it.',
 	role: 'wallet',
 	workflow: 'credential-acceptance',
 	memberships: [{ profile: 'vcalm', level: 'required' }],
@@ -40,7 +40,7 @@ export const vcalmWalletAcceptance = Scenario({
 			id: 'offer',
 			title: 'Offer the credential',
 			summary:
-				'We will offer your wallet a well-formed Open Badges credential over a VCALM exchange. Open the interaction URL from inside your wallet. Everything about this one is correct — accepting it is the right thing to do.',
+				'We will offer the wallet a well-formed Open Badges credential over a VCALM exchange. Open the interaction URL from inside the wallet. Everything about this one is correct — accepting it is the right thing to do.',
 			action: { kind: 'issue', credential: 'minimal-ob3' },
 			requirements: [
 				{
@@ -51,19 +51,19 @@ export const vcalmWalletAcceptance = Scenario({
 				},
 				{
 					id: 'holder-bound',
-					statement: 'Your wallet proved control of a DID.',
+					statement: 'The wallet proved control of a DID.',
 					level: 'MUST',
 					check: { kind: 'automatic', checkId: 'holder-did-bound' }
 				},
 				{
 					id: 'stored',
-					statement: 'The credential appears in your wallet’s credential list.',
+					statement: 'The credential appears in the wallet’s credential list.',
 					level: 'MUST',
 					check: { kind: 'attested', answer: { kind: 'affirm' } }
 				},
 				{
 					id: 'displayed',
-					statement: 'What did your wallet display for the achievement?',
+					statement: 'What did the wallet display for the achievement?',
 					level: 'SHOULD',
 					check: {
 						kind: 'attested',

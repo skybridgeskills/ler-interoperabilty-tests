@@ -58,7 +58,7 @@ export async function presentToVcalmVerifier(args: {
 }): Promise<PresentToVcalmResult> {
 	const url = args.interactionUrl.trim();
 	if (url === '') {
-		throw new PresentInputError('Paste the interaction URL from your verifier.');
+		throw new PresentInputError('Paste the interaction URL from the verifier.');
 	}
 	let parsed: URL;
 	try {

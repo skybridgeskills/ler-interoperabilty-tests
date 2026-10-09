@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
+	import { InlineMarkup } from '$lib/components/interop/inline-markup/index.js';
 	import type {
 		AttestedAnswerValue,
 		RequirementOutcome,
@@ -83,8 +84,7 @@
 
 {#snippet setupCallout()}
 	<div class="rounded-sm border-l-2 border-requirement-border bg-requirement-soft px-3 py-2">
-		<p class="text-label-md font-medium text-requirement">What we are sending</p>
-		<p class="mt-1 text-body-md text-foreground">{setup}</p>
+		<p class="text-body-md text-foreground"><InlineMarkup text={setup} /></p>
 	</div>
 {/snippet}
 

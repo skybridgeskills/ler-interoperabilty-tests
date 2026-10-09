@@ -155,7 +155,7 @@ describe('startReceiveStep', () => {
 
 	it('fails when the route responds non-2xx', async () => {
 		globalThis.fetch = vi.fn(async () =>
-			jsonResponse({ message: 'Paste the interaction URL from your issuer.' }, 400)
+			jsonResponse({ message: 'Paste the interaction URL from the issuer.' }, 400)
 		) as typeof fetch;
 
 		const { failed, handle } = drive();

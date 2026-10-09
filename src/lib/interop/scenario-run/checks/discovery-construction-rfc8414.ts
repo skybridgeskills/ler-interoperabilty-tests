@@ -37,7 +37,7 @@ export const discoveryConstructionRfc8414: AutomaticCheck = {
 			? {
 					met: true,
 					detail:
-						'Your wallet fetched the well-known document at the RFC 8414 §3.1 location, ' +
+						'The wallet fetched the well-known document at the RFC 8414 §3.1 location, ' +
 						'with the well-known segment placed after the host.'
 				}
 			: {
@@ -45,7 +45,7 @@ export const discoveryConstructionRfc8414: AutomaticCheck = {
 					// Naming both URLs concretely, because the difference is easy to
 					// misread as a typo rather than a construction.
 					detail:
-						'Your wallet fetched `…/exchanges/abc123/.well-known/openid-credential-issuer`, ' +
+						'The wallet fetched `…/exchanges/abc123/.well-known/openid-credential-issuer`, ' +
 						'appending the well-known segment to the issuer identifier. RFC 8414 §3.1 places ' +
 						'it after the host: ' +
 						'`…/.well-known/openid-credential-issuer/workflows/claim/exchanges/abc123`. ' +

@@ -44,7 +44,7 @@ export async function receiveFromOid4Issuer(args: {
 }): Promise<ReceiveFromIssuerResult> {
 	const offerUrl = args.input.trim();
 	if (offerUrl === '') {
-		throw new ReceiveInputError('Paste the credential offer URL from your issuer.');
+		throw new ReceiveInputError('Paste the credential offer URL from the issuer.');
 	}
 
 	const { observations } = await args.flow.runIssuerFlow(offerUrl, args.keyProofSuite);
@@ -129,25 +129,25 @@ function failureReason(observations: Oid4IssuerFlowObservations): string {
 	if (!offer?.credentialIssuer) {
 		const offerStep = transcript?.find((step) => step.name === 'offer');
 		return offerStep?.error
-			? `We could not read your credential offer: ${offerStep.error}`
-			: 'Your credential offer named no credential issuer.';
+			? `We could not read the credential offer: ${offerStep.error}`
+			: 'The credential offer named no credential issuer.';
 	}
 	if (!offer.preAuthCode) {
-		return 'Your credential offer carried no pre-authorized code.';
+		return 'The credential offer carried no pre-authorized code.';
 	}
 	if (!issuerMeta?.credentialEndpoint) {
 		// As in the VCALM leaf: name the endpoint we were reaching for, because the
 		// driver's own error can be as bare as "fetch failed".
 		const metaStep = transcript?.find((step) => step.name === 'issuer-metadata');
 		return metaStep?.error
-			? `We could not read your credential-issuer metadata: ${metaStep.error}`
-			: 'Your issuer metadata named no credential endpoint.';
+			? `We could not read the credential-issuer metadata: ${metaStep.error}`
+			: 'The issuer metadata named no credential endpoint.';
 	}
 	if (token?.redeemed !== true) {
 		const tokenStep = transcript?.find((step) => step.name === 'token');
 		return tokenStep?.error
-			? `Your token endpoint refused the pre-authorized code: ${tokenStep.error}`
-			: 'Your pre-authorized code was not redeemed for an access token.';
+			? `The issuer’s token endpoint refused the pre-authorized code: ${tokenStep.error}`
+			: 'The pre-authorized code was not redeemed for an access token.';
 	}
-	return delivery?.error ?? 'Your issuer delivered no credential.';
+	return delivery?.error ?? 'The issuer delivered no credential.';
 }

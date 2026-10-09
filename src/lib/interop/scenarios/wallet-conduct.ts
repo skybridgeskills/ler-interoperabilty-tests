@@ -37,13 +37,13 @@ function answered(): Requirement[] {
 	return [
 		{
 			id: 'vp-delivered',
-			statement: 'Your wallet sent a presentation to the verifier.',
+			statement: 'The wallet sent a presentation to the verifier.',
 			level: 'MUST',
 			check: { kind: 'automatic', checkId: 'wallet-vp-delivered' }
 		},
 		{
 			id: 'vp-signature-valid',
-			statement: 'The presentation’s signature verified against your wallet’s key.',
+			statement: 'The presentation’s signature verified against the wallet’s key.',
 			level: 'MUST',
 			check: { kind: 'automatic', checkId: 'wallet-vp-signature-valid' }
 		}
@@ -51,7 +51,7 @@ function answered(): Requirement[] {
 }
 
 /**
- * Does your wallet understand a **PEX** presentation request?
+ * Does the wallet understand a **PEX** presentation request?
  *
  * OID4VP defines two query languages and the service defaults to DCQL, so a
  * wallet can pass every shipped presentation scenario having never seen a
@@ -61,7 +61,7 @@ export const oid4WalletPresentationPex = Scenario({
 	slug: 'oid4-wallet-presentation-pex',
 	name: 'Answer a PEX presentation request',
 	blurb:
-		'We ask your wallet for a credential using DIF Presentation Exchange rather than DCQL. A wallet may understand one and not the other.',
+		'We ask the wallet for a credential using DIF Presentation Exchange rather than DCQL. A wallet may understand one and not the other.',
 	role: 'wallet',
 	workflow: 'credential-presentation',
 	memberships: [{ profile: 'oid4', level: 'optional' }],
@@ -70,7 +70,7 @@ export const oid4WalletPresentationPex = Scenario({
 			id: 'present',
 			title: 'Present a credential, asked for in PEX',
 			summary:
-				'We will ask your wallet for any Open Badges credential you hold, over OID4VP, phrasing the request as a DIF Presentation Exchange descriptor instead of DCQL. Open the request from inside your wallet and approve sharing. A wallet that only understands DCQL will not find a credential to offer — that is the measurement.',
+				'We will ask the wallet for any Open Badges credential it holds, over OID4VP, phrasing the request as a DIF Presentation Exchange descriptor instead of DCQL. Open the request from inside the wallet and approve sharing. A wallet that only understands DCQL will not find a credential to offer — that is the measurement.',
 			action: { kind: 'request-presentation', request: 'ob3-any', queryLanguage: 'pex' },
 			requirements: [
 				{
@@ -86,7 +86,7 @@ export const oid4WalletPresentationPex = Scenario({
 });
 
 /**
- * Does your wallet handle a request that asks for **less than the whole
+ * Does the wallet handle a request that asks for **less than the whole
  * credential**?
  *
  * Carries the advertise-to-observe bait as well: extra cryptosuite names unioned
@@ -104,7 +104,7 @@ export const oid4WalletPresentationLimited = Scenario({
 	slug: 'oid4-wallet-presentation-limited',
 	name: 'Answer a request for less than the whole credential',
 	blurb:
-		'We ask your wallet for a credential while saying we would prefer only part of it, and while advertising selective-disclosure cryptosuites. We watch what your wallet does with that.',
+		'We ask the wallet for a credential while saying we would prefer only part of it, and while advertising selective-disclosure cryptosuites. We watch what the wallet does with that.',
 	role: 'wallet',
 	workflow: 'credential-presentation',
 	memberships: [{ profile: 'oid4', level: 'optional' }],
@@ -113,7 +113,7 @@ export const oid4WalletPresentationLimited = Scenario({
 			id: 'present',
 			title: 'Present a credential, asked for with limited disclosure',
 			summary:
-				'We will ask your wallet for an Open Badges credential over OID4VP, using a PEX request that says we would prefer only some of its fields, and advertising selective-disclosure cryptosuites alongside the ordinary ones. Open the request from inside your wallet and approve sharing. A wallet with no selective-disclosure support should still present the whole credential — that is a pass, not a failure.',
+				'We will ask the wallet for an Open Badges credential over OID4VP, using a PEX request that says we would prefer only some of its fields, and advertising selective-disclosure cryptosuites alongside the ordinary ones. Open the request from inside the wallet and approve sharing. A wallet with no selective-disclosure support should still present the whole credential — that is a pass, not a failure.',
 			action: {
 				kind: 'request-presentation',
 				request: 'ob3-any',
@@ -142,7 +142,7 @@ export const oid4WalletPresentationLimited = Scenario({
 });
 
 /**
- * How does your wallet build the issuer's metadata URL?
+ * How does the wallet build the issuer's metadata URL?
  *
  * **Wallet-borne, so observed rather than pinned.** The transaction service
  * serves both RFC 8414 constructions and discriminates on neither, so the
@@ -154,7 +154,7 @@ export const oid4WalletDiscovery = Scenario({
 	slug: 'oid4-wallet-discovery',
 	name: 'Find the issuer’s metadata the way RFC 8414 specifies',
 	blurb:
-		'An ordinary OID4VCI offer, while we watch how your wallet builds the metadata URL. We serve both constructions, so your wallet’s choice is the measurement.',
+		'An ordinary OID4VCI offer, while we watch how the wallet builds the metadata URL. We serve both constructions, so the wallet’s choice is the measurement.',
 	role: 'wallet',
 	workflow: 'credential-acceptance',
 	memberships: [{ profile: 'oid4', level: 'optional' }],
@@ -163,7 +163,7 @@ export const oid4WalletDiscovery = Scenario({
 			id: 'offer',
 			title: 'Accept an ordinary credential offer',
 			summary:
-				'We will offer your wallet a well-formed Open Badges credential over OID4VCI. Nothing about this one is unusual — accept it as you normally would. What we are watching is how your wallet constructed the URL it fetched our metadata from.',
+				'We will offer the wallet a well-formed Open Badges credential over OID4VCI. Nothing about this one is unusual — accept it as you normally would. What we are watching is how the wallet constructed the URL it fetched our metadata from.',
 			action: { kind: 'issue', credential: 'minimal-ob3' },
 			requirements: [
 				{
@@ -174,7 +174,7 @@ export const oid4WalletDiscovery = Scenario({
 				},
 				{
 					id: 'discovery-construction',
-					statement: 'Your wallet built our metadata URL the way RFC 8414 §3.1 specifies.',
+					statement: 'The wallet built our metadata URL the way RFC 8414 §3.1 specifies.',
 					level: 'SHOULD',
 					check: { kind: 'automatic', checkId: 'discovery-construction-rfc8414' }
 				}
@@ -184,7 +184,7 @@ export const oid4WalletDiscovery = Scenario({
 });
 
 /**
- * Does your wallet refuse a credential whose proof was corrupted — asked
+ * Does the wallet refuse a credential whose proof was corrupted — asked
  * **without** hiding which credential is which?
  *
  * **This exists because `tamper-recorded` cannot live on a discrimination
@@ -210,7 +210,7 @@ export const oid4WalletTamperRefusal = Scenario({
 	slug: 'oid4-wallet-tamper-refusal',
 	name: 'Refuse a credential with a corrupted proof',
 	blurb:
-		'We offer your wallet a credential whose signature was corrupted after signing, and tell you so up front. Confirms both that your wallet refuses it and that this deployment can really corrupt one.',
+		'We offer the wallet a credential whose signature was corrupted after signing, and tell you so up front. Confirms both that the wallet refuses it and that this deployment can really corrupt one.',
 	role: 'wallet',
 	workflow: 'credential-acceptance',
 	memberships: [{ profile: 'oid4', level: 'optional' }],
@@ -219,7 +219,7 @@ export const oid4WalletTamperRefusal = Scenario({
 			id: 'offer',
 			title: 'Offer a credential with a corrupted proof',
 			summary:
-				'We will offer your wallet an Open Badges credential whose cryptographic proof was corrupted after signing. Everything else about it is well-formed. Unlike the refusal-discrimination scenario we are telling you which one this is, because the point here is also to confirm that this deployment can corrupt a credential at all.',
+				'We will offer the wallet an Open Badges credential whose cryptographic proof was corrupted after signing. Everything else about it is well-formed. Unlike the refusal-discrimination scenario we are telling you which one this is, because the point here is also to confirm that this deployment can corrupt a credential at all.',
 			action: { kind: 'issue', credential: 'minimal-ob3', tamper: 'proof' },
 			requirements: [
 				{
@@ -230,7 +230,7 @@ export const oid4WalletTamperRefusal = Scenario({
 				},
 				{
 					id: 'refused',
-					statement: 'Your wallet refused the credential, or reported its signature as invalid.',
+					statement: 'The wallet refused the credential, or reported its signature as invalid.',
 					level: 'MUST',
 					check: { kind: 'attested', answer: { kind: 'affirm' } }
 				}

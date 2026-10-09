@@ -46,7 +46,7 @@ function pass(
 		requirements: [
 			{
 				id: `${id}-verdict`,
-				statement: 'What did your verifier decide about this credential?',
+				statement: 'What did the verifier decide about this credential?',
 				level: 'MUST',
 				check: {
 					kind: 'attested',
@@ -62,7 +62,7 @@ function pass(
 			},
 			{
 				id: `${id}-reason`,
-				statement: 'What problem did your verifier report about it, if any?',
+				statement: 'What problem did the verifier report about it, if any?',
 				level: 'SHOULD',
 				check: {
 					kind: 'attested',
@@ -90,7 +90,7 @@ export const ob3DirectVerifierAcceptance = Scenario({
 	slug: 'ob3-direct-verifier-acceptance',
 	name: 'Tell a good credential from a bad one — as a verifier',
 	blurb:
-		'Four credentials, one after another, in a random order — one valid and three defective. Download each, feed it to your verifier, and report what it decided. Then we tell you what it should have.',
+		'Four credentials, one after another, in a random order — one valid and three defective. Download each, feed it to the verifier, and report what it decided. Then we tell you what it should have.',
 	role: 'verifier',
 	workflow: 'direct-credential-verification',
 	memberships: [{ profile: 'ob3-direct-delivery', level: 'required' }],

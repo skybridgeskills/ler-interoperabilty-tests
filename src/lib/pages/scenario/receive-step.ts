@@ -3,9 +3,12 @@ import type {
 	StepEvidence,
 	WireTrace
 } from '$lib/interop/scenario-run/index.js';
-import type { ScenarioStep } from '$lib/interop/scenarios/index.js';
+import type { ScenarioAction, ScenarioStep } from '$lib/interop/scenarios/index.js';
 
 import type { RunnerError } from './exchange-step.js';
+
+/** The intake transports a `receive-from-issuer` step may name. */
+type ReceiveTransport = Extract<ScenarioAction, { kind: 'receive-from-issuer' }>['transport'];
 
 /** What a miss observed: the wire summary, the trace, and the delivery outcome. */
 export type ReceiveMissEvidence = Pick<StepEvidence, 'issuerFlow' | 'trace' | 'transport'>;
@@ -28,8 +31,37 @@ export type ReceiveStepCallbacks = {
 	onFailed: (error: RunnerError) => void;
 };
 
-const RECEIVE_HINT =
-	'Check the server logs — the suite engages your issuer with the input you pasted and verifies whatever it delivers.';
+/** The hint shown when the receive route fails outright. Operator "you" only. */
+export const RECEIVE_HINT =
+	'Check the server logs — the suite engages the issuer with the input you pasted and verifies whatever it delivers.';
+
+/** The miss note shown when nothing arrived and the route named no reason. */
+export const RECEIVE_MISS_NOTE =
+	'The issuer delivered no credential. Check the input and try again.';
+
+/**
+ * The receive field's prompt and placeholder, per intake transport. One field,
+ * three pastes: the credential itself, a fresh single-use VC-API interaction
+ * URL, or a pre-authorized-code credential offer.
+ */
+export const RECEIVE_COPY: Record<ReceiveTransport, { prompt: string; placeholder: string }> = {
+	direct: {
+		prompt: 'Paste the credential the issuer produced',
+		placeholder: '{ "@context": […], "type": ["VerifiableCredential", "OpenBadgeCredential"], … }'
+	},
+	vcalm: {
+		prompt: 'Paste a fresh interaction URL from the issuer',
+		placeholder: 'https://issuer.example/exchanges/…'
+	},
+	oid4vci: {
+		prompt: 'Paste an openid-credential-offer:// URL from the issuer',
+		placeholder: 'openid-credential-offer://?credential_offer_uri=…'
+	}
+};
+
+/** The confirmation shown once a credential has arrived. */
+export const RECEIVE_SETTLED_NOTE =
+	'Received the credential from the issuer. Report what it offered below.';
 
 /**
  * Drive a `receive-from-issuer` step. Like `present-step` (and unlike
@@ -95,14 +127,11 @@ export function startReceiveStep(
 				if (stopped) return;
 
 				if (!delivered) {
-					callbacks.onMiss(
-						error?.message ?? 'Your issuer delivered no credential. Check the input and try again.',
-						{
-							issuerFlow: flow,
-							...(trace ? { trace } : {}),
-							transport: { delivered, ...(error ? { error } : {}) }
-						}
-					);
+					callbacks.onMiss(error?.message ?? RECEIVE_MISS_NOTE, {
+						issuerFlow: flow,
+						...(trace ? { trace } : {}),
+						transport: { delivered, ...(error ? { error } : {}) }
+					});
 					return;
 				}
 

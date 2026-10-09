@@ -9,8 +9,8 @@ import { Scenario, type ScenarioStep } from './scenario-schema.js';
  * it is the purest consumer of proofs in the catalog, and the one role whose
  * whole job is deciding whether a signature holds.
  *
- * **Discrimination, not acceptance.** The question is not *"does your verifier
- * accept an ECDSA credential"* but *"does your verifier tell a good ECDSA
+ * **Discrimination, not acceptance.** The question is not *"does the verifier
+ * accept an ECDSA credential"* but *"does the verifier tell a good ECDSA
  * credential from a bad one"*. A verifier that accepts everything passes the
  * first and fails the second, and the second is the one worth measuring. So each
  * scenario is two shuffled passes — one valid, one whose proof was corrupted
@@ -104,7 +104,7 @@ function pass(
 		requirements: [
 			{
 				id: `${id}-verdict`,
-				statement: 'What did your verifier decide about this credential?',
+				statement: 'What did the verifier decide about this credential?',
 				level: 'MUST',
 				check: {
 					kind: 'attested',
@@ -120,7 +120,7 @@ function pass(
 			},
 			{
 				id: `${id}-reason`,
-				statement: 'What problem did your verifier report about it, if any?',
+				statement: 'What problem did the verifier report about it, if any?',
 				level: 'SHOULD',
 				check: {
 					kind: 'attested',
@@ -148,7 +148,7 @@ function discriminationScenario(transport: Transport, suite: Suite) {
 	return Scenario({
 		slug: `${host.profile === 'ob3-direct-delivery' ? 'ob3-direct' : host.profile}-verifier-${suite}`,
 		name: `Tell a good ${SUITE_LABEL[suite]} credential from a bad one — over ${PROTOCOL[transport]}`,
-		blurb: `Two credentials signed with ${name}, in a random order — one valid, one whose proof was corrupted. Report what your verifier decided about each. It counts toward this protocol's Data Integrity Cryptosuites add-on badge; the other protocols have their own.`,
+		blurb: `Two credentials signed with ${name}, in a random order — one valid, one whose proof was corrupted. Report what the verifier decided about each. It counts toward this protocol's Data Integrity Cryptosuites add-on badge; the other protocols have their own.`,
 		role: 'verifier',
 		workflow: host.workflow,
 		memberships: [

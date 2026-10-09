@@ -10,7 +10,7 @@ import { Scenario } from './scenario-schema.js';
  * cross-protocol `oneOf` groups; M15 re-keyed the add-on badge to
  * `(additive, base profile, role)` and the groups went with it.
  *
- * **Pinned, not observed.** The question here is *can your wallet verify this*,
+ * **Pinned, not observed.** The question here is *can the wallet verify this*,
  * and that cannot be asked by watching: a wallet that only ever meets EdDSA
  * credentials tells you nothing about its ECDSA support by accepting one. So the
  * suite mints the credential itself, in the suite under test, and asks the
@@ -55,7 +55,7 @@ const TRANSPORT: Record<Protocol, string> = { oid4: 'OID4VCI', vcalm: 'VCALM' };
  * **`issued-suite`** reuses M11's producer checks unchanged. They read the
  * credential off `StepEvidence.artifact`, which a claim settle populates from
  * `variables.results.default.verifiableCredential[0]`. It is not decoration:
- * without it, "your wallet accepted an ECDSA credential" would rest on nothing
+ * without it, "the wallet accepted an ECDSA credential" would rest on nothing
  * but configuration. It is also the honest failure mode — if the pin silently
  * fell back to the default tenant, this row goes red rather than the scenario
  * passing under a false label.
@@ -77,7 +77,7 @@ function consumerRequirements(suite: Suite): Requirement[] {
 		},
 		{
 			id: 'verified',
-			statement: `Your wallet accepted this ${SUITE_NAME[suite]} credential with no signature or issuer error.`,
+			statement: `The wallet accepted this ${SUITE_NAME[suite]} credential with no signature or issuer error.`,
 			level: 'MUST',
 			check: { kind: 'attested', answer: { kind: 'affirm' } }
 		}
@@ -87,14 +87,14 @@ function consumerRequirements(suite: Suite): Requirement[] {
 function summaryFor(suite: Suite, protocol: Protocol): string {
 	const open =
 		protocol === 'oid4'
-			? 'Open the offer from inside your wallet'
-			: 'Open the interaction URL from inside your wallet';
+			? 'Open the offer from inside the wallet'
+			: 'Open the interaction URL from inside the wallet';
 	return `We will issue a well-formed Open Badges credential signed with \`${SUITE_NAME[suite]}\` and offer it over ${TRANSPORT[protocol]}. ${open} and accept it. Everything about this credential is correct, so a wallet that supports the cryptosuite should take it without complaint — a signature or issuer error is the finding.`;
 }
 
 /** The blurb every member carries: this scenario belongs to THIS protocol's add-on badge. */
 function blurbFor(suite: Suite, protocol: Protocol): string {
-	return `Check that your wallet can verify a ${SUITE_NAME[suite]} credential, offered over ${TRANSPORT[protocol]}. It counts toward this protocol's Data Integrity Cryptosuites add-on badge; the other protocol has its own.`;
+	return `Check that the wallet can verify a ${SUITE_NAME[suite]} credential, offered over ${TRANSPORT[protocol]}. It counts toward this protocol's Data Integrity Cryptosuites add-on badge; the other protocol has its own.`;
 }
 
 function acceptScenario(protocol: Protocol, suite: Suite) {

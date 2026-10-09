@@ -33,7 +33,7 @@ export const oid4WalletPresentation = Scenario({
 	slug: 'oid4-wallet-presentation',
 	name: 'Present a credential over OID4VP',
 	blurb:
-		'We ask your wallet for an Open Badges credential over OID4VP, and measure the presentation it sends back.',
+		'We ask the wallet for an Open Badges credential over OID4VP, and measure the presentation it sends back.',
 	role: 'wallet',
 	workflow: 'credential-presentation',
 	memberships: [{ profile: 'oid4', level: 'required' }],
@@ -42,7 +42,7 @@ export const oid4WalletPresentation = Scenario({
 			id: 'present',
 			title: 'Present a credential',
 			summary:
-				'We will ask your wallet for any Open Badges credential you hold. Use one you already have — the acceptance scenario is one way to get one. Open the request from inside your wallet, choose the credential, and approve sharing it.',
+				'We will ask the wallet for any Open Badges credential it holds. Use one it already has — the acceptance scenario is one way to get one. Open the request from inside the wallet, choose the credential, and approve sharing it.',
 			action: { kind: 'request-presentation', request: 'ob3-any' },
 			requirements: walletPresentationRequirements
 		}

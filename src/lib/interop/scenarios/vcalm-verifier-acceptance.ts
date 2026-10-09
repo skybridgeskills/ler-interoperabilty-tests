@@ -46,7 +46,7 @@ function pass(
 		requirements: [
 			{
 				id: `${id}-verdict`,
-				statement: 'What did your verifier decide about this credential?',
+				statement: 'What did the verifier decide about this credential?',
 				level: 'MUST',
 				check: {
 					kind: 'attested',
@@ -62,7 +62,7 @@ function pass(
 			},
 			{
 				id: `${id}-reason`,
-				statement: 'What problem did your verifier report about it, if any?',
+				statement: 'What problem did the verifier report about it, if any?',
 				level: 'SHOULD',
 				check: {
 					kind: 'attested',
@@ -90,7 +90,7 @@ export const vcalmVerifierAcceptance = Scenario({
 	slug: 'vcalm-verifier-acceptance',
 	name: 'Tell a good credential from a bad one — as a VCALM verifier',
 	blurb:
-		'Four credentials, one after another, in a random order — one valid and three defective. We present each to your verifier over VCALM; you report what it decided. Then we tell you what it should have.',
+		'Four credentials, one after another, in a random order — one valid and three defective. We present each to the verifier over VCALM; you report what it decided. Then we tell you what it should have.',
 	role: 'verifier',
 	workflow: 'credential-request-and-verification',
 	memberships: [{ profile: 'vcalm', level: 'required' }],

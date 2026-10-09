@@ -14,7 +14,7 @@ export const demoScenario: Scenario = Scenario({
 	slug: 'oid4-wallet-refusal-discrimination',
 	name: 'Tell a good credential from a bad one',
 	blurb:
-		'Three credentials, one after another, in a random order. Some are fine and some are not. After each one we ask what your wallet did — then tell you what actually happened.',
+		'Three credentials, one after another, in a random order. Some are fine and some are not. After each one we ask what the wallet did — then tell you what actually happened.',
 	role: 'wallet',
 	workflow: 'credential-acceptance',
 	memberships: [{ profile: 'oid4', level: 'required' }],
@@ -40,7 +40,7 @@ export const demoScenario: Scenario = Scenario({
 			requirements: [
 				{
 					id: 'debrief-told',
-					statement: 'Your wallet made clear which of the three it had refused.',
+					statement: 'The wallet made clear which of the three it had refused.',
 					level: 'SHOULD',
 					check: { kind: 'attested', answer: { kind: 'affirm' } }
 				}
@@ -53,7 +53,7 @@ function pass(id: string, credential: string, correct: string, setup: string) {
 	return {
 		id,
 		title: `Offer the ${id} credential`,
-		summary: `We will offer your wallet an Open Badges credential. ${setup}`,
+		summary: `We will offer the wallet an Open Badges credential. ${setup}`,
 		action: { kind: 'issue' as const, credential },
 		shuffle: true as const,
 		requirements: [
@@ -65,7 +65,7 @@ function pass(id: string, credential: string, correct: string, setup: string) {
 			},
 			{
 				id: `${id}-handled`,
-				statement: 'What did your wallet do with this credential?',
+				statement: 'What did the wallet do with this credential?',
 				level: 'MUST' as const,
 				check: {
 					kind: 'attested' as const,
@@ -140,8 +140,8 @@ export const storedRun: ScenarioRunRecord = {
  */
 export const directDeliveryScenario: Scenario = Scenario({
 	slug: 'ob3-direct-verifier-acceptance',
-	name: 'Hand your verifier a credential',
-	blurb: 'Download a credential, feed it to your verifier, and report what it decided.',
+	name: 'Hand the verifier a credential',
+	blurb: 'Download a credential, feed it to the verifier, and report what it decided.',
 	role: 'verifier',
 	workflow: 'direct-credential-verification',
 	memberships: [{ profile: 'ob3-direct-delivery', level: 'required' }],
@@ -149,12 +149,12 @@ export const directDeliveryScenario: Scenario = Scenario({
 		{
 			id: 'valid',
 			title: 'Offer the valid credential',
-			summary: 'We will hand your verifier a well-formed Open Badges credential.',
+			summary: 'We will hand the verifier a well-formed Open Badges credential.',
 			action: { kind: 'deliver-direct', credential: 'minimal-ob3' },
 			requirements: [
 				{
 					id: 'valid-verdict',
-					statement: 'What did your verifier decide about this credential?',
+					statement: 'What did the verifier decide about this credential?',
 					level: 'MUST',
 					check: {
 						kind: 'attested',
@@ -182,8 +182,8 @@ export const directDeliveryScenario: Scenario = Scenario({
  */
 export const presentScenario: Scenario = Scenario({
 	slug: 'vcalm-present-fixture',
-	name: 'Present a credential to your verifier',
-	blurb: 'Paste your verifier’s interaction URL, present, and report what it decided.',
+	name: 'Present a credential to the verifier',
+	blurb: 'Paste the verifier’s interaction URL, present, and report what it decided.',
 	role: 'verifier',
 	workflow: 'credential-request-and-verification',
 	memberships: [{ profile: 'vcalm', level: 'required' }],
@@ -191,12 +191,12 @@ export const presentScenario: Scenario = Scenario({
 		{
 			id: 'present',
 			title: 'Present the credential',
-			summary: 'We will present a credential to your verifier over a VC-API exchange.',
+			summary: 'We will present a credential to the verifier over a VC-API exchange.',
 			action: { kind: 'present-to-verifier', credential: 'minimal-ob3', transport: 'vcalm' },
 			requirements: [
 				{
 					id: 'verdict',
-					statement: 'What did your verifier decide about this credential?',
+					statement: 'What did the verifier decide about this credential?',
 					level: 'MUST',
 					check: {
 						kind: 'attested',
@@ -231,7 +231,7 @@ export const receiveScenario: Scenario = Scenario({
 		{
 			id: 'issue',
 			title: 'Issue a credential',
-			summary: 'We will redeem your credential offer as a wallet would.',
+			summary: 'We will redeem the issuer’s credential offer as a wallet would.',
 			action: {
 				kind: 'receive-from-issuer',
 				transport: 'oid4vci',
@@ -240,7 +240,7 @@ export const receiveScenario: Scenario = Scenario({
 			requirements: [
 				{
 					id: 'credential-endpoint',
-					statement: 'Your credential endpoint delivered a credential.',
+					statement: 'The credential endpoint delivered a credential.',
 					level: 'MUST',
 					check: { kind: 'automatic', checkId: 'oid4-issuer-credential-endpoint' }
 				}
@@ -261,7 +261,7 @@ export const singleStepScenario: Scenario = Scenario({
 		{
 			id: 'offer',
 			title: 'Offer the credential',
-			summary: 'We will offer your wallet a well-formed Open Badges credential.',
+			summary: 'We will offer the wallet a well-formed Open Badges credential.',
 			action: { kind: 'issue', credential: 'minimal-ob3' },
 			requirements: [
 				{
@@ -272,7 +272,7 @@ export const singleStepScenario: Scenario = Scenario({
 				},
 				{
 					id: 'stored',
-					statement: 'The credential appears in your wallet’s list.',
+					statement: 'The credential appears in the wallet’s list.',
 					level: 'MUST',
 					check: { kind: 'attested', answer: { kind: 'affirm' } }
 				}

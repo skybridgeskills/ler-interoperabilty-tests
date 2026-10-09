@@ -50,7 +50,7 @@ export const credentialSubjectIdentifierEmail: AutomaticCheck = {
 		if (identifiers.length === 0) {
 			return {
 				met: false,
-				detail: `Your credential carries no \`credentialSubject.identifier\`. ${WANTED}`
+				detail: `The credential carries no \`credentialSubject.identifier\`. ${WANTED}`
 			};
 		}
 
@@ -67,7 +67,7 @@ export const credentialSubjectIdentifierEmail: AutomaticCheck = {
 			return {
 				met: true,
 				detail:
-					'Your credential names its recipient with an unhashed `emailAddress` `IdentityObject`. That address is a claim — it is confirmed out of band, not by the presentation.'
+					'The credential names its recipient with an unhashed `emailAddress` `IdentityObject`. That address is a claim — it is confirmed out of band, not by the presentation.'
 			};
 		}
 
@@ -75,7 +75,7 @@ export const credentialSubjectIdentifierEmail: AutomaticCheck = {
 			return {
 				met: false,
 				detail:
-					'Your `emailAddress` identifier is hashed. This profile asks for the plaintext address (`"hashed": false`): these credentials are not published anywhere, so hashing buys no privacy here, and it forces exact-case matching against email systems that are case-insensitive.'
+					'The `emailAddress` identifier is hashed. This profile asks for the plaintext address (`"hashed": false`): these credentials are not published anywhere, so hashing buys no privacy here, and it forces exact-case matching against email systems that are case-insensitive.'
 			};
 		}
 
@@ -83,13 +83,13 @@ export const credentialSubjectIdentifierEmail: AutomaticCheck = {
 			return {
 				met: false,
 				detail:
-					'Your `emailAddress` identifier declares no `hashed` value. `hashed` is required, and this profile needs it to be `false` — without it there is no way to tell a plaintext address from a digest.'
+					'The `emailAddress` identifier declares no `hashed` value. `hashed` is required, and this profile needs it to be `false` — without it there is no way to tell a plaintext address from a digest.'
 			};
 		}
 
 		return {
 			met: false,
-			detail: `Your \`emailAddress\` identifier's \`identityHash\` is ${describe(emails[0].identityHash)}, which is not an email address. ${WANTED}`
+			detail: `The \`emailAddress\` identifier's \`identityHash\` is ${describe(emails[0].identityHash)}, which is not an email address. ${WANTED}`
 		};
 	}
 };
@@ -110,14 +110,14 @@ function noEmailReason(
 	identityObjects: Record<string, unknown>[]
 ): string {
 	if (identityObjects.length === 0) {
-		return `None of your \`credentialSubject.identifier\` entries declares \`"type": "IdentityObject"\` (${identifiers.length} entry/entries seen).`;
+		return `None of the \`credentialSubject.identifier\` entries declares \`"type": "IdentityObject"\` (${identifiers.length} entry/entries seen).`;
 	}
 	const found = identityObjects
 		.map((entry) =>
 			typeof entry.identityType === 'string' ? entry.identityType : 'no identityType'
 		)
 		.join(', ');
-	return `Your identifiers declare ${found} — none of them \`emailAddress\`.`;
+	return `The identifiers declare ${found} — none of them \`emailAddress\`.`;
 }
 
 /** A short, safe description of a value for a message: quote a string, else name its type. */

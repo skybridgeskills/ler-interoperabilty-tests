@@ -19,7 +19,7 @@ export const oid4WalletAcceptance = Scenario({
 	slug: 'oid4-wallet-acceptance',
 	name: 'Accept a well-formed credential over OID4VCI',
 	blurb:
-		'Offer your wallet a well-formed Open Badges credential over OID4VCI, and confirm it took it.',
+		'Offer the wallet a well-formed Open Badges credential over OID4VCI, and confirm it took it.',
 	role: 'wallet',
 	workflow: 'credential-acceptance',
 	memberships: [{ profile: 'oid4', level: 'required' }],
@@ -28,7 +28,7 @@ export const oid4WalletAcceptance = Scenario({
 			id: 'offer',
 			title: 'Offer the credential',
 			summary:
-				'We will offer your wallet a well-formed Open Badges credential over OID4VCI. Everything about this one is correct — accepting it is the right thing to do.',
+				'We will offer the wallet a well-formed Open Badges credential over OID4VCI. Everything about this one is correct — accepting it is the right thing to do.',
 			action: { kind: 'issue', credential: 'minimal-ob3' },
 			requirements: [
 				{
@@ -39,19 +39,19 @@ export const oid4WalletAcceptance = Scenario({
 				},
 				{
 					id: 'holder-bound',
-					statement: 'Your wallet proved control of a DID.',
+					statement: 'The wallet proved control of a DID.',
 					level: 'MUST',
 					check: { kind: 'automatic', checkId: 'holder-did-bound' }
 				},
 				{
 					id: 'stored',
-					statement: 'The credential appears in your wallet’s credential list.',
+					statement: 'The credential appears in the wallet’s credential list.',
 					level: 'MUST',
 					check: { kind: 'attested', answer: { kind: 'affirm' } }
 				},
 				{
 					id: 'displayed',
-					statement: 'What did your wallet display for the achievement?',
+					statement: 'What did the wallet display for the achievement?',
 					level: 'SHOULD',
 					check: {
 						kind: 'attested',
