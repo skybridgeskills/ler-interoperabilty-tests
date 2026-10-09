@@ -16,5 +16,16 @@ describe('/about/+page.svelte', () => {
 		await expect
 			.element(page.getByRole('heading', { name: 'Standards compliance is not interoperability' }))
 			.toBeInTheDocument();
+
+		await expect
+			.element(page.getByRole('heading', { name: 'Acknowledgements' }))
+			.toBeInTheDocument();
+		for (const name of [
+			'Digital Credentials Commons',
+			'Skybridge Skills',
+			'Micro-credential Multiverse'
+		]) {
+			await expect.element(page.getByRole('listitem').getByText(name)).toBeInTheDocument();
+		}
 	});
 });

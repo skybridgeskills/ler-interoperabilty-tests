@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { perspectiveStore } from '$lib/client/perspective/index.js';
+	import { ExternalLink } from '$lib/components/external-link/index.js';
 	import { PageHero } from '$lib/components/page-hero/index.js';
+
+	import { builtBy } from './credits.js';
 
 	import { resolve } from '$app/paths';
 
@@ -83,7 +86,57 @@
 		Pick the Standard Profiles you must interoperate with, run their scenarios, and prove real
 		interoperability instead of spec conformance on paper.
 	</p>
-	<p class="max-w-prose text-body-md">
-		<a href={resolve('/')} class="text-primary hover:underline">← Back to the console</a>
-	</p>
 </section>
+
+<section class="mt-12 space-y-6">
+	<h2 class="text-headline-md">Acknowledgements</h2>
+
+	<div class="space-y-3">
+		<h3 class="text-title-lg">Funders and sponsors</h3>
+		<!--
+			The funders' own wording, verbatim: names are linked in place and not a word
+			changes. Rockefeller Philanthropy Advisors stays unlinked until its URL is
+			confirmed.
+		-->
+		<p class="max-w-prose text-body-md text-muted-foreground">
+			The LER Interoperability Test Suite was created through <ExternalLink
+				href="https://www.skillsfwd.org/">SkillsFWD</ExternalLink
+			> with funding from <ExternalLink href="https://www.walmart.org/">Walmart</ExternalLink> and sponsorship
+			from the <ExternalLink href="https://www.uschamberfoundation.org/"
+				>U.S. Chamber of Commerce Foundation</ExternalLink
+			>. It is adapted from the original SkillsFWD assessment, which was developed during the
+			SkillsFWD grant period with sponsorship from Rockefeller Philanthropy Advisors. The tool now
+			lives on the
+			<ExternalLink href="https://dccommons.org/">Digital Credentials Commons</ExternalLink> as a resource
+			for the broader LER community.
+		</p>
+		<p class="max-w-prose text-body-md text-muted-foreground">
+			<ExternalLink href="https://www.strada.org/">Strada Education Foundation</ExternalLink> supports
+			its ongoing sustainability.
+		</p>
+	</div>
+
+	<div class="space-y-3">
+		<h3 class="text-title-lg">Built by</h3>
+		<ul class="space-y-3">
+			{#each builtBy as credit (credit.name)}
+				<li class="flex items-center gap-4">
+					{#if credit.logo}
+						<!-- White in both themes on purpose: one file per organisation works everywhere. -->
+						<span class="size-16 shrink-0 rounded-md border border-border bg-white p-2">
+							<img src={credit.logo} alt="" class="h-full w-full object-contain" />
+						</span>
+					{/if}
+					<span class="flex flex-col">
+						<ExternalLink href={credit.url}>{credit.name}</ExternalLink>
+						<span class="text-label-md text-muted-foreground">{credit.role}</span>
+					</span>
+				</li>
+			{/each}
+		</ul>
+	</div>
+</section>
+
+<p class="mt-12 max-w-prose text-body-md">
+	<a href={resolve('/')} class="text-primary hover:underline">← Back to the console</a>
+</p>

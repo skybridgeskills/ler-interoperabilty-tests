@@ -64,6 +64,8 @@ pnpm turbo validate     # check + test + build
 ## Project structure
 
 ```
+static/
+└── credits/               # Built-by logos for the About page (see its README)
 src/
 ├── app.html               # HTML shell + Inter/JetBrains Mono fonts + flash-prevention script
 ├── app.d.ts               # App.Locals types
