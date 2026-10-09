@@ -39,6 +39,7 @@ function scenario(over: Partial<ScenarioInput> = {}): Scenario {
 		name: 'Accept a well-formed credential',
 		blurb: 'The happy path.',
 		standards: [{ standard: 'ob-3' }],
+		framing: { builder: 'Builder framing.', evaluator: 'Evaluator framing.' },
 		role: 'wallet',
 		workflow: 'credential-acceptance',
 		memberships: [{ profile: 'oid4', level: 'required' }],
@@ -347,6 +348,11 @@ describe('validateCatalog', () => {
 		it('ignores actions of other kinds', () => {
 			expect(codes([scenario()])).not.toContain('limit-disclosure-without-pex');
 		});
+	});
+
+	it('rejects framing with the same text for Builder and Evaluator', () => {
+		const same = scenario({ framing: { builder: 'One paragraph.', evaluator: 'One paragraph.' } });
+		expect(validateCatalog([same]).map((v) => v.code)).toEqual(['missing-perspective-copy']);
 	});
 
 	it('reports every violation, not just the first', () => {

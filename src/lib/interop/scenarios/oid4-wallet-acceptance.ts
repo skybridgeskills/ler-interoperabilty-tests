@@ -21,6 +21,12 @@ export const oid4WalletAcceptance = Scenario({
 	name: 'Accept a well-formed credential over OID4VCI',
 	blurb:
 		'Offer the wallet a well-formed Open Badges credential over OID4VCI, and confirm it took it.',
+	framing: {
+		builder:
+			'You’re testing your own wallet on the simplest thing an OID4VCI wallet must do: take a correct credential and keep it. Have a build that can open a pre-authorized code offer and prove control of a DID. If the exchange completes but the credential never appears in the list, your wallet received it and lost it somewhere between the credential response and storage.',
+		evaluator:
+			'You’re checking whether a vendor’s wallet can take a correct Open Badges credential over OID4VCI and keep it — the baseline every other wallet scenario builds on. The wire covers the exchange; what you judge is the screen afterwards. If the vendor is driving, ask them to show you the credential list rather than describe it, and note whether the achievement appears as a card or as raw data. A failure here means the wallet isn’t ready for anything harder.'
+	},
 	standards: [cite.vciPreAuthorizedCode, cite.vciBinding],
 	role: 'wallet',
 	workflow: 'credential-acceptance',

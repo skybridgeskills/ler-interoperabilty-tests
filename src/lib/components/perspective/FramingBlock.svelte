@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { InlineMarkup } from '$lib/components/interop/inline-markup/index.js';
 	import type { Perspective } from '$lib/interop/perspective/index.js';
 
 	import { perspectiveOption } from './perspective-options.js';
@@ -26,5 +27,6 @@
 		<option.icon class="size-3.5" aria-hidden="true" />
 		{option.noun}
 	</p>
-	<p class="text-body-md text-foreground">{text}</p>
+	<!-- Backtick spans render as code chips, as they do in statements and summaries. -->
+	<p class="text-body-md text-foreground"><InlineMarkup {text} /></p>
 </aside>

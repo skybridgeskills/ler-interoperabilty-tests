@@ -23,6 +23,12 @@ export const oid4WalletFaithfulRendering = Scenario({
 	name: 'Render a decorated credential faithfully',
 	blurb:
 		'Offer the wallet a fully-decorated Open Badges credential — image, rich achievement, issuer — and confirm it shows them, not raw data.',
+	framing: {
+		builder:
+			'You’re testing whether your own wallet shows a decorated credential the way its issuer meant it: the badge image, the achievement’s name and description, and who issued it. Have a build that renders Open Badges fields rather than a generic credential view. These count toward the OID4 Standard Profile’s Expanded tier rather than Essential, so a miss is a gap, not a failure — usually a field your wallet parses but never draws.',
+		evaluator:
+			'You’re checking whether a vendor’s wallet shows a credential faithfully, not just that it stores one. Look at the credential itself, opening its detail view if the list shows only a tile: is the image real rather than a placeholder, are the achievement’s name and description both there, is the issuer named? A wallet that shows only a name or raw JSON here will show every badge that way.'
+	},
 	standards: [cite.obDocument],
 	role: 'wallet',
 	workflow: 'credential-acceptance',

@@ -12,6 +12,7 @@ const catalog = vi.hoisted(() => {
 		name: 'Accept a well-formed credential',
 		blurb: 'The happy path.',
 		standards: [{ standard: 'ob-3' as const }],
+		framing: { builder: 'Builder framing.', evaluator: 'Evaluator framing.' },
 		role: 'wallet' as const,
 		workflow: 'credential-acceptance' as const,
 		memberships: [{ profile: 'oid4' as const, level: 'required' as const }],

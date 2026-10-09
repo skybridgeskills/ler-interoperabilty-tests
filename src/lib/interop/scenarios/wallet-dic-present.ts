@@ -1,3 +1,5 @@
+import type { PerspectiveCopy } from '$lib/interop/perspective/perspective.js';
+
 import { cite, suiteCitation } from './citations.js';
 import type { Requirement } from './requirement-schema.js';
 import { Scenario } from './scenario-schema.js';
@@ -96,11 +98,23 @@ function blurbFor(suite: Suite, protocol: Protocol): string {
 	return `Present a credential over ${TRANSPORT[protocol]} signed with ${SUITE_NAME[suite]}. It counts toward this protocol's Data Integrity Cryptosuites add-on badge; the other protocol has its own.`;
 }
 
+/** How a Builder and an Evaluator should each approach this member. */
+function framingFor(suite: Suite, protocol: Protocol): PerspectiveCopy {
+	const s = SUITE_NAME[suite];
+	const t = TRANSPORT[protocol];
+	const k = KEY_NAME[suite];
+	return {
+		builder: `You’re testing whether your own wallet can sign a presentation with ${s} over ${t}. Have a build holding an Open Badges credential and a ${k} holder key on a \`did:key\` or \`did:web\` DID, and choose that key before you present. Every row is read off the presentation that arrives; if your wallet can’t sign with a ${k} key, this scenario fails, and that is the answer rather than a fault in the run.`,
+		evaluator: `You’re checking whether a vendor’s wallet can sign a presentation with ${s} over ${t}; the wallet’s own key decides that, and nothing in the request can. Ask the vendor to show the key or DID setting they choose before presenting, since every row is read off what arrives. A wallet with no ${k} key fails here — a real gap in its ${s} support, not a fault in the run.`
+	};
+}
+
 function presentScenario(protocol: Protocol, suite: Suite) {
 	return Scenario({
 		slug: `${protocol}-wallet-present-${suite}`,
 		name: `Present with ${suite === 'eddsa' ? 'EdDSA' : 'ECDSA'} over ${TRANSPORT[protocol]}`,
 		blurb: blurbFor(suite, protocol),
+		framing: framingFor(suite, protocol),
 		standards: [suiteCitation(suite), cite.multikey],
 		role: 'wallet',
 		workflow: 'credential-presentation',

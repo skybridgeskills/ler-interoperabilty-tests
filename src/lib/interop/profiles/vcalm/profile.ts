@@ -29,6 +29,10 @@ export const vcalmProfileMeta = {
 		{ standard: 'did-key' },
 		{ standard: 'cid-1', section: 'Multikey', label: '§2.2.2 Multikey' }
 	] satisfies StandardCitation[],
+	example: {
+		builder: 'e.g. your product exchanges credentials in the browser over VCALM',
+		evaluator: 'e.g. your partners exchange credentials over VCALM, so the vendor must too'
+	},
 	description:
 		'Browser-based credential exchange using VCALM Exchanges over Open Badges 3.0 credentials. ' +
 		'The cryptosuite, key type, and DID-method options are declared by the ' +

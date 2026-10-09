@@ -92,6 +92,12 @@ export const ob3DirectVerifierAcceptance = Scenario({
 	name: 'Tell a good credential from a bad one — as a verifier',
 	blurb:
 		'Four credentials, one after another, in a random order — one valid and three defective. Download each, feed it to the verifier, and report what it decided. Then we tell you what it should have.',
+	framing: {
+		builder:
+			'You’re testing your own verifier’s judgement: have a build where you can load a credential file and see what it decided and why. We hand over four credentials in a random order, one good and three each broken in one way, and you report each verdict before we reveal the answers. Accepting a broken one, or rejecting the good one, is the failure that matters; naming the wrong problem is a lesser finding about how clearly your verifier explains itself.',
+		evaluator:
+			'You’re checking whether a vendor’s verifier can tell a good credential from a bad one, not just whether it says yes. For each of the four files, look at the decision and reason the verifier actually shows (or ask the vendor to show you) and answer from that, not from what it ought to do. Accepting a broken credential fails outright; rejecting it for a vague or wrong reason is a smaller finding, but worth raising.'
+	},
 	standards: [cite.obVerification, cite.diVerifyProof, cite.vcdmValidityPeriod],
 	role: 'verifier',
 	workflow: 'direct-credential-verification',

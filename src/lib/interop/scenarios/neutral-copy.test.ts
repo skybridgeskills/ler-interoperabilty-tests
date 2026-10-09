@@ -14,6 +14,12 @@ import { allScenarios } from './all-scenarios.js';
  *
  * Every offender is collected and reported at once, so a failure names each
  * slug, field and string rather than stopping at the first.
+ *
+ * **`framing` is deliberately not scanned.** It is the one place a scenario
+ * addresses a reader by Perspective — the Builder's paragraph says "your
+ * wallet" because it is written to the wallet's owner — and it renders only
+ * once a Perspective is chosen. The neutral rule governs everything both
+ * readers see.
  */
 
 const SECOND_PERSON_PRODUCT = /\byour\b/i;

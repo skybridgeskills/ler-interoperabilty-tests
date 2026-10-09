@@ -22,7 +22,8 @@ describe('AdditiveProfile', () => {
 			status: 'draft',
 			lastUpdated: '2026-05-15',
 			description: 'Adds skill-alignment data to OpenBadgeCredentials.',
-			appliesToBaseProfiles: ['ob3-direct-delivery']
+			appliesToBaseProfiles: ['ob3-direct-delivery'],
+			example: { builder: 'b', evaluator: 'e' }
 		});
 		expect(p.slug).toBe('open-skill-alignment');
 		expect(p.appliesToBaseProfiles).toEqual(['ob3-direct-delivery']);
@@ -39,7 +40,8 @@ describe('AdditiveProfile', () => {
 			url: 'https://example.com/profiles/open-skill-alignment/',
 			lastUpdated: '2026-05-15',
 			description: 'Adds skill-alignment data to OpenBadgeCredentials.',
-			appliesToBaseProfiles: ['ob3-direct-delivery']
+			appliesToBaseProfiles: ['ob3-direct-delivery'],
+			example: { builder: 'b', evaluator: 'e' }
 		});
 		expect(p.url).toBe('https://example.com/profiles/open-skill-alignment/');
 	});
@@ -54,7 +56,8 @@ describe('AdditiveProfile', () => {
 				status: 'draft',
 				lastUpdated: '2026-05-15',
 				description: 'x',
-				appliesToBaseProfiles: []
+				appliesToBaseProfiles: [],
+				example: { builder: 'b', evaluator: 'e' }
 			})
 		).toThrow();
 	});
@@ -69,7 +72,8 @@ describe('AdditiveProfile', () => {
 				status: 'draft',
 				lastUpdated: '2026-05-15',
 				description: 'x',
-				appliesToBaseProfiles: ['not-a-profile' as 'ob3-direct-delivery']
+				appliesToBaseProfiles: ['not-a-profile' as 'ob3-direct-delivery'],
+				example: { builder: 'b', evaluator: 'e' }
 			})
 		).toThrow();
 	});

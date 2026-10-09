@@ -28,6 +28,12 @@ export const vcalmVerifierDelivery = Scenario({
 	name: 'Deliver a credential to the verifier over VCALM',
 	blurb:
 		'Present a well-formed credential to the verifier over a VC-API exchange. We check the exchange it offers and that the credential reaches it — the wire, not the verdict.',
+	framing: {
+		builder:
+			'You’re testing whether a credential can get into your own verifier over VCALM: have a build that can open a VC-API exchange whose request asks for an Open Badges credential by example and for DID authentication. We present one valid credential and check the exchange on the wire, so a failure points at what your exchange offered or asked for, not at your verifier’s judgement. Whether it turns away bad credentials is measured separately, in the acceptance scenario.',
+		evaluator:
+			'You’re checking whether a vendor’s verifier can receive a credential over VCALM and asks for it the standard way. Get an interaction URL from a live exchange on the vendor’s verifier; we present one valid credential and read everything off the wire, so there are no questions to answer. A pass says the connection works, not that the verifier judges well, so pair it with the acceptance scenario before drawing conclusions.'
+	},
 	standards: [cite.vcalmInteractionUrl, cite.vcalmQueryByExample, cite.vcalmDidAuthentication],
 	role: 'verifier',
 	workflow: 'credential-request-and-verification',

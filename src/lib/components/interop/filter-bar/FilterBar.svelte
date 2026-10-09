@@ -11,7 +11,7 @@
 	import { toSearchParams } from '$lib/interop/selection/index.js';
 
 	import { anchorX } from './anchor-x.svelte.js';
-	import { copyLinkLabel } from './copy-link-copy.js';
+	import { copyLinkConfirmation, copyLinkLabel } from './copy-link-copy.js';
 	import { dimensionCopy, filterPanelNotes } from './filter-bar-copy.js';
 	import { setsLabel, summarise } from './filter-bar-summary.js';
 	import { type Dimension, toneClasses, toneFor } from './filter-bar-tone.js';
@@ -289,7 +289,8 @@
 				{matched}
 				{total}
 				{anySelected}
-				copyLabel={perspectiveCopy(copyLinkLabel, perspective) ?? 'Copy link'}
+				copyLabel={perspectiveCopy(copyLinkLabel, perspective) ?? ''}
+				copiedLabel={perspectiveCopy(copyLinkConfirmation, perspective) ?? ''}
 				onCopyLink={copyLink}
 				{onClear}
 			/>

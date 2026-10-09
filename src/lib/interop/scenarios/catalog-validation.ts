@@ -12,7 +12,8 @@ export type CatalogViolationCode =
 	| 'choose-correct-not-an-option'
 	| 'discontiguous-shuffle'
 	| 'missing-shuffle-label'
-	| 'limit-disclosure-without-pex';
+	| 'limit-disclosure-without-pex'
+	| 'missing-perspective-copy';
 
 /** One authoring error found in the catalog. */
 export type CatalogViolation = {
@@ -37,6 +38,7 @@ export function validateCatalog(scenarios: Scenario[]): CatalogViolation[] {
 		...scenarios.flatMap(uniqueStepIds),
 		...scenarios.flatMap(uniqueRequirementIds),
 		...scenarios.flatMap(exactlyOneBaseMembership),
+		...scenarios.flatMap(framesBothPerspectives),
 		...scenarios.flatMap(additiveOnlyIsClaimedByAnAdditive),
 		...scenarios.flatMap(chooseCorrectIsAnOption),
 		...scenarios.flatMap(contiguousShuffle),
@@ -297,6 +299,23 @@ function oneOfGroupsAgree(scenarios: Scenario[]): CatalogViolation[] {
 }
 
 /** Every requirement id in a scenario, in step-then-requirement order. */
+/**
+ * Rule: a scenario's framing says something different to a Builder and an
+ * Evaluator. The schema requires both to be non-empty; this catches the
+ * shortcut of one paragraph pasted into both slots, which leaves one reader
+ * with no framing written for them.
+ */
+function framesBothPerspectives(scenario: Scenario): CatalogViolation[] {
+	if (scenario.framing.builder.trim() !== scenario.framing.evaluator.trim()) return [];
+	return [
+		{
+			code: 'missing-perspective-copy',
+			subject: scenario.slug,
+			message: 'framing has the same text for Builder and Evaluator; write one for each'
+		}
+	];
+}
+
 function requirementIdsOf(scenario: Scenario): string[] {
 	return scenario.steps.flatMap((step) => step.requirements.map((r) => r.id));
 }

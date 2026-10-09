@@ -1,3 +1,5 @@
+import type { PerspectiveCopy } from '$lib/interop/perspective/perspective.js';
+
 import { cite, suiteVerifyCitation } from './citations.js';
 import type { LocallySignedSuite } from './locally-signed-suite.js';
 import type { Requirement } from './requirement-schema.js';
@@ -112,11 +114,31 @@ function blurbFor(transport: Transport, suite: Suite): string {
 	return `Check that the issuer can verify a holder key proof signed with ${SUITE_NAME[suite]}, over ${PROTOCOL[transport]}. It counts toward this protocol's Data Integrity Cryptosuites add-on badge; the other protocol has its own.`;
 }
 
+/**
+ * The Builder / Evaluator framing, naming the suite, key and protocol as the
+ * blurb and summary do. Both say outright that "nothing arrived" is the
+ * finding, for the same reason the summary does.
+ */
+function framingFor(transport: Transport, suite: Suite): PerspectiveCopy {
+	const name = SUITE_NAME[suite];
+	const protocol = PROTOCOL[transport];
+	const handoff = transport === 'vcalm' ? 'a fresh interaction URL' : 'a pre-authorized-code offer';
+	const fix =
+		transport === 'vcalm'
+			? `adding ${name} to the suites your issuer verifies for DID authentication`
+			: `adding ${name} to the suites your issuer verifies for di_vp key proofs, and listing it in your metadata`;
+	return {
+		builder: `You’re testing whether your own issuer accepts a wallet that signs with ${name}: have a build that can issue any Open Badges credential over ${protocol}. We act as that wallet with a ${KEY_NAME[suite]} key, so if your issuer can’t verify ${name} it refuses us and nothing arrives; that is the finding, not a broken run. The usual fix is ${fix}.`,
+		evaluator: `You’re checking whether a vendor’s issuer will serve wallets that sign with ${name}, not only the key type it was built around. Get ${handoff} from the vendor’s issuer over ${protocol}; we collect the credential as a wallet holding a ${KEY_NAME[suite]} key, and there are no questions for you to answer. If nothing arrives, the issuer could not verify our key proof: a real limit on which wallets can collect from it, not a fault in this harness.`
+	};
+}
+
 function consumerScenario(transport: Transport, suite: Suite) {
 	return Scenario({
 		slug: `${BASE_PROFILE[transport]}-issuer-consumer-${suite}`,
 		name: `Verify an ${suite === 'eddsa' ? 'EdDSA' : 'ECDSA'} key proof over ${PROTOCOL[transport]}`,
 		blurb: blurbFor(transport, suite),
+		framing: framingFor(transport, suite),
 		standards: [
 			transport === 'vcalm' ? cite.vcalmDidAuthenticationResponse : cite.vciDiVpKeyProof,
 			suiteVerifyCitation(suite)

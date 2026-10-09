@@ -257,9 +257,9 @@ export const Scenario = ZodFactory(
 		 * One paragraph per Perspective on how to approach this scenario — running
 		 * it on your own build vs. watching a vendor demonstrate. Rendered once,
 		 * under the hero. No `neutral`: absent when unset. Outside the fingerprint.
-		 * Required from M10.
+		 * Required, and the two versions must differ (`missing-perspective-copy`).
 		 */
-		framing: PerspectiveCopy.schema.optional(),
+		framing: PerspectiveCopy.schema,
 		/**
 		 * Which specs this scenario exercises — **scenario level only** (no step or
 		 * requirement citations, by design: easier to keep true), typically one or

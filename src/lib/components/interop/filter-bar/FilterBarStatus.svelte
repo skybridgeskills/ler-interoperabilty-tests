@@ -14,6 +14,7 @@
 		total,
 		anySelected,
 		copyLabel,
+		copiedLabel,
 		onCopyLink,
 		onClear
 	}: {
@@ -22,6 +23,8 @@
 		anySelected: boolean;
 		/** Already resolved for the reader's Perspective. */
 		copyLabel: string;
+		/** The confirmation, resolved likewise. */
+		copiedLabel: string;
 		onCopyLink: () => Promise<void>;
 		onClear: () => void;
 	} = $props();
@@ -57,6 +60,6 @@
 		</button>
 	{/if}
 	<p aria-live="polite" class="w-full text-right text-label-md text-muted-foreground empty:hidden">
-		{#if copied}Link copied — it opens with this filter, not your Perspective.{/if}
+		{#if copied}{copiedLabel}{/if}
 	</p>
 </div>

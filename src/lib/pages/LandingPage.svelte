@@ -58,15 +58,12 @@
 
 	const perspective = perspectiveStore();
 
-	/**
-	 * The only hero copy that varies by Perspective. Placeholder until the
-	 * Perspective copy is authored: all three versions read the same.
-	 */
+	/** The only hero copy that varies by Perspective. */
 	const HOME_LEDE = PerspectiveCopy({
 		builder:
-			'Your console for building and evaluating interoperable Learning & Employment Record systems. Standards compliance isn’t the same as interoperability.',
+			'Prove your wallet, issuer or verifier really interoperates with the rest of the Learning & Employment Record ecosystem, scenario by scenario.',
 		evaluator:
-			'Your console for building and evaluating interoperable Learning & Employment Record systems. Standards compliance isn’t the same as interoperability.',
+			'Find out whether a wallet, issuer or verifier really interoperates with the Learning & Employment Record ecosystem before you choose it.',
 		neutral:
 			'Your console for building and evaluating interoperable Learning & Employment Record systems. Standards compliance isn’t the same as interoperability.'
 	});

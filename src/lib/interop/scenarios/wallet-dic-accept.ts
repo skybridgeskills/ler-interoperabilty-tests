@@ -1,3 +1,5 @@
+import type { PerspectiveCopy } from '$lib/interop/perspective/perspective.js';
+
 import { cite, suiteVerifyCitation } from './citations.js';
 import type { Requirement } from './requirement-schema.js';
 import { Scenario } from './scenario-schema.js';
@@ -98,11 +100,22 @@ function blurbFor(suite: Suite, protocol: Protocol): string {
 	return `Check that the wallet can verify a ${SUITE_NAME[suite]} credential, offered over ${TRANSPORT[protocol]}. It counts toward this protocol's Data Integrity Cryptosuites add-on badge; the other protocol has its own.`;
 }
 
+/** How a Builder and an Evaluator should each approach this member. */
+function framingFor(suite: Suite, protocol: Protocol): PerspectiveCopy {
+	const s = SUITE_NAME[suite];
+	const t = TRANSPORT[protocol];
+	return {
+		builder: `You’re testing whether your own wallet can verify a ${s} credential arriving over ${t}. Have a build with ${s} support that can resolve a \`did:key\` issuer. If the first row fails, this deployment didn’t really issue with that suite; if your wallet shows a signature or issuer error on this correct credential, its ${s} verification is missing or broken.`,
+		evaluator: `You’re checking whether a vendor’s wallet can verify a ${s} credential delivered over ${t}; the suite signs it itself, so the cryptosuite is known. Watch what the wallet says as it accepts: any signature or issuer error is a fail, even if the credential is stored. Ask the vendor which cryptosuites the wallet claims to support — this is how you check that claim for ${s}.`
+	};
+}
+
 function acceptScenario(protocol: Protocol, suite: Suite) {
 	return Scenario({
 		slug: `${protocol}-wallet-accept-${suite}`,
 		name: `Accept an ${suite === 'eddsa' ? 'EdDSA' : 'ECDSA'} credential over ${TRANSPORT[protocol]}`,
 		blurb: blurbFor(suite, protocol),
+		framing: framingFor(suite, protocol),
 		standards: [suiteVerifyCitation(suite), cite.diVerifyProof],
 		role: 'wallet',
 		workflow: 'credential-acceptance',

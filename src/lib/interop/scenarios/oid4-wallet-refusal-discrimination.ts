@@ -75,6 +75,12 @@ export const oid4WalletRefusalDiscrimination = Scenario({
 	name: 'Tell a good credential from a bad one — over OID4VCI',
 	blurb:
 		'Three credentials, one after another, in a random order. Some are fine and some are not. After each one we ask what the wallet did — then tell you what actually happened.',
+	framing: {
+		builder:
+			'You’re testing whether your own wallet can tell a good credential from an expired one and a tampered one, offered over OID4VCI in an order you won’t know. Have a build that checks the validity period and verifies the proof when a credential arrives. A visible warning on an accepted credential is not a refusal, and a silent refusal misses the SHOULD on saying what the wallet decided. If your wallet took all three, it is storing credentials without checking them.',
+		evaluator:
+			'You’re checking whether a vendor’s wallet can tell a good credential from an expired one and a tampered one, offered over OID4VCI in a random order. The wire can’t see a refusal, so the answers rest on what the screen showed: watch each offer yourself, and note whether the wallet said what it decided. A wallet that accepts all three isn’t checking what it stores. If you can only import the vendor’s results, this is the scenario worth asking to watch live.'
+	},
 	standards: [cite.obVerification, cite.vcdmValidityPeriod, cite.diVerifyProof],
 	role: 'wallet',
 	workflow: 'credential-acceptance',

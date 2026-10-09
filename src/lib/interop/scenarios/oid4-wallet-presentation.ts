@@ -35,6 +35,12 @@ export const oid4WalletPresentation = Scenario({
 	name: 'Present a credential over OID4VP',
 	blurb:
 		'We ask the wallet for an Open Badges credential over OID4VP, and measure the presentation it sends back.',
+	framing: {
+		builder:
+			'You’re testing whether your own wallet can answer an OID4VP request with a presentation a verifier will trust: Data Integrity rather than JWT, signed, bound to this request, and still carrying the issuer’s original proof. Have a build that already holds an Open Badges credential; the acceptance scenario will give it one. A binding failure usually means the proof’s `challenge` or `domain` doesn’t match the request’s nonce and audience.',
+		evaluator:
+			'You’re checking whether a vendor’s wallet can share a credential over OID4VP in a form a verifier can trust. The wire checks the presentation itself; the two questions are yours, so watch for a consent prompt and for the wallet naming the credential before it sends. The wallet needs an Open Badges credential already — ask the vendor to show one in its list first. Any failed wire check means a strict verifier would reject what this wallet sends.'
+	},
 	standards: [cite.vpReplayProtection, cite.vpDcql, cite.vpDirectPost],
 	role: 'wallet',
 	workflow: 'credential-presentation',

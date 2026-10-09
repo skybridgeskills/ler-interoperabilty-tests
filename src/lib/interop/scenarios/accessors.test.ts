@@ -28,6 +28,7 @@ const catalog = vi.hoisted(() => {
 			name: 'Accept a well-formed credential',
 			blurb: 'The happy path.',
 			standards: [{ standard: 'ob-3' as const }],
+			framing: { builder: 'Builder framing.', evaluator: 'Evaluator framing.' },
 			role: 'wallet' as const,
 			workflow: 'credential-acceptance' as const,
 			memberships: [{ profile: 'oid4' as const, level: 'required' as const }],
@@ -38,6 +39,7 @@ const catalog = vi.hoisted(() => {
 			name: 'Accept an ECDSA credential',
 			blurb: 'The same, signed differently.',
 			standards: [{ standard: 'ob-3' as const }],
+			framing: { builder: 'Builder framing.', evaluator: 'Evaluator framing.' },
 			role: 'wallet' as const,
 			workflow: 'credential-acceptance' as const,
 			memberships: [
@@ -51,6 +53,7 @@ const catalog = vi.hoisted(() => {
 			name: 'Issue over VCALM',
 			blurb: 'The issuer side.',
 			standards: [{ standard: 'ob-3' as const }],
+			framing: { builder: 'Builder framing.', evaluator: 'Evaluator framing.' },
 			role: 'issuer' as const,
 			workflow: 'credential-issuance' as const,
 			memberships: [{ profile: 'vcalm' as const, level: 'required' as const }],

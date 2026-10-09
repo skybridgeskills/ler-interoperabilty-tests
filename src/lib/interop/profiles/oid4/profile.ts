@@ -28,6 +28,10 @@ export const oid4ProfileMeta = {
 		{ standard: 'did-web' },
 		{ standard: 'did-key' }
 	] satisfies StandardCitation[],
+	example: {
+		builder: 'e.g. your wallet or issuer speaks OID4VCI and OID4VP',
+		evaluator: 'e.g. your program mandates OpenID for Verifiable Credentials'
+	},
 	description:
 		'OAuth 2.0-based credential exchange using OID4VCI / OID4VP over Open Badges 3.0 ' +
 		'credentials. The cryptosuite, key type, and DID-method options are declared by the ' +

@@ -92,6 +92,12 @@ export const vcalmVerifierAcceptance = Scenario({
 	name: 'Tell a good credential from a bad one — as a VCALM verifier',
 	blurb:
 		'Four credentials, one after another, in a random order — one valid and three defective. We present each to the verifier over VCALM; you report what it decided. Then we tell you what it should have.',
+	framing: {
+		builder:
+			'You’re testing your own verifier’s judgement over VCALM: have a build that can open a fresh VC-API exchange for each credential, and a view of what it decided and why. We present four credentials in a random order, one good and three each broken in one way, and you report each verdict before we reveal the answers. Accepting a broken one, or rejecting the good one, is the failure that matters; naming the wrong problem is a lesser finding about how clearly your verifier explains itself.',
+		evaluator:
+			'You’re checking whether a vendor’s verifier can tell a good credential from a bad one over VCALM, not just whether it says yes. Each of the four needs a fresh exchange URL from the verifier; for each, look at the decision and reason it actually shows (or ask the vendor to show you) and answer from that, not from what it ought to do. Accepting a broken credential fails outright; rejecting it for a vague or wrong reason is a smaller finding, but worth raising.'
+	},
 	standards: [cite.obVerification, cite.diVerifyProof, cite.vcdmValidityPeriod],
 	role: 'verifier',
 	workflow: 'credential-request-and-verification',

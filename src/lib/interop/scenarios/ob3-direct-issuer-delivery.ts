@@ -31,6 +31,12 @@ export const ob3DirectIssuerDelivery = Scenario({
 	name: 'Issue a credential and deliver it directly',
 	blurb:
 		'Issue an Open Badges credential from the issuer and hand it to us. We verify it and read what it carries — plus two questions about how the issuer offered it to you.',
+	framing: {
+		builder:
+			'You’re testing your own issuer’s direct delivery: have a build that can issue an Open Badges 3.0 credential to an email address and let you download it or copy it as text. We verify what you paste and read every field we check, so a failure points at the exact thing your issuer put in the credential or left out. The two closing questions ask whether you were offered a file and copy-paste text, so answer them for the run you just did.',
+		evaluator:
+			'You’re checking whether a vendor’s issuer produces an Open Badges credential that conforms and verifies when it’s handed over as a file or as text. Ask the vendor to show both the download and the copy-paste option as the credential is issued, because the two closing questions ask whether each was offered. Each failed check names what the credential got wrong, which gives you a specific point to raise with the vendor.'
+	},
 	standards: [cite.obAchievementCredential, cite.obIdentityObject, cite.bslEntry],
 	role: 'issuer',
 	workflow: 'direct-credential-issuance',

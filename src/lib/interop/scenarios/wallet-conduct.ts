@@ -63,6 +63,12 @@ export const oid4WalletPresentationPex = Scenario({
 	name: 'Answer a PEX presentation request',
 	blurb:
 		'We ask the wallet for a credential using DIF Presentation Exchange rather than DCQL. A wallet may understand one and not the other.',
+	framing: {
+		builder:
+			'You’re testing whether your own wallet understands a DIF Presentation Exchange request, not only DCQL. Have a build that holds an Open Badges credential and can match a `presentation_definition`. If your wallet finds nothing to offer, it isn’t matching PEX input descriptors; if the first row fails, the suite’s verifier couldn’t send PEX, so the run says nothing about your wallet.',
+		evaluator:
+			'You’re checking whether a vendor’s wallet can answer a verifier that asks in DIF Presentation Exchange rather than DCQL, as some verifiers still do. Watch whether the wallet offers a credential at all — a wallet that finds nothing to share understands only DCQL. If the first row fails, the fault is this deployment’s, not the wallet’s, and the result says nothing about it.'
+	},
 	standards: [cite.pexPresentationDefinition],
 	role: 'wallet',
 	workflow: 'credential-presentation',
@@ -107,6 +113,12 @@ export const oid4WalletPresentationLimited = Scenario({
 	name: 'Answer a request for less than the whole credential',
 	blurb:
 		'We ask the wallet for a credential while saying we would prefer only part of it, and while advertising selective-disclosure cryptosuites. We watch what the wallet does with that.',
+	framing: {
+		builder:
+			'You’re testing how your own wallet copes with a PEX request that prefers only part of a credential, from a verifier advertising selective-disclosure cryptosuites. Have a build that holds an Open Badges credential. Presenting the whole credential, signed, is a pass; what fails is an error or an empty choice, which usually means the `limit_disclosure` constraint or the unfamiliar suites broke your request handling.',
+		evaluator:
+			'You’re checking whether a vendor’s wallet stays usable when a verifier asks for less than the whole credential. Selective disclosure isn’t required to pass — sending the whole credential, signed, is fine — so watch for an error or an empty choice instead. If the vendor claims selective-disclosure support, ask them to show what the wallet shares here; the two recorded rows only confirm the deployment sent the request as described.'
+	},
 	standards: [cite.pexLimitedDisclosure],
 	role: 'wallet',
 	workflow: 'credential-presentation',
@@ -158,6 +170,12 @@ export const oid4WalletDiscovery = Scenario({
 	name: 'Find the issuer’s metadata the way RFC 8414 specifies',
 	blurb:
 		'An ordinary OID4VCI offer, while we watch how the wallet builds the metadata URL. We serve both constructions, so the wallet’s choice is the measurement.',
+	framing: {
+		builder:
+			'You’re testing how your own wallet builds an issuer’s metadata URL: the well-known segment inserted between host and path, as RFC 8414 §3.1 specifies, or tacked onto the end. Accept the offer as you normally would; the suite serves both forms, so the exchange completes either way. A miss on the SHOULD means a stricter issuer will 404 your wallet’s metadata fetch before it ever requests a credential.',
+		evaluator:
+			'You’re checking a detail of a vendor’s wallet that only shows up against stricter issuers: how it builds the URL for an issuer’s metadata. There’s nothing to judge on screen — the offer is ordinary, and the suite reads the answer off the request the wallet makes. A miss is only a SHOULD, but expect that wallet to fail with issuers that serve metadata only where RFC 8414 puts it.'
+	},
 	standards: [cite.rfc8414MetadataRequest, cite.vciMetadataRetrieval],
 	role: 'wallet',
 	workflow: 'credential-acceptance',
@@ -215,6 +233,12 @@ export const oid4WalletTamperRefusal = Scenario({
 	name: 'Refuse a credential with a corrupted proof',
 	blurb:
 		'We offer the wallet a credential whose signature was corrupted after signing, and tell you so up front. Confirms both that the wallet refuses it and that this deployment can really corrupt one.',
+	framing: {
+		builder:
+			'You’re testing that your own wallet refuses a credential with a corrupted proof, and that this deployment can really corrupt one. You’re told which credential it is, so it’s the easy version — worth a run before the refusal-discrimination scenario. If the first row fails, the deployment can’t tamper and the discrimination scenario would fail a correct wallet; if the second fails, your wallet isn’t verifying proofs on receipt.',
+		evaluator:
+			'You’re checking that a vendor’s wallet rejects a credential whose signature was broken after signing, with nothing hidden about which one it is. Watch for a refusal or an invalid-signature message; a quiet acceptance is a fail. This is the weaker, known-position version, so read it mainly as a precondition: if the first row fails, refusal-discrimination results from this deployment can’t be trusted.'
+	},
 	standards: [cite.diVerifyProof, cite.obVerification],
 	role: 'wallet',
 	workflow: 'credential-acceptance',

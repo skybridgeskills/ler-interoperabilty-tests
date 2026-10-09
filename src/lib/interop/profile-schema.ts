@@ -64,9 +64,9 @@ export const Profile = ZodFactory(
 		/**
 		 * One line per Perspective under this item's blurb on a filter-panel choice
 		 * card — what choosing it means to a Builder or an Evaluator. No `neutral`:
-		 * absent when the Perspective is unset. Required from M10.
+		 * absent when the Perspective is unset. Required: every card has both.
 		 */
-		example: PerspectiveCopy.schema.optional()
+		example: PerspectiveCopy.schema
 	})
 );
 export type Profile = ReturnType<typeof Profile>;

@@ -1,4 +1,5 @@
 import { suiteCitation } from './citations.js';
+import { blurbFor, framingFor, summaryFor } from './issuer-dic-producer-copy.js';
 import type { Requirement } from './requirement-schema.js';
 import { Scenario } from './scenario-schema.js';
 import type { ScenarioAction } from './scenario-schema.js';
@@ -58,18 +59,6 @@ function producerRequirements(suite: 'eddsa' | 'ecdsa'): Requirement[] {
 	];
 }
 
-/** The whole instruction: configure the issuer to sign with this suite, then deliver over this transport. */
-function summaryFor(suite: 'eddsa' | 'ecdsa', delivery: string): string {
-	const name = suite === 'eddsa' ? '`eddsa-rdfc-2022`' : '`ecdsa-rdfc-2019`';
-	return `Configure the issuer to sign with ${name}, then ${delivery} We read the cryptosuite off the credential's proof; this is the whole of what the scenario asks.`;
-}
-
-/** The blurb every member carries: this scenario belongs to THIS protocol's add-on badge. */
-function blurbFor(suite: 'eddsa' | 'ecdsa', protocol: string): string {
-	const name = suite === 'eddsa' ? 'eddsa-rdfc-2022' : 'ecdsa-rdfc-2019';
-	return `Sign a credential with ${name} and deliver it over ${protocol}. It counts toward this protocol's Data Integrity Cryptosuites add-on badge; the other protocols have their own.`;
-}
-
 const DIRECT_ACTION: ScenarioAction = { kind: 'receive-from-issuer', transport: 'direct' };
 const VCALM_ACTION: ScenarioAction = {
 	kind: 'receive-from-issuer',
@@ -92,6 +81,7 @@ export const ob3DirectIssuerEddsa = Scenario({
 	slug: 'ob3-direct-issuer-eddsa',
 	name: 'Sign with EdDSA and deliver directly',
 	blurb: blurbFor('eddsa', 'a direct paste'),
+	framing: framingFor('eddsa', 'a direct paste'),
 	standards: [suiteCitation('eddsa')],
 	role: 'issuer',
 	workflow: 'direct-credential-issuance',
@@ -114,6 +104,7 @@ export const vcalmIssuerEddsa = Scenario({
 	slug: 'vcalm-issuer-eddsa',
 	name: 'Sign with EdDSA and issue over VCALM',
 	blurb: blurbFor('eddsa', 'VCALM'),
+	framing: framingFor('eddsa', 'VCALM'),
 	standards: [suiteCitation('eddsa')],
 	role: 'issuer',
 	workflow: 'credential-issuance',
@@ -139,6 +130,7 @@ export const oid4IssuerEddsa = Scenario({
 	slug: 'oid4-issuer-eddsa',
 	name: 'Sign with EdDSA and issue over OID4VCI',
 	blurb: blurbFor('eddsa', 'OID4VCI'),
+	framing: framingFor('eddsa', 'OID4VCI'),
 	standards: [suiteCitation('eddsa')],
 	role: 'issuer',
 	workflow: 'credential-issuance',
@@ -164,6 +156,7 @@ export const ob3DirectIssuerEcdsa = Scenario({
 	slug: 'ob3-direct-issuer-ecdsa',
 	name: 'Sign with ECDSA and deliver directly',
 	blurb: blurbFor('ecdsa', 'a direct paste'),
+	framing: framingFor('ecdsa', 'a direct paste'),
 	standards: [suiteCitation('ecdsa')],
 	role: 'issuer',
 	workflow: 'direct-credential-issuance',
@@ -186,6 +179,7 @@ export const vcalmIssuerEcdsa = Scenario({
 	slug: 'vcalm-issuer-ecdsa',
 	name: 'Sign with ECDSA and issue over VCALM',
 	blurb: blurbFor('ecdsa', 'VCALM'),
+	framing: framingFor('ecdsa', 'VCALM'),
 	standards: [suiteCitation('ecdsa')],
 	role: 'issuer',
 	workflow: 'credential-issuance',
@@ -211,6 +205,7 @@ export const oid4IssuerEcdsa = Scenario({
 	slug: 'oid4-issuer-ecdsa',
 	name: 'Sign with ECDSA and issue over OID4VCI',
 	blurb: blurbFor('ecdsa', 'OID4VCI'),
+	framing: framingFor('ecdsa', 'OID4VCI'),
 	standards: [suiteCitation('ecdsa')],
 	role: 'issuer',
 	workflow: 'credential-issuance',

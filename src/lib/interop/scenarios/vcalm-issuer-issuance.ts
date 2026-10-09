@@ -32,6 +32,12 @@ export const vcalmIssuerIssuance = Scenario({
 	name: 'Issue a credential to us over VCALM',
 	blurb:
 		'Create an issuance exchange on the issuer and give us the interaction URL. We take delivery as a holder would and check both the exchange and the credential.',
+	framing: {
+		builder:
+			'You’re testing your own issuer’s VCALM issuance: have a build that can create a VC-API issuance exchange and give you its interaction URL. We play the holder, authenticate a DID and take delivery, so the results cover both your exchange and the credential it issues. A failure in the exchange rows usually means a protocol step a real wallet would trip on; a failure in the credential rows is about what your issuer signed.',
+		evaluator:
+			'You’re checking whether a vendor’s issuer can deliver a conforming credential over a VC-API exchange to a wallet it has never met. Get a fresh interaction URL from the vendor’s issuer, since each one works once; the results show whether it asked us to authenticate a DID and bound the credential to it. Everything here is read off the wire, so there are no questions to answer, and a failure is a protocol or credential fault rather than a judgement call.'
+	},
 	standards: [
 		cite.vcalmProtocolsResponse,
 		cite.vcalmDidAuthentication,

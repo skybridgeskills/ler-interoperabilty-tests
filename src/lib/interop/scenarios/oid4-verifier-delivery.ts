@@ -36,6 +36,12 @@ export const oid4VerifierDelivery = Scenario({
 	name: 'Deliver a credential to the verifier over OID4VP',
 	blurb:
 		'Present a well-formed credential to the verifier over OID4VP, using the authorization request it publishes. We inspect that request and check the credential reaches the verifier’s response endpoint — the wire, not the verdict.',
+	framing: {
+		builder:
+			'You’re testing whether a credential can get into your own verifier over OID4VP: have a build that publishes an authorization request asking for an Open Badges credential and accepting a Data Integrity presentation. We inspect that request and present one valid credential to its response endpoint, so a failure points at what your request asked for or where it sent us, not at your verifier’s judgement. Whether it turns away bad credentials is measured separately, in the acceptance scenario.',
+		evaluator:
+			'You’re checking whether a vendor’s verifier can receive a credential over OID4VP and asks for it in a form a Data Integrity wallet can answer. Get the authorization request the vendor’s verifier publishes; we present one valid credential and read everything off the wire, so there are no questions to answer. A pass says the connection works, not that the verifier judges well, so pair it with the acceptance scenario before drawing conclusions.'
+	},
 	standards: [cite.vpAuthorizationRequest, cite.pexPresentationDefinition, cite.vpDirectPost],
 	role: 'verifier',
 	workflow: 'credential-request-and-verification',

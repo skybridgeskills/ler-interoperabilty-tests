@@ -1,7 +1,8 @@
 import {
 	issuerSkillsDataRequirements,
 	SKILLS_DATA_PAYLOAD,
-	skillsDataCitations
+	skillsDataCitations,
+	skillsDataFramingFor
 } from './issuer-skills-data-requirements.js';
 import { Scenario } from './scenario-schema.js';
 
@@ -16,6 +17,7 @@ export const oid4IssuerSkillsData = Scenario({
 	name: 'Deliver skills data over OID4VCI',
 	blurb:
 		'Issue a credential carrying a performance scale and a learner result over OID4VCI. It counts toward this protocol’s Open Skill Alignment add-on badge.',
+	framing: skillsDataFramingFor('oid4vci'),
 	standards: skillsDataCitations,
 	role: 'issuer',
 	workflow: 'credential-issuance',

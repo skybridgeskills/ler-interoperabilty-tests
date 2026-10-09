@@ -26,6 +26,12 @@ export const oid4IssuerIssuance = Scenario({
 	name: 'Issue a credential to us over OID4VCI',
 	blurb:
 		'Publish a pre-authorized-code credential offer on the issuer and give us the offer URL. We redeem it as a wallet would and check both the protocol and the credential.',
+	framing: {
+		builder:
+			'You’re testing your own issuer’s OID4VCI issuance: have a build that can publish a pre-authorized-code credential offer and accept a Data Integrity key proof. We redeem the offer as a wallet would, so the results cover your metadata, token and credential endpoints as well as the credential itself. A failure in the protocol rows usually means a step a real wallet would trip on, often a JWT-only key proof; a failure in the credential rows is about what your issuer signed.',
+		evaluator:
+			'You’re checking whether a vendor’s issuer can deliver a conforming credential over OID4VCI to a wallet it has never met. Get a pre-authorized-code offer URL from the vendor’s issuer; the results show whether its metadata advertised a Data Integrity key proof and whether the credential came back bound to our DID. Everything here is read off the wire, so there are no questions to answer; an issuer that only accepts JWT key proofs fails on that point, and that is the finding.'
+	},
 	standards: [cite.vciPreAuthorizedCode, cite.vciDiVpKeyProof, cite.vciMetadataRetrieval],
 	role: 'issuer',
 	workflow: 'credential-issuance',

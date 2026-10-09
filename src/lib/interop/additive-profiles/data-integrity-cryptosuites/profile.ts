@@ -35,6 +35,10 @@ export const dataIntegrityCryptosuitesMeta = {
 		{ standard: 'vc-di-ecdsa-1' },
 		{ standard: 'cid-1', section: 'Multikey', label: '§2.2.2 Multikey' }
 	] satisfies StandardCitation[],
+	example: {
+		builder: 'e.g. your product signs or verifies with EdDSA, ECDSA or both',
+		evaluator: 'e.g. your ecosystem pins a cryptosuite the vendor must handle'
+	},
 	description:
 		'Bundles two complete Data Integrity cryptosuite options for ' +
 		'OB 3.0 credentials and the verifiable presentations that carry them: EdDSA ' +

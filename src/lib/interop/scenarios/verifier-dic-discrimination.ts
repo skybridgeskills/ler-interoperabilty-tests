@@ -1,3 +1,5 @@
+import type { PerspectiveCopy } from '$lib/interop/perspective/perspective.js';
+
 import { cite, suiteVerifyCitation } from './citations.js';
 import type { LocallySignedSuite } from './locally-signed-suite.js';
 import { Scenario, type ScenarioStep } from './scenario-schema.js';
@@ -142,6 +144,20 @@ function pass(
 	};
 }
 
+/**
+ * The Builder / Evaluator framing, naming the suite as the blurb does and the
+ * transport as the scenario name does. Both separate the two ways to fail:
+ * rejecting the valid pass (no support) from accepting the tampered one (no check).
+ */
+function framingFor(transport: Transport, suite: Suite): PerspectiveCopy {
+	const name = SUITE_NAME[suite];
+	const protocol = PROTOCOL[transport];
+	return {
+		builder: `You’re testing whether your own verifier actually checks ${name} signatures: have a build with ${name} verification enabled, and a view of what it decided about a credential and why. Two credentials signed with ${name} arrive over ${protocol} in a random order, one good and one with a corrupted proof, and you report what your verifier decided about each. Rejecting the good one means your verifier doesn’t support the suite; accepting the corrupted one means it isn’t checking the signature.`,
+		evaluator: `You’re checking whether a vendor’s verifier tells a good ${name} credential from a tampered one over ${protocol}, not just whether it says yes. For each of the two, look at the decision and reason the verifier actually shows (or ask the vendor to show you) and answer from that. Rejecting the good credential means the suite isn’t supported; accepting the tampered one is the more serious result, because the verifier isn’t checking ${SUITE_LABEL[suite]} signatures at all.`
+	};
+}
+
 function discriminationScenario(transport: Transport, suite: Suite) {
 	const host = HOST[transport];
 	const name = SUITE_NAME[suite];
@@ -150,6 +166,7 @@ function discriminationScenario(transport: Transport, suite: Suite) {
 		slug: `${host.profile === 'ob3-direct-delivery' ? 'ob3-direct' : host.profile}-verifier-${suite}`,
 		name: `Tell a good ${SUITE_LABEL[suite]} credential from a bad one — over ${PROTOCOL[transport]}`,
 		blurb: `Two credentials signed with ${name}, in a random order — one valid, one whose proof was corrupted. Report what the verifier decided about each. It counts toward this protocol's Data Integrity Cryptosuites add-on badge; the other protocols have their own.`,
+		framing: framingFor(transport, suite),
 		standards: [suiteVerifyCitation(suite), cite.diVerifyProof],
 		role: 'verifier',
 		workflow: host.workflow,

@@ -79,9 +79,9 @@
 	 */
 	const claimFraming = (set: string) =>
 		PerspectiveCopy({
-			builder: `Your ${set} set is complete — claim this badge into your wallet.`,
-			evaluator: `The ${set} set is complete — the vendor claims this badge into their wallet; ask for it, or verify the one they show you.`,
-			neutral: `Your ${set} set is complete — claim this badge into your wallet.`
+			builder: `Your product’s ${set} set is complete — claim this badge into your own wallet to show it.`,
+			evaluator: `The ${set} set is complete — the badge is the vendor’s to claim and present: ask for it, or verify the one they show you.`,
+			neutral: `The ${set} set is complete — the badge is ready to claim into a wallet.`
 		});
 	const role = $derived(roleBySlug(badge.role));
 	const baseProfile = $derived(profileBySlug(badge.baseProfile));

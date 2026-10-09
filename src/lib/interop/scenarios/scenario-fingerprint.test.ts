@@ -10,6 +10,7 @@ function baseScenario(): Scenario {
 		name: 'Accept a well-formed credential',
 		blurb: 'The happy path.',
 		standards: [{ standard: 'ob-3' }],
+		framing: { builder: 'Builder framing.', evaluator: 'Evaluator framing.' },
 		role: 'wallet',
 		workflow: 'credential-acceptance',
 		memberships: [{ profile: 'oid4', level: 'required' }],

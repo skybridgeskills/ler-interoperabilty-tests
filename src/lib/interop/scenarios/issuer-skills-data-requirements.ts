@@ -1,3 +1,5 @@
+import type { PerspectiveCopy } from '$lib/interop/perspective/perspective.js';
+
 import { cite } from './citations.js';
 import type { Requirement } from './requirement-schema.js';
 
@@ -91,3 +93,40 @@ export const skillsDataCitations = [
 	cite.obResult,
 	cite.obCredentialEngineAlignment
 ];
+
+/** The transports the three skills-data siblings run over. */
+type SkillsDataTransport = 'direct' | 'vcalm' | 'oid4vci';
+
+const SKILLS_DATA_TRANSPORT: Record<
+	SkillsDataTransport,
+	{ issues: string; handOver: string; profile: string }
+> = {
+	direct: {
+		issues: 'the credentials it hands over directly',
+		handOver: 'and hand it over as a file or text',
+		profile: 'OB 3.0 Direct Delivery'
+	},
+	vcalm: {
+		issues: 'the credentials it issues over VCALM',
+		handOver: 'over a VC-API exchange',
+		profile: 'VCALM'
+	},
+	oid4vci: {
+		issues: 'the credentials it issues over OID4VCI',
+		handOver: 'over OID4VCI',
+		profile: 'OID4'
+	}
+};
+
+/**
+ * The framing paragraphs the three siblings share: the payload question is the
+ * same whatever the transport, so only the transport phrase and the base
+ * Standard Profile's name differ between them.
+ */
+export function skillsDataFramingFor(transport: SkillsDataTransport): PerspectiveCopy {
+	const { issues, handOver, profile } = SKILLS_DATA_TRANSPORT[transport];
+	return {
+		builder: `You’re testing whether your own issuer puts skills data into ${issues}: have a build that can issue a credential whose achievement declares a performance scale (a raw score, a percentage or a rubric) and whose subject carries a learner result against it. We check that every result fits the scale it names, so a failure usually means a result pointing at a scale the achievement doesn’t declare, or a value outside its range. This run counts toward the Open Skill Alignment Add-on for ${profile}, not toward the Standard Profile itself.`,
+		evaluator: `You’re checking whether a vendor’s issuer can say what a learner achieved, not just that they earned a badge. Ask the vendor to issue a credential with a real performance scale and a result against it ${handOver}, ideally from an actual program rather than a demo. A pass means the scale and result are well-formed and agree with each other; it doesn’t say whether the scale is meaningful, so judge that part yourself.`
+	};
+}

@@ -21,6 +21,10 @@ export const ob3DirectDeliveryProfileMeta = {
 		{ standard: 'did-key' },
 		{ standard: 'cid-1', section: 'Multikey', label: '§2.2.2 Multikey' }
 	] satisfies StandardCitation[],
+	example: {
+		builder: 'e.g. your issuer lets learners download their badge as a file',
+		evaluator: 'e.g. learners will get badges as a file or by email, with no wallet'
+	},
 	description:
 		'Direct credential issuance and verification using EdDSA-signed Open Badges 3.0 credentials delivered as JSON files or copy-paste text, without an exchange protocol. Recipient identifiers are email addresses.',
 	keyComponents: [
