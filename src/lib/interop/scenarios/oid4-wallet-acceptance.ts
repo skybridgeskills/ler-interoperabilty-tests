@@ -1,3 +1,4 @@
+import { cite } from './citations.js';
 import { Scenario } from './scenario-schema.js';
 
 /**
@@ -20,6 +21,7 @@ export const oid4WalletAcceptance = Scenario({
 	name: 'Accept a well-formed credential over OID4VCI',
 	blurb:
 		'Offer the wallet a well-formed Open Badges credential over OID4VCI, and confirm it took it.',
+	standards: [cite.vciPreAuthorizedCode, cite.vciBinding],
 	role: 'wallet',
 	workflow: 'credential-acceptance',
 	memberships: [{ profile: 'oid4', level: 'required' }],

@@ -13,6 +13,7 @@ describe('Profile', () => {
 			lastUpdated: '2026-01-01',
 			description: 'A test profile.',
 			keyComponents: [{ label: 'Suite', value: 'eddsa' }],
+			standards: [{ standard: 'vcalm-1' }],
 			useCases: ['testing']
 		});
 		expect(p.slug).toBe('vcalm');
@@ -31,6 +32,7 @@ describe('Profile', () => {
 			lastUpdated: '2026-01-01',
 			description: 'A test profile.',
 			keyComponents: [{ label: 'Suite', value: 'eddsa' }],
+			standards: [{ standard: 'vcalm-1' }],
 			useCases: ['testing']
 		});
 		expect(p.url).toBe('https://example.com/profiles/test/');
@@ -48,6 +50,7 @@ describe('Profile', () => {
 				lastUpdated: '2026-01-01',
 				description: 'A test profile.',
 				keyComponents: [],
+				standards: [{ standard: 'vcalm-1' }],
 				useCases: []
 			})
 		).toThrow();

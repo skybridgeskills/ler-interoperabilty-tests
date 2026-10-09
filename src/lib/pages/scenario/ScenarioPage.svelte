@@ -2,6 +2,7 @@
 	import { onDestroy, onMount } from 'svelte';
 
 	import { perspectiveStore } from '$lib/client/perspective/index.js';
+	import { ExternalLink } from '$lib/components/external-link/index.js';
 	import { DeliverableCredentialPanel } from '$lib/components/interop/deliverable-credential/index.js';
 	import { ExchangeRunnerPanel } from '$lib/components/interop/exchange-runner/index.js';
 	import { InlineMarkup } from '$lib/components/interop/inline-markup/index.js';
@@ -22,6 +23,7 @@
 		cannotServeMessage,
 		type Scenario
 	} from '$lib/interop/scenarios/index.js';
+	import { citationHref, citationText, standardById } from '$lib/interop/standards.js';
 
 	import { transportFor } from './exchange-step.js';
 	import { PRESENT_COPY, PRESENT_SETTLED_NOTE } from './present-step.js';
@@ -150,6 +152,20 @@
 			</span>
 		{/snippet}
 		{#snippet lede()}<InlineMarkup text={scenario.blurb} />{/snippet}
+		{#snippet meta()}
+			{#if scenario.standards}
+				<span>Tests against</span>
+				{#each scenario.standards as citation, i (citation.standard + (citation.section ?? ''))}
+					{@const standard = standardById(citation.standard)}
+					{#if i > 0}<span aria-hidden="true">·</span>{/if}
+					<ExternalLink
+						muted
+						href={citationHref(citation)}
+						title={`${standard.name} · ${standard.status}`}>{citationText(citation)}</ExternalLink
+					>
+				{/each}
+			{/if}
+		{/snippet}
 		{#snippet chips()}
 			{#if role}
 				<ContextChip kind="role" label={role.name} href={roleHref(role.slug)} />

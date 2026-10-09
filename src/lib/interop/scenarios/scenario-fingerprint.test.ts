@@ -9,6 +9,7 @@ function baseScenario(): Scenario {
 		slug: 'oid4-wallet-acceptance',
 		name: 'Accept a well-formed credential',
 		blurb: 'The happy path.',
+		standards: [{ standard: 'ob-3' }],
 		role: 'wallet',
 		workflow: 'credential-acceptance',
 		memberships: [{ profile: 'oid4', level: 'required' }],
@@ -90,6 +91,11 @@ describe('scenarioFingerprint', () => {
 		it('ignores framing — Perspective copy, so authoring it resets nobody', () => {
 			const framing = { builder: 'On your own build…', evaluator: 'Watching a vendor…' };
 			expect(scenarioFingerprint(Scenario({ ...base, framing }))).toBe(expected);
+		});
+
+		it('ignores standards — a citation can be corrected without dropping results', () => {
+			const standards = [{ standard: 'oid4vci-1' as const, section: 'section-3.5' }];
+			expect(scenarioFingerprint(Scenario({ ...base, standards }))).toBe(expected);
 		});
 
 		it('ignores a step summary', () => {

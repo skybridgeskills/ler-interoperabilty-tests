@@ -90,9 +90,11 @@ export default defineConfig(
 	{
 		// Interop UI + route pages use the typed `scenarioHref` / `profileHref`
 		// helpers, which call `resolve()` internally; the rule can't trace that.
-		// The hero and its chips take hrefs the page built with those helpers.
+		// The hero and its chips take hrefs the page built with those helpers;
+		// ExternalLink only ever points off-site, where `resolve()` does not apply.
 		files: [
 			'src/lib/components/interop/**/*.svelte',
+			'src/lib/components/external-link/**/*.svelte',
 			'src/lib/components/page-hero/**/*.svelte',
 			'src/lib/components/perspective/**/*.svelte',
 			'src/lib/pages/**/*.svelte',

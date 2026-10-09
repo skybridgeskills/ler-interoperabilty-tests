@@ -1,4 +1,5 @@
 import type { ProfileKeyComponent } from '../../profile-schema.js';
+import type { StandardCitation } from '../../standards.js';
 
 /**
  * Identity + key technical choices for the OID4 profile.
@@ -16,6 +17,17 @@ export const oid4ProfileMeta = {
 	status: "Editor's Draft",
 	url: 'https://interoperability.learningmobilitycollaborative.org/profiles/oid4-ecdsa/',
 	lastUpdated: '2026-06-10',
+	standards: [
+		{ standard: 'oid4vci-1' },
+		{ standard: 'oid4vp-1' },
+		{ standard: 'ob-3' },
+		{ standard: 'vcdm-2' },
+		{ standard: 'vc-di-1' },
+		{ standard: 'bsl-1' },
+		{ standard: 'did-core-1' },
+		{ standard: 'did-web' },
+		{ standard: 'did-key' }
+	] satisfies StandardCitation[],
 	description:
 		'OAuth 2.0-based credential exchange using OID4VCI / OID4VP over Open Badges 3.0 ' +
 		'credentials. The cryptosuite, key type, and DID-method options are declared by the ' +
@@ -25,7 +37,7 @@ export const oid4ProfileMeta = {
 		{
 			label: 'OID4VP Presentation',
 			value:
-				'Unsigned request with the `redirect_uri` client_id scheme; DCQL query; `vp_token` returned via `direct_post`.'
+				'Unsigned request with the `redirect_uri` client identifier prefix; DCQL query; `vp_token` returned via `direct_post`.'
 		},
 		{
 			label: 'Cryptographic Suite',

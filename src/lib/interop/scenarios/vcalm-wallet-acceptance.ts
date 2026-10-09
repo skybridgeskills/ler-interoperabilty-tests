@@ -1,3 +1,4 @@
+import { cite } from './citations.js';
 import { Scenario } from './scenario-schema.js';
 
 /**
@@ -32,6 +33,7 @@ export const vcalmWalletAcceptance = Scenario({
 	name: 'Accept a well-formed credential over VCALM',
 	blurb:
 		'Offer the wallet a well-formed Open Badges credential over VCALM, and confirm it took it.',
+	standards: [cite.vcalmParticipate, cite.vcalmDidAuthentication],
 	role: 'wallet',
 	workflow: 'credential-acceptance',
 	memberships: [{ profile: 'vcalm', level: 'required' }],

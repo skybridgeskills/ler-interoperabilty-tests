@@ -1,3 +1,4 @@
+import { cite, suiteVerifyCitation } from './citations.js';
 import type { LocallySignedSuite } from './locally-signed-suite.js';
 import { Scenario, type ScenarioStep } from './scenario-schema.js';
 
@@ -149,6 +150,7 @@ function discriminationScenario(transport: Transport, suite: Suite) {
 		slug: `${host.profile === 'ob3-direct-delivery' ? 'ob3-direct' : host.profile}-verifier-${suite}`,
 		name: `Tell a good ${SUITE_LABEL[suite]} credential from a bad one — over ${PROTOCOL[transport]}`,
 		blurb: `Two credentials signed with ${name}, in a random order — one valid, one whose proof was corrupted. Report what the verifier decided about each. It counts toward this protocol's Data Integrity Cryptosuites add-on badge; the other protocols have their own.`,
+		standards: [suiteVerifyCitation(suite), cite.diVerifyProof],
 		role: 'verifier',
 		workflow: host.workflow,
 		memberships: [

@@ -1,3 +1,4 @@
+import { cite } from './citations.js';
 import { Scenario } from './scenario-schema.js';
 
 /**
@@ -22,6 +23,7 @@ export const oid4WalletFaithfulRendering = Scenario({
 	name: 'Render a decorated credential faithfully',
 	blurb:
 		'Offer the wallet a fully-decorated Open Badges credential — image, rich achievement, issuer — and confirm it shows them, not raw data.',
+	standards: [cite.obDocument],
 	role: 'wallet',
 	workflow: 'credential-acceptance',
 	memberships: [{ profile: 'oid4', level: 'optional' }],

@@ -78,6 +78,7 @@ in it imports from `src/lib/server/`:
 | `catalog-validation.ts`   | `validateCatalog()` / `assertValidCatalog()`                                                                |
 | `accessors.ts`            | `scenarioBySlug`, `scenariosFor`, `membershipsOfProfile` (`scenarioHref` is in `route-hrefs.ts`)            |
 | `all-scenarios.ts`        | the registry, validated at module evaluation                                                                |
+| `citations.ts`            | the named section citations scenarios point at (`cite`, `suiteCitation`, `suiteVerifyCitation`)             |
 
 Four properties are load-bearing:
 
@@ -125,6 +126,38 @@ Four properties are load-bearing:
   "your wallet") in this release, before anything fingerprinted shipped, and
   `scenarios/neutral-copy.test.ts` and `scenario-run/checks/neutral-detail.test.ts`
   pin that voice.
+
+### Standards
+
+`src/lib/interop/standards.ts` is the **register** of external specs the suite
+rests on — about fifteen entries, each with `id`, full `name`, `shortName`,
+`version`, `status` ("W3C Recommendation", "OpenID Final", "W3C Working Draft",
+"CCG draft", …) and **one `url`: the version-named one**, never a dated snapshot,
+so link rot is a one-line fix. Specs that only exist evergreen (VCALM's Working
+Draft, did:web, did:key) take their evergreen URL and say what they are in
+`status`.
+
+A `StandardCitation` is `{ standard, section?, label? }`, where `section` is a
+bare anchor and `label` its human name.
+
+- **Scenarios cite at scenario level only** (`Scenario.standards`, required,
+  usually one to three, authored through `scenarios/citations.ts`). There is no
+  step or requirement citation by design: exact deep links per row are
+  attractive and impossible to keep true. Citations sit **outside the
+  fingerprint**, so a wrong one can be fixed without dropping recorded results.
+  They render in the scenario hero's meta line ("Tests against OID4VCI 1.0 §3.5
+  ↗ · …").
+- **Standard Profiles say what they are built on** (`Profile.standards`,
+  required, hand-authored, not derived from scenarios — that would leak add-on
+  standards such as EdDSA into a cryptosuite-neutral profile); add-ons may too
+  (`AdditiveProfile.standards`, optional, both set). Both render as a "Built
+  on" list. `keyComponents` stay unlinked prose.
+- **The schema enforces** a known id, a bare anchor and at least one citation;
+  `standards-catalog.test.ts` pins those over the real catalog and adds the
+  cross-catalog rule that **every register entry is cited somewhere** — an
+  unused entry is deleted, not kept "for later".
+- Every outward link renders through `ExternalLink` (named, ↗, new tab). No
+  links on cards, and none inside authored copy.
 
 ### Catalog validation
 

@@ -1,3 +1,4 @@
+import { cite, suiteCitation } from './citations.js';
 import type { Requirement } from './requirement-schema.js';
 import { Scenario } from './scenario-schema.js';
 
@@ -100,6 +101,7 @@ function presentScenario(protocol: Protocol, suite: Suite) {
 		slug: `${protocol}-wallet-present-${suite}`,
 		name: `Present with ${suite === 'eddsa' ? 'EdDSA' : 'ECDSA'} over ${TRANSPORT[protocol]}`,
 		blurb: blurbFor(suite, protocol),
+		standards: [suiteCitation(suite), cite.multikey],
 		role: 'wallet',
 		workflow: 'credential-presentation',
 		memberships: [

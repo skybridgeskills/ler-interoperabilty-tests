@@ -1,3 +1,4 @@
+import { cite } from './citations.js';
 import { Scenario, type ScenarioStep } from './scenario-schema.js';
 
 /**
@@ -91,6 +92,7 @@ export const ob3DirectVerifierAcceptance = Scenario({
 	name: 'Tell a good credential from a bad one — as a verifier',
 	blurb:
 		'Four credentials, one after another, in a random order — one valid and three defective. Download each, feed it to the verifier, and report what it decided. Then we tell you what it should have.',
+	standards: [cite.obVerification, cite.diVerifyProof, cite.vcdmValidityPeriod],
 	role: 'verifier',
 	workflow: 'direct-credential-verification',
 	memberships: [{ profile: 'ob3-direct-delivery', level: 'required' }],

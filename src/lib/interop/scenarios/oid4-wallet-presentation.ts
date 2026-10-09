@@ -1,3 +1,4 @@
+import { cite } from './citations.js';
 import { Scenario } from './scenario-schema.js';
 import { walletPresentationRequirements } from './wallet-presentation-requirements.js';
 
@@ -34,6 +35,7 @@ export const oid4WalletPresentation = Scenario({
 	name: 'Present a credential over OID4VP',
 	blurb:
 		'We ask the wallet for an Open Badges credential over OID4VP, and measure the presentation it sends back.',
+	standards: [cite.vpReplayProtection, cite.vpDcql, cite.vpDirectPost],
 	role: 'wallet',
 	workflow: 'credential-presentation',
 	memberships: [{ profile: 'oid4', level: 'required' }],

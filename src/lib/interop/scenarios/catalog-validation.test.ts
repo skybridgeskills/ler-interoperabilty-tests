@@ -38,6 +38,7 @@ function scenario(over: Partial<ScenarioInput> = {}): Scenario {
 		slug: 'oid4-wallet-acceptance',
 		name: 'Accept a well-formed credential',
 		blurb: 'The happy path.',
+		standards: [{ standard: 'ob-3' }],
 		role: 'wallet',
 		workflow: 'credential-acceptance',
 		memberships: [{ profile: 'oid4', level: 'required' }],

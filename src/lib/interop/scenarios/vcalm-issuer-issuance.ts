@@ -1,3 +1,4 @@
+import { cite } from './citations.js';
 import { Scenario } from './scenario-schema.js';
 
 /**
@@ -31,6 +32,11 @@ export const vcalmIssuerIssuance = Scenario({
 	name: 'Issue a credential to us over VCALM',
 	blurb:
 		'Create an issuance exchange on the issuer and give us the interaction URL. We take delivery as a holder would and check both the exchange and the credential.',
+	standards: [
+		cite.vcalmProtocolsResponse,
+		cite.vcalmDidAuthentication,
+		cite.obAchievementCredential
+	],
 	role: 'issuer',
 	workflow: 'credential-issuance',
 	memberships: [{ profile: 'vcalm', level: 'required' }],

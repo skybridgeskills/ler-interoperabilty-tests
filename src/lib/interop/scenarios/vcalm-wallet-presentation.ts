@@ -1,3 +1,4 @@
+import { cite } from './citations.js';
 import { Scenario } from './scenario-schema.js';
 import { walletPresentationRequirements } from './wallet-presentation-requirements.js';
 
@@ -21,6 +22,7 @@ export const vcalmWalletPresentation = Scenario({
 	name: 'Present a credential over VCALM',
 	blurb:
 		'We ask the wallet for an Open Badges credential over VCALM, and measure the presentation it sends back.',
+	standards: [cite.vcalmDidAuthenticationResponse, cite.diProofs],
 	role: 'wallet',
 	workflow: 'credential-presentation',
 	memberships: [{ profile: 'vcalm', level: 'required' }],

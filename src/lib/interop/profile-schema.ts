@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { ZodFactory } from '$lib/util/zod-factory.js';
 
 import { PerspectiveCopy } from './perspective/perspective.js';
+import { StandardCitation } from './standards.js';
 
 /**
  * URL slug for the three product roles. Wallets play the holder role in the
@@ -54,6 +55,12 @@ export const Profile = ZodFactory(
 		keyComponents: z.array(ProfileKeyComponent.schema),
 		useCases: z.array(z.string()),
 		notes: z.array(z.string()).optional(),
+		/**
+		 * The external standards this Standard Profile is **built on**, hand-authored
+		 * (not derived from its scenarios, which would leak add-on standards such as
+		 * EdDSA into a cryptosuite-neutral profile). Rendered as the "Built on" list.
+		 */
+		standards: z.array(StandardCitation.schema).min(1),
 		/**
 		 * One line per Perspective under this item's blurb on a filter-panel choice
 		 * card — what choosing it means to a Builder or an Evaluator. No `neutral`:

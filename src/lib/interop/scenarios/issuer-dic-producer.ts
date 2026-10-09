@@ -1,3 +1,4 @@
+import { suiteCitation } from './citations.js';
 import type { Requirement } from './requirement-schema.js';
 import { Scenario } from './scenario-schema.js';
 import type { ScenarioAction } from './scenario-schema.js';
@@ -91,6 +92,7 @@ export const ob3DirectIssuerEddsa = Scenario({
 	slug: 'ob3-direct-issuer-eddsa',
 	name: 'Sign with EdDSA and deliver directly',
 	blurb: blurbFor('eddsa', 'a direct paste'),
+	standards: [suiteCitation('eddsa')],
 	role: 'issuer',
 	workflow: 'direct-credential-issuance',
 	memberships: [
@@ -112,6 +114,7 @@ export const vcalmIssuerEddsa = Scenario({
 	slug: 'vcalm-issuer-eddsa',
 	name: 'Sign with EdDSA and issue over VCALM',
 	blurb: blurbFor('eddsa', 'VCALM'),
+	standards: [suiteCitation('eddsa')],
 	role: 'issuer',
 	workflow: 'credential-issuance',
 	memberships: [
@@ -136,6 +139,7 @@ export const oid4IssuerEddsa = Scenario({
 	slug: 'oid4-issuer-eddsa',
 	name: 'Sign with EdDSA and issue over OID4VCI',
 	blurb: blurbFor('eddsa', 'OID4VCI'),
+	standards: [suiteCitation('eddsa')],
 	role: 'issuer',
 	workflow: 'credential-issuance',
 	memberships: [
@@ -160,6 +164,7 @@ export const ob3DirectIssuerEcdsa = Scenario({
 	slug: 'ob3-direct-issuer-ecdsa',
 	name: 'Sign with ECDSA and deliver directly',
 	blurb: blurbFor('ecdsa', 'a direct paste'),
+	standards: [suiteCitation('ecdsa')],
 	role: 'issuer',
 	workflow: 'direct-credential-issuance',
 	memberships: [
@@ -181,6 +186,7 @@ export const vcalmIssuerEcdsa = Scenario({
 	slug: 'vcalm-issuer-ecdsa',
 	name: 'Sign with ECDSA and issue over VCALM',
 	blurb: blurbFor('ecdsa', 'VCALM'),
+	standards: [suiteCitation('ecdsa')],
 	role: 'issuer',
 	workflow: 'credential-issuance',
 	memberships: [
@@ -205,6 +211,7 @@ export const oid4IssuerEcdsa = Scenario({
 	slug: 'oid4-issuer-ecdsa',
 	name: 'Sign with ECDSA and issue over OID4VCI',
 	blurb: blurbFor('ecdsa', 'OID4VCI'),
+	standards: [suiteCitation('ecdsa')],
 	role: 'issuer',
 	workflow: 'credential-issuance',
 	memberships: [

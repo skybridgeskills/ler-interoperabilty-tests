@@ -1,3 +1,4 @@
+import { cite } from './citations.js';
 import { Scenario } from './scenario-schema.js';
 
 /**
@@ -25,6 +26,7 @@ export const oid4IssuerIssuance = Scenario({
 	name: 'Issue a credential to us over OID4VCI',
 	blurb:
 		'Publish a pre-authorized-code credential offer on the issuer and give us the offer URL. We redeem it as a wallet would and check both the protocol and the credential.',
+	standards: [cite.vciPreAuthorizedCode, cite.vciDiVpKeyProof, cite.vciMetadataRetrieval],
 	role: 'issuer',
 	workflow: 'credential-issuance',
 	memberships: [{ profile: 'oid4', level: 'required' }],

@@ -1,4 +1,5 @@
 import type { ProfileKeyComponent } from '../../profile-schema.js';
+import type { StandardCitation } from '../../standards.js';
 
 /**
  * Identity + key technical choices for the VCALM profile.
@@ -17,6 +18,17 @@ export const vcalmProfileMeta = {
 	status: "Editor's Draft",
 	url: 'https://interoperability.learningmobilitycollaborative.org/profiles/vcalm-eddsa/',
 	lastUpdated: '2026-05-16',
+	standards: [
+		{ standard: 'vcalm-1' },
+		{ standard: 'ob-3' },
+		{ standard: 'vcdm-2' },
+		{ standard: 'vc-di-1' },
+		{ standard: 'bsl-1' },
+		{ standard: 'did-core-1' },
+		{ standard: 'did-web' },
+		{ standard: 'did-key' },
+		{ standard: 'cid-1', section: 'Multikey', label: '§2.2.2 Multikey' }
+	] satisfies StandardCitation[],
 	description:
 		'Browser-based credential exchange using VCALM Exchanges over Open Badges 3.0 credentials. ' +
 		'The cryptosuite, key type, and DID-method options are declared by the ' +

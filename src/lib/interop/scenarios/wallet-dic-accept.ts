@@ -1,3 +1,4 @@
+import { cite, suiteVerifyCitation } from './citations.js';
 import type { Requirement } from './requirement-schema.js';
 import { Scenario } from './scenario-schema.js';
 
@@ -102,6 +103,7 @@ function acceptScenario(protocol: Protocol, suite: Suite) {
 		slug: `${protocol}-wallet-accept-${suite}`,
 		name: `Accept an ${suite === 'eddsa' ? 'EdDSA' : 'ECDSA'} credential over ${TRANSPORT[protocol]}`,
 		blurb: blurbFor(suite, protocol),
+		standards: [suiteVerifyCitation(suite), cite.diVerifyProof],
 		role: 'wallet',
 		workflow: 'credential-acceptance',
 		memberships: [

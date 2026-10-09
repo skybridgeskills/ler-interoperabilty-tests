@@ -27,6 +27,7 @@ const catalog = vi.hoisted(() => {
 			slug: 'oid4-wallet-acceptance',
 			name: 'Accept a well-formed credential',
 			blurb: 'The happy path.',
+			standards: [{ standard: 'ob-3' as const }],
 			role: 'wallet' as const,
 			workflow: 'credential-acceptance' as const,
 			memberships: [{ profile: 'oid4' as const, level: 'required' as const }],
@@ -36,6 +37,7 @@ const catalog = vi.hoisted(() => {
 			slug: 'oid4-wallet-ecdsa-acceptance',
 			name: 'Accept an ECDSA credential',
 			blurb: 'The same, signed differently.',
+			standards: [{ standard: 'ob-3' as const }],
 			role: 'wallet' as const,
 			workflow: 'credential-acceptance' as const,
 			memberships: [
@@ -48,6 +50,7 @@ const catalog = vi.hoisted(() => {
 			slug: 'vcalm-issuer-issuance',
 			name: 'Issue over VCALM',
 			blurb: 'The issuer side.',
+			standards: [{ standard: 'ob-3' as const }],
 			role: 'issuer' as const,
 			workflow: 'credential-issuance' as const,
 			memberships: [{ profile: 'vcalm' as const, level: 'required' as const }],

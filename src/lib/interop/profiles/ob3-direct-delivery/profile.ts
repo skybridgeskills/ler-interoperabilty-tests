@@ -1,4 +1,5 @@
 import type { ProfileKeyComponent } from '../../profile-schema.js';
+import type { StandardCitation } from '../../standards.js';
 
 /** Identity + key technical choices for the OB 3.0 Direct Delivery profile. */
 export const ob3DirectDeliveryProfileMeta = {
@@ -9,6 +10,17 @@ export const ob3DirectDeliveryProfileMeta = {
 	status: "Editor's Draft",
 	url: 'https://interoperability.learningmobilitycollaborative.org/profiles/ob-3.0-direct-delivery/',
 	lastUpdated: '2026-02-15',
+	standards: [
+		{ standard: 'ob-3' },
+		{ standard: 'vcdm-2' },
+		{ standard: 'vc-di-1' },
+		{ standard: 'vc-di-eddsa-1' },
+		{ standard: 'bsl-1' },
+		{ standard: 'did-core-1' },
+		{ standard: 'did-web' },
+		{ standard: 'did-key' },
+		{ standard: 'cid-1', section: 'Multikey', label: '§2.2.2 Multikey' }
+	] satisfies StandardCitation[],
 	description:
 		'Direct credential issuance and verification using EdDSA-signed Open Badges 3.0 credentials delivered as JSON files or copy-paste text, without an exchange protocol. Recipient identifiers are email addresses.',
 	keyComponents: [

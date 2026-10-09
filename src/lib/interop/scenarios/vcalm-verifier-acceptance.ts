@@ -1,3 +1,4 @@
+import { cite } from './citations.js';
 import { Scenario, type ScenarioStep } from './scenario-schema.js';
 
 /**
@@ -91,6 +92,7 @@ export const vcalmVerifierAcceptance = Scenario({
 	name: 'Tell a good credential from a bad one — as a VCALM verifier',
 	blurb:
 		'Four credentials, one after another, in a random order — one valid and three defective. We present each to the verifier over VCALM; you report what it decided. Then we tell you what it should have.',
+	standards: [cite.obVerification, cite.diVerifyProof, cite.vcdmValidityPeriod],
 	role: 'verifier',
 	workflow: 'credential-request-and-verification',
 	memberships: [{ profile: 'vcalm', level: 'required' }],

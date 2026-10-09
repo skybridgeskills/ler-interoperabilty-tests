@@ -1,3 +1,4 @@
+import { cite } from './citations.js';
 import type { Requirement } from './requirement-schema.js';
 import { Scenario } from './scenario-schema.js';
 
@@ -62,6 +63,7 @@ export const oid4WalletPresentationPex = Scenario({
 	name: 'Answer a PEX presentation request',
 	blurb:
 		'We ask the wallet for a credential using DIF Presentation Exchange rather than DCQL. A wallet may understand one and not the other.',
+	standards: [cite.pexPresentationDefinition],
 	role: 'wallet',
 	workflow: 'credential-presentation',
 	memberships: [{ profile: 'oid4', level: 'optional' }],
@@ -105,6 +107,7 @@ export const oid4WalletPresentationLimited = Scenario({
 	name: 'Answer a request for less than the whole credential',
 	blurb:
 		'We ask the wallet for a credential while saying we would prefer only part of it, and while advertising selective-disclosure cryptosuites. We watch what the wallet does with that.',
+	standards: [cite.pexLimitedDisclosure],
 	role: 'wallet',
 	workflow: 'credential-presentation',
 	memberships: [{ profile: 'oid4', level: 'optional' }],
@@ -155,6 +158,7 @@ export const oid4WalletDiscovery = Scenario({
 	name: 'Find the issuer’s metadata the way RFC 8414 specifies',
 	blurb:
 		'An ordinary OID4VCI offer, while we watch how the wallet builds the metadata URL. We serve both constructions, so the wallet’s choice is the measurement.',
+	standards: [cite.rfc8414MetadataRequest, cite.vciMetadataRetrieval],
 	role: 'wallet',
 	workflow: 'credential-acceptance',
 	memberships: [{ profile: 'oid4', level: 'optional' }],
@@ -211,6 +215,7 @@ export const oid4WalletTamperRefusal = Scenario({
 	name: 'Refuse a credential with a corrupted proof',
 	blurb:
 		'We offer the wallet a credential whose signature was corrupted after signing, and tell you so up front. Confirms both that the wallet refuses it and that this deployment can really corrupt one.',
+	standards: [cite.diVerifyProof, cite.obVerification],
 	role: 'wallet',
 	workflow: 'credential-acceptance',
 	memberships: [{ profile: 'oid4', level: 'optional' }],

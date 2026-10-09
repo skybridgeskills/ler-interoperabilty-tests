@@ -1,4 +1,5 @@
 import type { ProfileSlug } from '../../profile-schema.js';
+import type { StandardCitation } from '../../standards.js';
 
 /**
  * Identity + composition info for the data-integrity-cryptosuites
@@ -28,6 +29,12 @@ export const dataIntegrityCryptosuitesMeta = {
 	version: '0.1',
 	status: "Editor's Draft",
 	lastUpdated: '2026-05-16',
+	standards: [
+		{ standard: 'vc-di-1' },
+		{ standard: 'vc-di-eddsa-1' },
+		{ standard: 'vc-di-ecdsa-1' },
+		{ standard: 'cid-1', section: 'Multikey', label: '§2.2.2 Multikey' }
+	] satisfies StandardCitation[],
 	description:
 		'Bundles two complete Data Integrity cryptosuite options for ' +
 		'OB 3.0 credentials and the verifiable presentations that carry them: EdDSA ' +

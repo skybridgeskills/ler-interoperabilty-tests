@@ -1,3 +1,4 @@
+import { cite, suiteVerifyCitation } from './citations.js';
 import type { LocallySignedSuite } from './locally-signed-suite.js';
 import type { Requirement } from './requirement-schema.js';
 import { Scenario } from './scenario-schema.js';
@@ -116,6 +117,10 @@ function consumerScenario(transport: Transport, suite: Suite) {
 		slug: `${BASE_PROFILE[transport]}-issuer-consumer-${suite}`,
 		name: `Verify an ${suite === 'eddsa' ? 'EdDSA' : 'ECDSA'} key proof over ${PROTOCOL[transport]}`,
 		blurb: blurbFor(transport, suite),
+		standards: [
+			transport === 'vcalm' ? cite.vcalmDidAuthenticationResponse : cite.vciDiVpKeyProof,
+			suiteVerifyCitation(suite)
+		],
 		role: 'issuer',
 		workflow: 'credential-issuance',
 		memberships: [

@@ -1,3 +1,4 @@
+import { cite } from './citations.js';
 import type { Requirement } from './requirement-schema.js';
 
 /**
@@ -83,3 +84,10 @@ export const issuerSkillsDataRequirements: Requirement[] = [
  */
 export const SKILLS_DATA_PAYLOAD =
 	'Issue a credential whose achievement carries a performance scale (`credentialSubject.achievement.resultDescription[]` — a raw score, a percentage or a rubric) and whose subject carries the learner’s result (`credentialSubject.result[]`).';
+
+/** What every issuer skills-data scenario tests against: OB 3.0's result model and its CTDL alignment. */
+export const skillsDataCitations = [
+	cite.obResultDescription,
+	cite.obResult,
+	cite.obCredentialEngineAlignment
+];

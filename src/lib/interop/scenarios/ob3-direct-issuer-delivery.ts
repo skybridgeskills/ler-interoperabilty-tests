@@ -1,3 +1,4 @@
+import { cite } from './citations.js';
 import { Scenario } from './scenario-schema.js';
 
 /**
@@ -30,6 +31,7 @@ export const ob3DirectIssuerDelivery = Scenario({
 	name: 'Issue a credential and deliver it directly',
 	blurb:
 		'Issue an Open Badges credential from the issuer and hand it to us. We verify it and read what it carries — plus two questions about how the issuer offered it to you.',
+	standards: [cite.obAchievementCredential, cite.obIdentityObject, cite.bslEntry],
 	role: 'issuer',
 	workflow: 'direct-credential-issuance',
 	memberships: [{ profile: 'ob3-direct-delivery', level: 'required' }],

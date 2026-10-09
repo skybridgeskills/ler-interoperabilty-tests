@@ -1,6 +1,7 @@
 import {
 	issuerSkillsDataRequirements,
-	SKILLS_DATA_PAYLOAD
+	SKILLS_DATA_PAYLOAD,
+	skillsDataCitations
 } from './issuer-skills-data-requirements.js';
 import { Scenario } from './scenario-schema.js';
 
@@ -29,6 +30,7 @@ export const ob3DirectIssuerSkillsData = Scenario({
 	name: 'Deliver skills data directly',
 	blurb:
 		'Issue a credential carrying a performance scale and a learner result, and paste it here. It counts toward this protocol’s Open Skill Alignment add-on badge.',
+	standards: skillsDataCitations,
 	role: 'issuer',
 	workflow: 'direct-credential-issuance',
 	memberships: [

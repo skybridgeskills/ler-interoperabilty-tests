@@ -1,3 +1,4 @@
+import { cite } from './citations.js';
 import { Scenario } from './scenario-schema.js';
 
 /**
@@ -35,6 +36,7 @@ export const oid4VerifierDelivery = Scenario({
 	name: 'Deliver a credential to the verifier over OID4VP',
 	blurb:
 		'Present a well-formed credential to the verifier over OID4VP, using the authorization request it publishes. We inspect that request and check the credential reaches the verifier’s response endpoint — the wire, not the verdict.',
+	standards: [cite.vpAuthorizationRequest, cite.pexPresentationDefinition, cite.vpDirectPost],
 	role: 'verifier',
 	workflow: 'credential-request-and-verification',
 	memberships: [{ profile: 'oid4', level: 'required' }],

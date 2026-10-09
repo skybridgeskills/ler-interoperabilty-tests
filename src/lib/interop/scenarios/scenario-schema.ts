@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { PerspectiveCopy } from '$lib/interop/perspective/perspective.js';
 import { RoleSlug, WorkflowSlug } from '$lib/interop/profile-schema.js';
+import { StandardCitation } from '$lib/interop/standards.js';
 import { ZodFactory } from '$lib/util/zod-factory.js';
 
 import { LocallySignedSuite } from './locally-signed-suite.js';
@@ -259,6 +260,13 @@ export const Scenario = ZodFactory(
 		 * Required from M10.
 		 */
 		framing: PerspectiveCopy.schema.optional(),
+		/**
+		 * Which specs this scenario exercises — **scenario level only** (no step or
+		 * requirement citations, by design: easier to keep true), typically one or
+		 * two. Rendered in the hero's meta line. Outside the fingerprint, so a
+		 * citation can be corrected without dropping anyone's results.
+		 */
+		standards: z.array(StandardCitation.schema).min(1),
 		role: RoleSlug.schema,
 		/** Taxonomy only. Never a constraint on what the steps may do. */
 		workflow: WorkflowSlug.schema,

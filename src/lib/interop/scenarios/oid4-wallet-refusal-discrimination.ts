@@ -1,3 +1,4 @@
+import { cite } from './citations.js';
 import { Scenario, type ScenarioStep } from './scenario-schema.js';
 
 /**
@@ -74,6 +75,7 @@ export const oid4WalletRefusalDiscrimination = Scenario({
 	name: 'Tell a good credential from a bad one — over OID4VCI',
 	blurb:
 		'Three credentials, one after another, in a random order. Some are fine and some are not. After each one we ask what the wallet did — then tell you what actually happened.',
+	standards: [cite.obVerification, cite.vcdmValidityPeriod, cite.diVerifyProof],
 	role: 'wallet',
 	workflow: 'credential-acceptance',
 	memberships: [{ profile: 'oid4', level: 'required' }],

@@ -1,11 +1,12 @@
 <script lang="ts">
-	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import { onMount } from 'svelte';
 
 	import { allBadgeClaims } from '$lib/client/badges/index.js';
 	import { perspectiveStore } from '$lib/client/perspective/index.js';
 	import { allScenarioRuns } from '$lib/client/scenario-runs/index.js';
 	import { selectionStore } from '$lib/client/selection/index.js';
+	import { ExternalLink } from '$lib/components/external-link/index.js';
+	import { BuiltOn } from '$lib/components/interop/built-on/index.js';
 	import { CompletionGroup } from '$lib/components/interop/completion-group/index.js';
 	import { ProfileSummary } from '$lib/components/interop/profile-summary/index.js';
 	import { PageHero } from '$lib/components/page-hero/index.js';
@@ -138,16 +139,9 @@
 			<span class="whitespace-nowrap">Updated {data.profile.lastUpdated}</span>
 		{/if}
 		{#if data.profile.url}
-			<a
-				href={data.profile.url}
-				target="_blank"
-				rel="noopener noreferrer"
-				class="inline-flex items-center gap-0.5 text-primary hover:underline"
-			>
+			<ExternalLink href={data.profile.url} title={`${data.profile.name} · ${data.profile.status}`}>
 				{data.kind === 'additive' ? 'Read the published add-on' : 'Read the published profile'}
-				<ArrowUpRight class="size-3.5" aria-hidden="true" />
-				<span class="sr-only">(opens in a new tab)</span>
-			</a>
+			</ExternalLink>
 		{/if}
 	{/snippet}
 </PageHero>
@@ -182,6 +176,12 @@
 		</section>
 	{/if}
 {:else}
+	{#if data.profile.standards}
+		<div class="mt-8 max-w-2xl">
+			<BuiltOn standards={data.profile.standards} />
+		</div>
+	{/if}
+
 	<section class="mt-12 max-w-2xl space-y-4">
 		<h2 class="text-headline-md">Scenarios</h2>
 		{#if scenarioGroups.length > 0}

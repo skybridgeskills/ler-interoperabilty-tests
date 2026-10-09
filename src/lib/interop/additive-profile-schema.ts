@@ -4,6 +4,7 @@ import { ZodFactory } from '$lib/util/zod-factory.js';
 
 import { PerspectiveCopy } from './perspective/perspective.js';
 import { ProfileSlug } from './profile-schema.js';
+import { StandardCitation } from './standards.js';
 
 /** URL slug for an additive interoperability profile (user-facing label: Add-on). */
 export const AdditiveProfileSlug = ZodFactory(
@@ -32,6 +33,8 @@ export const AdditiveProfile = ZodFactory(
 		lastUpdated: z.string(),
 		description: z.string(),
 		appliesToBaseProfiles: z.array(ProfileSlug.schema).min(1),
+		/** The external standards this add-on is built on — its "Built on" list. */
+		standards: z.array(StandardCitation.schema).optional(),
 		/**
 		 * One line per Perspective under this item's blurb on a filter-panel choice
 		 * card — what choosing it means to a Builder or an Evaluator. No `neutral`:

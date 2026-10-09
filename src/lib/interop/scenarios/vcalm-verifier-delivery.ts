@@ -1,3 +1,4 @@
+import { cite } from './citations.js';
 import { Scenario } from './scenario-schema.js';
 
 /**
@@ -27,6 +28,7 @@ export const vcalmVerifierDelivery = Scenario({
 	name: 'Deliver a credential to the verifier over VCALM',
 	blurb:
 		'Present a well-formed credential to the verifier over a VC-API exchange. We check the exchange it offers and that the credential reaches it — the wire, not the verdict.',
+	standards: [cite.vcalmInteractionUrl, cite.vcalmQueryByExample, cite.vcalmDidAuthentication],
 	role: 'verifier',
 	workflow: 'credential-request-and-verification',
 	memberships: [{ profile: 'vcalm', level: 'required' }],
