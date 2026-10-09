@@ -11,5 +11,7 @@ export type FilterPanelItem = {
 	meta?: string;
 	/** The item's example line for the reader's Perspective, already resolved; absent when unset. */
 	example?: string;
+	/** Why this item does not fit the rest of the selection — annotated, never hidden. */
+	warning?: string;
 	selected: boolean;
 };

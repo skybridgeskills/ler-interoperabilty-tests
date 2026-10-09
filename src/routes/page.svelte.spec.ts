@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 
@@ -20,6 +20,12 @@ function meterLabels(root: HTMLElement): (string | null)[] {
 }
 
 describe('/+page.svelte', () => {
+	// Past the inline first step, which has its own spec below.
+	beforeEach(() => {
+		sessionStorage.setItem('lits.filterIntro', 'done');
+		localStorage.removeItem('lits.selection.v1');
+	});
+
 	it('renders the console heading, the filter bar, and the completion groups', async () => {
 		render(Page, { props: { data: { blocked: {} } }, context: perspectiveContext() });
 
@@ -124,5 +130,36 @@ describe('/+page.svelte', () => {
 			.element(page.getByRole('heading', { name: 'Standard Profiles' }))
 			.toBeInTheDocument();
 		await expect.element(page.getByRole('switch', { name: /^OID4/ })).toBeInTheDocument();
+	});
+});
+
+describe('/+page.svelte — guidance', () => {
+	beforeEach(() => {
+		sessionStorage.removeItem('lits.filterIntro');
+		localStorage.removeItem('lits.selection.v1');
+	});
+
+	it('opens the inline first step for an empty selection in a new session', async () => {
+		render(Page, { props: { data: { blocked: {} } }, context: perspectiveContext() });
+		await expect
+			.element(page.getByRole('heading', { name: /Start here — 1. Which role/ }))
+			.toBeInTheDocument();
+		await page.getByRole('button', { name: /^Skip — show all/ }).click();
+		expect(sessionStorage.getItem('lits.filterIntro')).toBe('done');
+	});
+
+	it('names the gap and offers Remove buttons when nothing matches', async () => {
+		localStorage.setItem(
+			'lits.selection.v1',
+			JSON.stringify({ roles: ['wallet'], profiles: ['ob3-direct-delivery'], additiveProfiles: [] })
+		);
+		render(Page, { props: { data: { blocked: {} } }, context: perspectiveContext() });
+		await expect
+			.element(page.getByText('No Wallet scenario set for OB 3.0 Direct Delivery yet.'))
+			.toBeInTheDocument();
+		await page.getByRole('button', { name: 'Remove Wallets' }).click();
+		await expect
+			.element(page.getByText('No Wallet scenario set for OB 3.0 Direct Delivery yet.'))
+			.not.toBeInTheDocument();
 	});
 });

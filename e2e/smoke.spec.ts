@@ -49,3 +49,10 @@ test('first visit shows the Perspective gate; choosing Building closes it', asyn
 	const cookies = await page.context().cookies();
 	expect(cookies.find((c) => c.name === 'lits.perspective')?.value).toBe('builder');
 });
+
+test('a shared selection link seeds the filter and leaves the address bar', async ({ page }) => {
+	await page.goto('/?roles=wallet&profiles=vcalm');
+	await expect(page.getByRole('button', { name: 'Roles Wallets' })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Standard Profiles VCALM' })).toBeVisible();
+	await expect(page).toHaveURL(/\/$/);
+});

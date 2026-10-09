@@ -127,3 +127,15 @@ the three layers read as three.
 - `--live`'s light-mode contrast defect is **not fixed here**. It remains
   on `MobileWalletDrawer` and `StepRunStateIndicator`, which is a smaller
   surface than before.
+
+## Amendment (2026-10-09 — the bar's base dimensions go neutral)
+
+The guided filters moved the homepage filter bar's **Roles and Standard
+Profiles** dimensions from `requirement` blue to **neutral ink**
+(`filter-bar-tone.ts` now has `'neutral' | 'additive'`; `requirement` left the
+bar). Selecting a role or a Standard Profile narrows which scenario sets show;
+it does not select a requirement level, and blue there now only means what it
+means on the cards — requirement levels and the Essential tier. **Add-ons is
+unchanged**: it keeps `additive` teal, because an add-on is a requirement layer,
+which is the decision this ADR records. The "colour marks the layer, not the
+surface" argument above therefore now holds for the add-on dimension alone.

@@ -1,7 +1,7 @@
 // Measured components need the real stylesheet; the `client` project loads none.
 import '../../../../routes/layout.css';
 
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 
@@ -16,6 +16,10 @@ import FilterBar from './FilterBar.svelte';
  * opening hands focus to the panel, and focus leaving it — by Tab, by click, or
  * by Escape — closes it. These need a real browser, because `focusin`/`focusout`
  * do not fire at all unless the document genuinely holds system focus.
+ *
+ * That contract is the **overlay** form, which exists from `sm:` up; below it, and
+ * during the inline first step, a panel is in the page flow and takes no focus.
+ * The focus specs therefore run at a desktop viewport.
  */
 
 /** Props with no selection made and both filtering dimensions available. */
@@ -49,6 +53,10 @@ const profilesTrigger = () => page.getByRole('button', { name: /^Standard Profil
 const UNDER_LOAD = { timeout: 20_000 };
 
 describe('FilterBar panel focus', UNDER_LOAD, () => {
+	beforeAll(async () => {
+		await page.viewport(1280, 900);
+	});
+
 	it('moves focus into the panel when it opens', async () => {
 		render(FilterBar, props());
 
@@ -229,5 +237,56 @@ describe('FilterBar panel focus', UNDER_LOAD, () => {
 
 		await expect.poll(() => panel()?.getAttribute('aria-label')).toBe('Standard Profiles filter');
 		await expect.poll(() => document.activeElement).toBe(panel());
+	});
+});
+
+describe('FilterBar guidance', UNDER_LOAD, () => {
+	beforeAll(async () => {
+		await page.viewport(1280, 900);
+	});
+
+	it('numbers the dimensions and keeps "<Label> <summary>" as the name', async () => {
+		render(FilterBar, props({ roles: new Set<RoleSlug>(['wallet']) }));
+		await expect.element(page.getByRole('button', { name: 'Roles Wallets' })).toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: 'Add-ons None' })).toBeInTheDocument();
+	});
+
+	it('reads "All N" unfiltered and "n of N" filtered, with Copy link and Clear', async () => {
+		const screen = render(FilterBar, props());
+		await expect.element(page.getByText('All 4 scenario sets')).toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: 'Copy link' })).not.toBeInTheDocument();
+		await screen.rerender(props({ roles: new Set<RoleSlug>(['wallet']), matched: 1, hidden: 3 }));
+		await expect.element(page.getByRole('button', { name: 'Copy link' })).toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: 'Clear' })).toBeInTheDocument();
+	});
+
+	it('offers Next to the following dimension, and Show on the last', async () => {
+		render(FilterBar, props());
+		await rolesTrigger().click();
+		await page.getByRole('button', { name: 'Next: Standard Profiles →' }).click();
+		await expect.poll(() => panel()?.getAttribute('aria-label')).toBe('Standard Profiles filter');
+		// No role, so no Add-ons: Standard Profiles is the last offered dimension.
+		await page.getByRole('button', { name: 'Show 4 scenario sets' }).click();
+		await expect.poll(() => panel()).toBeNull();
+	});
+
+	it('annotates a profile with no set for the selected role instead of hiding it', async () => {
+		render(FilterBar, props({ roles: new Set<RoleSlug>(['wallet']) }));
+		await profilesTrigger().click();
+		await expect
+			.element(page.getByRole('switch', { name: /OB 3.0 Direct Delivery/ }))
+			.toHaveTextContent('No Wallet scenario set — covers Issuers and Verifiers');
+	});
+
+	it('runs the inline first step in flow, and ends it on Skip without taking focus', async () => {
+		const onIntroEnd = vi.fn();
+		// `intro` is also a Svelte mount option, so the props go under `props`.
+		render(FilterBar, { props: props({ intro: true, onIntroEnd }) });
+		await expect
+			.element(page.getByRole('heading', { name: /Start here — 1. Which role/ }))
+			.toBeInTheDocument();
+		expect(document.activeElement).not.toBe(panel());
+		await page.getByRole('button', { name: 'Skip — show all 4' }).click();
+		expect(onIntroEnd).toHaveBeenCalledOnce();
 	});
 });

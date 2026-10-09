@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { Badge } from '$lib/components/ui/badge/index.js';
+	import AppWindow from '@lucide/svelte/icons/app-window';
+	import Layers from '@lucide/svelte/icons/layers';
+
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { type ClaimedInfo, formatDay } from '$lib/interop/badges/index.js';
 	import {
@@ -264,13 +266,30 @@
 	</div>
 {/snippet}
 
+<!--
+	The set's identity as two markers — "ROLE Wallet · STANDARD PROFILE VCALM" —
+	in the same icon + small-caps vocabulary the filter bar uses. Neutral: Role and
+	Standard Profile are told apart by icon and label, never by hue.
+-->
+{#snippet markers()}
+	<h3 class="flex flex-wrap items-center gap-x-4 gap-y-1">
+		<span class="inline-flex items-center gap-1.5">
+			<AppWindow class="size-4 text-muted-foreground" aria-hidden="true" />
+			<span class="text-label-md text-muted-foreground">Role</span>
+			<span class="text-title-lg text-foreground">{roleName}</span>
+		</span>
+		<span class="inline-flex items-center gap-1.5">
+			<Layers class="size-4 text-muted-foreground" aria-hidden="true" />
+			<span class="text-label-md text-muted-foreground">Standard Profile</span>
+			<span class="text-title-lg text-foreground">{profileName}</span>
+		</span>
+	</h3>
+{/snippet}
+
 <section class="space-y-4 rounded-lg border border-border bg-card p-4 sm:p-6">
 	{#if categorised}
 		<header class="space-y-4">
-			<div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-				<Badge variant="secondary">{roleName}</Badge>
-				<h3 class="text-title-lg text-foreground">{profileName}</h3>
-			</div>
+			{@render markers()}
 			<div class="space-y-3">
 				<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
 					{@render tierRow('Essential', 'essential', result.met, result.total)}
@@ -354,10 +373,7 @@
 	{:else}
 		<!-- Single category: no expanded set and no add-on selected. Unchanged shape. -->
 		<header class="space-y-3">
-			<div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-				<Badge variant="secondary">{roleName}</Badge>
-				<h3 class="text-title-lg text-foreground">{profileName}</h3>
-			</div>
+			{@render markers()}
 			<CompletionMeter met={result.met} total={result.total} />
 			<div class="flex flex-col gap-1">
 				{#if claimHref}

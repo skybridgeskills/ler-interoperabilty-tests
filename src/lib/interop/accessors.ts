@@ -1,6 +1,6 @@
 import type { AdditiveProfile } from './additive-profile-schema.js';
 import { allAdditiveProfiles } from './additive-profiles/all-additive-profiles.js';
-import type { Profile, RoleSlug } from './profile-schema.js';
+import type { Profile, ProfileSlug, RoleSlug } from './profile-schema.js';
 import { allProfiles } from './profiles/all-profiles.js';
 import { allRoles, type Role } from './roles.js';
 import { allScenarios } from './scenarios/all-scenarios.js';
@@ -48,6 +48,26 @@ export function rolesOfAdditiveProfile(additive: AdditiveProfile): RoleSlug[] {
 			.map((s) => s.role)
 	);
 	return allRoles.filter((r) => declared.has(r.slug)).map((r) => r.slug);
+}
+
+/**
+ * The roles a Standard Profile has a scenario set in — the distinct roles of the
+ * scenarios that count toward its meters, in catalog role order. An
+ * `additive-only` base membership counts toward no meter and appears on no
+ * card, so it does not make a set.
+ *
+ * What the filter bar annotates a mismatched profile with ("covers Issuers and
+ * Verifiers"), and what the empty state names.
+ */
+export function rolesOfProfile(profile: ProfileSlug): RoleSlug[] {
+	const covered = new Set<RoleSlug>(
+		allScenarios
+			.filter((s) =>
+				s.memberships.some((m) => m.profile === profile && m.level !== 'additive-only')
+			)
+			.map((s) => s.role)
+	);
+	return allRoles.filter((r) => covered.has(r.slug)).map((r) => r.slug);
 }
 
 /**

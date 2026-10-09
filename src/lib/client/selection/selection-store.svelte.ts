@@ -3,7 +3,7 @@ import { SvelteSet } from 'svelte/reactivity';
 import { additiveProfilesForRoles } from '$lib/interop/accessors.js';
 import { AdditiveProfileSlug } from '$lib/interop/additive-profile-schema.js';
 import { ProfileSlug, RoleSlug } from '$lib/interop/profile-schema.js';
-import type { Selection } from '$lib/interop/selection/index.js';
+import type { Selection, SelectionLink } from '$lib/interop/selection/index.js';
 
 const STORAGE_KEY = 'lits.selection.v1';
 
@@ -55,6 +55,19 @@ export function createSelectionStore() {
 		roles = [];
 		profiles = [];
 		additiveProfiles = [];
+		persist();
+	}
+
+	/**
+	 * Overwrite every dimension at once — what opening a shared selection link
+	 * does. The link wins over the saved selection; additives the link's roles do
+	 * not offer are pruned, as any other change prunes them.
+	 */
+	function replace(next: SelectionLink): void {
+		roles = [...next.roles];
+		profiles = [...next.profiles];
+		additiveProfiles = [...next.additiveProfiles];
+		pruneAdditives();
 		persist();
 	}
 
@@ -144,6 +157,7 @@ export function createSelectionStore() {
 		},
 		toggleRole,
 		clear,
+		replace,
 		toggleProfile,
 		toggleAdditiveProfile,
 		isRoleSelected,

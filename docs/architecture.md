@@ -787,6 +787,16 @@ The app keeps three pieces of state in `localStorage`, isolated under
   chosen roles/profiles, key `lits.selection.v1`. A Svelte 5 runes store;
   hydrate from a browser `onMount` only (never during SSR). Unknown slugs are
   validated away on read via `RoleSlug`/`ProfileSlug` schemas.
+  - **Shareable link.** `/?roles=…&profiles=…&addons=…` (Home only;
+    `interop/selection/selection-link.ts`) **overwrites** the saved selection on
+    mount (`selectionStore.replace`, pruning additives as any change does), then
+    the params are stripped with `replaceState` — deferred past the router's
+    initialisation, which refuses it during the first `afterNavigate`. The link
+    carries the selection only, never the Perspective.
+  - **The inline first step** is gated on **sessionStorage** `lits.filterIntro`
+    (`client/selection/filter-intro.ts`): shown after hydration while the
+    selection is empty and the flag is not `done`; Skip, ✕, finishing and Clear
+    set it. A new session with an empty selection sees the step again.
 - **Scenario runs** (`client/scenario-runs/scenario-run-store.ts`) — one
   `ScenarioRunRecord` per scenario, key `lits.scenario-runs.v1`. The pure model
   lives in `interop/scenario-run/`; only the store touches `localStorage`. It

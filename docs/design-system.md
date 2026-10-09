@@ -128,6 +128,12 @@ encodes the level.
 | `text-requirement`          | Requirement label text on soft/outline chips.      |
 | `border-requirement-border` | Edge of soft/outline requirement chips.            |
 
+`requirement` is **not** used in the homepage filter bar. Since the guided
+filters, the bar's Roles and Standard Profiles dimensions speak **neutral ink**
+(`text-foreground`, a `foreground` underline and rail, an ink-filled selected
+card and pip); only Add-ons keeps a hue, `additive`. Blue there implied a
+requirement level the dimensions do not select.
+
 ### Additive — the add-on requirement layer
 
 The `additive` family (cyan-teal, h188) renders the **add-on requirement

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import XIcon from '@lucide/svelte/icons/x';
+	import type { Component } from 'svelte';
 
 	import { perspectiveOption } from '$lib/components/perspective/index.js';
 	import type { Perspective } from '$lib/interop/perspective/index.js';
@@ -21,6 +22,7 @@
 	 */
 	let {
 		heading,
+		icon: Icon,
 		description,
 		items,
 		columns = 3,
@@ -29,11 +31,16 @@
 		overviewHref,
 		overviewLabel,
 		footnote,
+		primary,
+		skip,
 		onToggle,
 		onClose,
 		tone
 	}: {
+		/** Numbered: "2. Standard Profiles", or the inline first step's question. */
 		heading: string;
+		/** The dimension's marker icon. */
+		icon: Component<{ class?: string; 'aria-hidden'?: 'true' }>;
 		description: string;
 		items: FilterPanelItem[];
 		/** Card grid width at `sm:` and up. One column below it, always. */
@@ -46,6 +53,13 @@
 		overviewLabel: string;
 		/** Optional line under the grid, e.g. "2 more add-ons apply to other roles." */
 		footnote?: string;
+		/**
+		 * The way on: "Next: Standard Profiles →", or "Show N scenario sets" on the
+		 * last offered dimension. Never auto-advanced, never disabled.
+		 */
+		primary: { label: string; onClick: () => void };
+		/** The inline first step's "Skip — show all N". */
+		skip?: { label: string; onClick: () => void };
 		onToggle: (slug: string) => void;
 		onClose: () => void;
 		/**
@@ -79,12 +93,15 @@
 	<!--
 		The soft band gives the panel an identity where the heading would otherwise
 		float: the single-column phone layout. Above `sm:` the panel stays genuinely
-		quiet, which is the whole point of this treatment — and the notch's inner fill
-		in `FilterBar.svelte` switches at the same breakpoint, so the two must agree.
+		quiet, which is the whole point of this treatment. (The overlay's notch only
+		exists from `sm:` up, so it always sits on the plain panel surface.)
 	-->
 	<div class={`-mx-4 -mt-6 mb-4 px-4 pt-6 pb-4 sm:bg-transparent ${tone.softBg}`}>
 		<div class="flex flex-col gap-2 pr-14 sm:flex-row sm:items-baseline sm:justify-between">
-			<h3 class={`text-title-lg ${tone.text}`}>{heading}</h3>
+			<h3 class={`flex items-center gap-2 text-title-lg ${tone.text}`}>
+				<Icon class="size-5 shrink-0" aria-hidden="true" />
+				{heading}
+			</h3>
 			<p class="max-w-prose text-body-md text-muted-foreground">{description}</p>
 		</div>
 	</div>
@@ -113,6 +130,14 @@
 				</span>
 				{#if item.meta}
 					<span class="text-label-md text-muted-foreground">{item.meta}</span>
+				{/if}
+				{#if item.warning}
+					<!-- Foreground ⚠ on muted text: never `live` or `warning`, which mean something else. -->
+					<span class="text-label-md text-muted-foreground">
+						<span class="text-foreground" aria-hidden="true">⚠</span>
+						<span class="sr-only">Note:</span>
+						{item.warning}
+					</span>
 				{/if}
 				<!--
 					Clamped: the panel teaches, but a 14-line cryptosuite blurb would make
@@ -145,7 +170,7 @@
 		<p class="text-label-md text-muted-foreground">{footnote}</p>
 	{/if}
 
-	<div class="mt-5 flex flex-col gap-4 border-t border-border pt-4 sm:flex-row sm:items-start">
+	<div class="mt-5 flex flex-col gap-4 border-t border-border pt-4 sm:flex-row sm:items-center">
 		<div class="flex-1 space-y-1">
 			{#if tag}
 				<span class="inline-flex items-center gap-1 text-label-md text-perspective">
@@ -157,9 +182,28 @@
 		</div>
 		<a
 			href={overviewHref}
-			class={`shrink-0 self-start text-label-md hover:underline sm:self-end ${tone.text}`}
+			class={`shrink-0 self-start text-label-md hover:underline sm:self-center ${tone.text}`}
 		>
 			{overviewLabel} →
 		</a>
+		<!-- Next first in the DOM: stacked full width below `sm:`, right-most beside it. -->
+		<div class="flex flex-col gap-2 sm:flex-row-reverse sm:items-center sm:gap-4">
+			<button
+				type="button"
+				onclick={primary.onClick}
+				class={`w-full rounded-full px-4 py-2 text-body-md font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:w-auto ${tone.action}`}
+			>
+				{primary.label}
+			</button>
+			{#if skip}
+				<button
+					type="button"
+					onclick={skip.onClick}
+					class="w-full rounded-full px-4 py-2 text-body-md text-muted-foreground hover:text-foreground hover:underline sm:w-auto sm:px-0"
+				>
+					{skip.label}
+				</button>
+			{/if}
+		</div>
 	</div>
 </div>

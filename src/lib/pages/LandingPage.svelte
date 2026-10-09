@@ -1,4 +1,6 @@
 <script lang="ts">
+	import AppWindow from '@lucide/svelte/icons/app-window';
+	import Layers from '@lucide/svelte/icons/layers';
 	import { onMount } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 
@@ -9,7 +11,11 @@
 		exportResults,
 		importResults
 	} from '$lib/client/scenario-runs/index.js';
-	import { selectionStore } from '$lib/client/selection/index.js';
+	import {
+		filterIntroDone,
+		markFilterIntroDone,
+		selectionStore
+	} from '$lib/client/selection/index.js';
 	import { CompletionGroup } from '$lib/components/interop/completion-group/index.js';
 	import { FilterBar } from '$lib/components/interop/filter-bar/index.js';
 	import { ResultsTransfer } from '$lib/components/interop/results-transfer/index.js';
@@ -23,13 +29,22 @@
 		expandedBadgeHrefFor,
 		expandedBadgeNameFor,
 		expandedClaimedInfoFor,
-		completionGroups
+		completionGroups,
+		profileBySlug,
+		roleBySlug
 	} from '$lib/interop/index.js';
 	import { PerspectiveCopy, perspectiveCopy } from '$lib/interop/perspective/index.js';
 	import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
 	import type { CannotServe } from '$lib/interop/scenarios/index.js';
+	import {
+		emptyStateCopy,
+		fromSearchParams,
+		hasSelectionParams
+	} from '$lib/interop/selection/index.js';
 
+	import { afterNavigate, replaceState } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 
 	/**
 	 * Which scenarios this deployment cannot serve, keyed by slug — resolved by the
@@ -68,11 +83,45 @@
 		claims = allBadgeClaims();
 	}
 
+	/**
+	 * The inline first step. Opened **after hydration only** — the selection
+	 * lives in localStorage, so the server cannot know it is empty, and a
+	 * returning reader with a saved filter must never see the step flash.
+	 */
+	let showIntro = $state(false);
+
+	function endIntro() {
+		showIntro = false;
+		markFilterIntroDone();
+	}
+
 	onMount(() => {
-		// All read localStorage — browser only.
+		// All read browser storage — browser only.
 		selectionStore.hydrate();
+		// A shared link (`/?roles=…&profiles=…&addons=…`) overwrites the saved
+		// selection, then leaves the address bar: the link seeds, it does not stick.
+		const shared = fromSearchParams(page.url.searchParams);
+		if (shared) selectionStore.replace(shared);
 		reloadResults();
+		const empty =
+			selectionStore.roles.length === 0 &&
+			selectionStore.profiles.length === 0 &&
+			selectionStore.additiveProfiles.length === 0;
+		showIntro = empty && !filterIntroDone();
 	});
+
+	// The strip waits for the router: on the first load, `afterNavigate` runs while
+	// SvelteKit is still initialising, and `replaceState` refuses until it is done.
+	afterNavigate(() => {
+		if (!hasSelectionParams(page.url.searchParams)) return;
+		setTimeout(() => replaceState(resolve('/'), {}));
+	});
+
+	function clearSelection() {
+		selectionStore.clear();
+		// Clearing within a session does not bring the first step back.
+		markFilterIntroDone();
+	}
 
 	const selection = $derived(selectionStore.selection);
 	const selectedAdditives = $derived(new SvelteSet(selectionStore.additiveProfiles));
@@ -135,10 +184,12 @@
 	onToggleRole={selectionStore.toggleRole}
 	onToggleProfile={selectionStore.toggleProfile}
 	onToggleAdditive={selectionStore.toggleAdditiveProfile}
-	onClear={selectionStore.clear}
+	onClear={clearSelection}
 	matched={shownGroups.length}
 	hidden={hiddenGroups.length}
 	perspective={perspective.current}
+	intro={showIntro}
+	onIntroEnd={endIntro}
 />
 
 {#snippet groupCard(group: (typeof groups)[number])}
@@ -161,11 +212,42 @@
 	<h2 class="sr-only">Scenario sets</h2>
 
 	{#if shownGroups.length === 0}
-		<div class="rounded-lg border border-dashed border-border p-8 text-center">
-			<p class="text-body-md text-foreground">No scenario set matches that combination yet.</p>
-			<p class="mt-1 text-body-md text-muted-foreground">
-				Every scenario set is still available — clear a filter to see them.
-			</p>
+		<!--
+			Guided recovery, generated from the catalog: only a role × Standard Profile
+			gap can empty the list, so it names the gap, what each selected profile
+			does cover, and offers to remove each choice.
+		-->
+		{@const copy = emptyStateCopy({
+			roles: [...selection.roles],
+			profiles: [...selection.profiles]
+		})}
+		<div class="rounded-lg border border-dashed border-border p-6 text-center sm:p-8">
+			<p class="text-body-md text-foreground">{copy.headline}</p>
+			{#each copy.coverage as line (line)}
+				<p class="mt-1 text-body-md text-muted-foreground">{line}</p>
+			{/each}
+			<div class="mt-4 flex flex-wrap justify-center gap-2">
+				{#each [...selection.profiles] as slug (slug)}
+					<button
+						type="button"
+						onclick={() => selectionStore.toggleProfile(slug)}
+						class="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-body-md text-foreground transition-colors hover:border-foreground"
+					>
+						<Layers class="size-3.5" aria-hidden="true" />
+						Remove {profileBySlug(slug)?.name ?? slug}
+					</button>
+				{/each}
+				{#each [...selection.roles] as slug (slug)}
+					<button
+						type="button"
+						onclick={() => selectionStore.toggleRole(slug)}
+						class="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-body-md text-foreground transition-colors hover:border-foreground"
+					>
+						<AppWindow class="size-3.5" aria-hidden="true" />
+						Remove {roleBySlug(slug)?.plural ?? slug}
+					</button>
+				{/each}
+			</div>
 		</div>
 	{/if}
 

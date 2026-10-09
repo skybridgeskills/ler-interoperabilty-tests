@@ -8,8 +8,12 @@
 		type RoleSlug
 	} from '$lib/interop/index.js';
 	import { type Perspective, perspectiveCopy } from '$lib/interop/perspective/index.js';
+	import { toSearchParams } from '$lib/interop/selection/index.js';
 
 	import { anchorX } from './anchor-x.svelte.js';
+	import { copyLinkLabel } from './copy-link-copy.js';
+	import { dimensionCopy, filterPanelNotes } from './filter-bar-copy.js';
+	import { setsLabel, summarise } from './filter-bar-summary.js';
 	import { type Dimension, toneClasses, toneFor } from './filter-bar-tone.js';
 	import {
 		additiveItems,
@@ -17,40 +21,41 @@
 		roleItems,
 		unofferedAdditiveNote
 	} from './filter-panel-items.js';
-	import { filterPanelNotes } from './filter-panel-notes.js';
+	import FilterBarStatus from './FilterBarStatus.svelte';
 	import FilterPanel from './FilterPanel.svelte';
+	import FilterTrigger from './FilterTrigger.svelte';
 	import { panelMotion } from './panel-motion.js';
 
 	import { resolve } from '$app/paths';
 
 	/**
-	 * The homepage filter bar.
+	 * The homepage filter bar: **① Roles · ② Standard Profiles · ③ Add-ons**.
 	 *
-	 * Replaces the three stacked chooser sections with one compact row whose
-	 * **closed state states the whole filter** — `Roles · Wallets, Verifiers`,
-	 * `Standard Profiles · OID4`, the match count, and a Clear. Each dimension opens a
-	 * full-width {@link FilterPanel} that carries the educational content those
-	 * sections used to spend the top half of the page on.
+	 * One compact row whose **closed state states the whole filter** — each
+	 * dimension's number turns to ✓ once it has a selection, the count reads "All
+	 * N" or "n of N scenario sets", and Copy link and Clear appear once anything is
+	 * selected. Each dimension opens a full-width {@link FilterPanel} that teaches
+	 * it, and each panel offers the way on (Next, or Show N scenario sets) without
+	 * ever advancing on its own or locking the order.
 	 *
 	 * Two rules the bar exists to make visible:
 	 *
 	 * 1. **Add-ons appear with a role.** The Add-ons dimension is absent entirely
 	 *    until a role with a scenario naming the additive is selected
-	 *    (`rolesOfAdditiveProfile`) — an additive layers on a base profile *in a role*, so offering one earlier
-	 *    asks a question with nowhere to put the answer. `selectionStore` prunes a
-	 *    stale additive out of state to match; this component only decides what to
-	 *    show.
-	 * 2. **Filters filter.** The count reads `N of M scenario sets`, and the page
-	 *    hides the rest behind an escape hatch rather than reordering them — which
-	 *    is what made the old selectors read as broken when a selection matched
-	 *    nothing.
+	 *    (`rolesOfAdditiveProfile`) — an additive layers on a base profile *in a
+	 *    role*, so offering one earlier asks a question with nowhere to put the
+	 *    answer. `selectionStore` prunes a stale additive out of state to match;
+	 *    this component only decides what to show.
+	 * 2. **Filters filter.** The page hides what does not match behind an escape
+	 *    hatch rather than reordering it.
 	 *
-	 * **The colour marks the requirement layer, not the dimension.** Roles and
-	 * Profiles select base-profile requirements and speak the same `requirement`
-	 * blue the Essential tier uses on the cards below; Add-ons layers a different
-	 * kind of requirement and speaks `additive` teal. A **closed** dimension that is
-	 * filtering keeps its colour, so the bar states its own filter at rest and not
-	 * only while open. See `filter-bar-tone.ts`.
+	 * **Two forms of panel.** From `sm:` up a panel is an overlay anchored to its
+	 * trigger (backdrop, focus moves in, focus leaving closes it). Below `sm:`, and
+	 * while the page runs the **inline first step** (`intro`), a panel opens in the
+	 * page flow instead: no backdrop, no notch, no focus theft, no focus-out close.
+	 *
+	 * **Colour**: Roles and Standard Profiles speak neutral ink; Add-ons speaks
+	 * `additive` teal, the requirement layer it is. See `filter-bar-tone.ts`.
 	 *
 	 * State is owned by the caller, as with every selector this replaces.
 	 */
@@ -65,6 +70,8 @@
 		matched,
 		hidden,
 		perspective,
+		intro = false,
+		onIntroEnd = () => {},
 		open = $bindable(null)
 	}: {
 		roles: Set<RoleSlug>;
@@ -80,7 +87,13 @@
 		hidden: number;
 		/** The reader's Perspective, for the panels' notes and example lines. */
 		perspective?: Perspective;
-		/** Which panel is open. Bindable so a story can render one open. */
+		/**
+		 * The inline first step: panels open in the page flow, starting at Roles,
+		 * until the reader skips, closes or finishes — then `onIntroEnd`.
+		 */
+		intro?: boolean;
+		onIntroEnd?: () => void;
+		/** Which panel the reader opened. Bindable so a story can render one open. */
 		open?: Dimension | null;
 	} = $props();
 
@@ -91,11 +104,20 @@
 	const offeredAdditives = $derived(additiveProfilesForRoles(roles));
 	const showAdditives = $derived(offeredAdditives.length > 0);
 
+	/** The panel showing: the one opened, or Roles while the first step runs. */
+	const shown = $derived<Dimension | null>(open ?? (intro ? 'roles' : null));
+	const inline = $derived(intro);
+
 	// A panel cannot outlive its dimension: deselecting the last relevant role
 	// while the Add-ons panel is open would otherwise leave it hanging.
 	$effect(() => {
 		if (open === 'additives' && !showAdditives) open = null;
 	});
+
+	/** The overlay form only exists from `sm:` up; below it, every panel is in flow. */
+	const isWide = () =>
+		typeof window !== 'undefined' && window.matchMedia?.('(min-width: 40rem)').matches;
+	const overlay = () => !inline && isWide();
 
 	/**
 	 * The dimension already handed focus. A plain `let`, deliberately untracked:
@@ -105,10 +127,9 @@
 	 */
 	let focusedPanel: Dimension | null = null;
 
-	// Opening a panel moves focus into it. The panel is a labelled group, so
-	// landing on the container itself announces which filter opened and leaves the
-	// next Tab on the first control — rather than dropping the reader onto "Close",
-	// which is what focusing the first focusable element would do.
+	// Opening an overlay panel moves focus into it. The panel is a labelled group,
+	// so landing on the container itself announces which filter opened and leaves
+	// the next Tab on the first control. An in-flow panel never steals focus.
 	$effect(() => {
 		if (!open) {
 			focusedPanel = null;
@@ -116,131 +137,113 @@
 		}
 		if (focusedPanel === open) return;
 		focusedPanel = open;
-		panel?.focus();
+		if (overlay()) panel?.focus();
 	});
 
 	function close(returnFocus = true): void {
 		const was = open;
 		open = null;
-		if (returnFocus && was) triggers[was]?.focus();
+		if (returnFocus && was && overlay()) triggers[was]?.focus();
+	}
+
+	/** Close, and end the first step if it is running — ✕, Escape, Show and Skip all do. */
+	function finish(): void {
+		close();
+		if (intro) onIntroEnd();
+	}
+
+	function onTrigger(dimension: Dimension): void {
+		if (shown !== dimension) open = dimension;
+		else if (intro) finish();
+		else close(false);
 	}
 
 	function onWindowKeydown(event: KeyboardEvent): void {
-		if (event.key === 'Escape' && open) {
+		if (event.key === 'Escape' && shown) {
 			event.stopPropagation();
-			close();
+			finish();
 		}
 	}
 
 	/**
-	 * Focus leaving the panel closes it — the non-modal counterpart to the
-	 * backdrop's click-away. Tab off the last card and the panel gets out of the
-	 * way instead of leaving a full-width overlay open behind the page it is
-	 * covering; the panel is deliberately **not** a focus trap, because it is not
-	 * modal and the page behind it stays usable.
+	 * Focus leaving an overlay panel closes it — the non-modal counterpart to the
+	 * backdrop's click-away. The panel is deliberately **not** a focus trap,
+	 * because it is not modal and the page behind it stays usable.
 	 *
-	 * Three things are not "leaving":
-	 *
-	 * - **No `relatedTarget`.** Focus went to the browser chrome or another window;
-	 *   closing on every Alt-Tab would lose a half-made selection.
-	 * - **Somewhere inside the panel.** Clicking a card, tabbing between them.
-	 * - **The trigger that owns this panel.** It is the same disclosure widget, and
-	 *   closing here would race the trigger's own click — a pointer press moves
-	 *   focus *before* the click fires, so we would close and the click would find
-	 *   the panel already shut and reopen it.
+	 * Three things are not "leaving": no `relatedTarget` (focus went to the
+	 * browser chrome or another window), somewhere inside the panel, and the
+	 * trigger that owns this panel (closing here would race its own click). An
+	 * in-flow panel is part of the page and never closes on focus-out.
 	 */
 	function onFocusOut(event: FocusEvent): void {
-		if (!open) return;
+		if (!open || !overlay()) return;
 		const next = event.relatedTarget;
 		if (!(next instanceof HTMLElement)) return;
 		if (panel?.contains(next)) return;
 		if (next === triggers[open]) return;
-		// Focus has already moved where the operator sent it; pulling it back to the
-		// trigger would undo their Tab.
 		close(false);
 	}
 
-	/**
-	 * What a trigger says about its dimension. Never blank: an unfiltered
-	 * dimension reads "Any", because a filter bar that shows nothing where a
-	 * selection would go looks broken rather than open.
-	 */
-	function summarise(
-		selected: Set<string>,
-		all: { slug: string; label: string }[],
-		emptyLabel: 'Any' | 'None'
-	): string {
-		if (selected.size === 0) return emptyLabel;
-		// "All" is a summary, and a summary of one item is just that item's name. With
-		// a single add-on offered, `Add-ons · All` reads as a claim about a set the
-		// reader cannot see; `Add-ons · Data Integrity` reads as what it is.
-		if (selected.size === all.length) return all.length === 1 ? all[0].label : 'All';
-		const labels = all.filter((x) => selected.has(x.slug)).map((x) => x.label);
-		return labels.length <= 2 ? labels.join(', ') : `${labels[0]}, +${labels.length - 1} more`;
-	}
+	const summaries = $derived({
+		roles: summarise(
+			roles,
+			allRoles.map((r) => ({ slug: r.slug as string, label: r.plural })),
+			'Any'
+		),
+		profiles: summarise(
+			profiles,
+			allProfiles.map((p) => ({ slug: p.slug as string, label: p.name })),
+			'Any'
+		),
+		additives: summarise(
+			additives,
+			offeredAdditives.map((a) => ({ slug: a.slug as string, label: a.name })),
+			'None'
+		)
+	});
+	const selectedCount = $derived({
+		roles: roles.size,
+		profiles: profiles.size,
+		additives: additives.size
+	});
 
-	const roleLabels = $derived(allRoles.map((r) => ({ slug: r.slug as string, label: r.plural })));
-	const profileLabels = $derived(
-		allProfiles.map((p) => ({ slug: p.slug as string, label: p.name }))
-	);
-	const additiveLabels = $derived(
-		offeredAdditives.map((a) => ({ slug: a.slug as string, label: a.name }))
-	);
-
-	const dimensions = $derived<
-		{ key: Dimension; label: string; summary: string; active: boolean }[]
-	>([
-		// "Any" for the two filtering dimensions — an empty one admits everything.
-		// "None" for add-ons, because an empty add-on selection layers nothing on;
-		// it is not a wildcard, and saying "Any" there would claim it was.
-		//
-		// `active` is what lets a **closed** dimension state its own colour: a bar
-		// that only shows its filter while a panel is open is a bar that looks
-		// unfiltered at rest.
-		{
-			key: 'roles',
-			label: 'Roles',
-			summary: summarise(roles, roleLabels, 'Any'),
-			active: roles.size > 0
-		},
-		{
-			key: 'profiles',
-			label: 'Standard Profiles',
-			summary: summarise(profiles, profileLabels, 'Any'),
-			active: profiles.size > 0
-		},
-		...(showAdditives
-			? [
-					{
-						key: 'additives' as const,
-						label: 'Add-ons',
-						summary: summarise(additives, additiveLabels, 'None'),
-						active: additives.size > 0
-					}
-				]
-			: [])
+	const dimensions = $derived<Dimension[]>([
+		'roles',
+		'profiles',
+		...(showAdditives ? (['additives'] as const) : [])
 	]);
 
 	const anySelected = $derived(roles.size > 0 || profiles.size > 0 || additives.size > 0);
+	const total = $derived(matched + hidden);
 
 	const panelItems = $derived({
 		roles: roleItems(roles, perspective),
-		profiles: profileItems(profiles, perspective),
+		profiles: profileItems(profiles, perspective, roles),
 		additives: additiveItems(offeredAdditives, additives, perspective)
-	});
-	const notes = $derived({
-		roles: perspectiveCopy(filterPanelNotes.roles, perspective) ?? '',
-		profiles: perspectiveCopy(filterPanelNotes.profiles, perspective) ?? '',
-		additives: perspectiveCopy(filterPanelNotes.additives, perspective) ?? ''
 	});
 	const additiveNote = $derived(unofferedAdditiveNote(offeredAdditives));
 
 	/** Where each panel's "read more" goes. Static route ids, resolved once. */
-	const profilesOverviewHref = resolve('/profiles');
-	const rolesOverviewHref = resolve('/about');
+	const overviewHref = { roles: resolve('/about'), profiles: resolve('/profiles') } as const;
 
-	const openTone = $derived(open ? toneFor(open) : 'requirement');
-	const tone = $derived(toneClasses(openTone));
+	/** The way on from a panel: the next offered dimension, or Show on the last. */
+	function primaryFor(dimension: Dimension): { label: string; onClick: () => void } {
+		const next = dimensions[dimensions.indexOf(dimension) + 1];
+		return next
+			? { label: `Next: ${dimensionCopy[next].label} →`, onClick: () => (open = next) }
+			: { label: `Show ${setsLabel(matched)}`, onClick: finish };
+	}
+
+	const tone = $derived(toneClasses(shown ? toneFor(shown) : 'neutral'));
+
+	async function copyLink(): Promise<void> {
+		const params = toSearchParams({
+			roles: [...roles],
+			profiles: [...profiles],
+			additiveProfiles: [...additives]
+		});
+		await navigator.clipboard.writeText(`${window.location.origin}${resolve('/')}?${params}`);
+	}
 
 	/**
 	 * Where the panel grows from, and where its notch points. Measured live because
@@ -248,9 +251,9 @@
 	 * open panel — see `anchor-x.svelte.ts` for the full failure mode.
 	 */
 	const anchor = anchorX({
-		trigger: () => (open ? triggers[open] : undefined),
+		trigger: () => (shown ? triggers[shown] : undefined),
 		wrapper: () => wrapper,
-		track: () => dimensions
+		track: () => summaries
 	});
 
 	const { reveal, fade } = panelMotion(() => anchor.current);
@@ -259,162 +262,121 @@
 <svelte:window onkeydown={onWindowKeydown} />
 
 <!--
-	`focusout` is listened for on the whole widget — bar and panel together — rather
-	than on the panel alone, so a focus move *between* the two (the trigger, a
-	sibling trigger, Clear) is one event this handler can judge as a whole.
+	`focusout` is listened for on the whole widget — bar and panel together — so a
+	focus move *between* the two is one event the handler can judge as a whole.
 -->
 <div class="relative" bind:this={wrapper} onfocusout={onFocusOut}>
+	<!-- Not sticky below `sm:`: four stacked rows would cost a fifth of the viewport. -->
 	<div
-		class="sticky top-14 z-30 -mx-4 border-b border-border bg-background/95 px-4 py-2.5 backdrop-blur"
+		class="z-30 -mx-4 border-b border-border bg-background/95 px-4 py-2.5 backdrop-blur sm:sticky sm:top-14"
 	>
-		<div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-			{#each dimensions as dimension (dimension.key)}
-				{@const isOpen = open === dimension.key}
-				{@const dimensionTone = toneClasses(toneFor(dimension.key))}
-				<!--
-					`relative z-40` puts the trigger above the panel's own top rail, so the
-					underline and the rail read as one line the notch detours around rather
-					than as two lines stacked.
-				-->
-				<button
-					bind:this={triggers[dimension.key]}
-					type="button"
-					aria-haspopup="dialog"
-					aria-expanded={isOpen}
-					aria-controls="filter-panel"
-					onclick={() => (isOpen ? close(false) : (open = dimension.key))}
-					class={`relative z-40 flex max-w-full items-center gap-1.5 rounded-md px-2 py-1 text-label-md transition-all duration-150 ${
-						isOpen
-							? `rounded-b-none border-b-2 bg-transparent ${dimensionTone.text} ${dimensionTone.underline}`
-							: `${dimension.active ? dimensionTone.text : 'text-muted-foreground'} ${dimensionTone.softHover}`
-					}`}
-				>
-					<span>{dimension.label}</span>
-					<span aria-hidden="true" class="opacity-50">·</span>
-					<span class="min-w-0 truncate text-foreground">{dimension.summary}</span>
-					<span
-						aria-hidden="true"
-						class={`text-xs opacity-70 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-						>▾</span
-					>
-				</button>
+		<div class="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2">
+			{#each dimensions as dimension (dimension)}
+				<FilterTrigger
+					bind:ref={triggers[dimension]}
+					step={dimensionCopy[dimension].step}
+					icon={dimensionCopy[dimension].icon}
+					label={dimensionCopy[dimension].label}
+					summary={summaries[dimension]}
+					active={selectedCount[dimension] > 0}
+					open={shown === dimension}
+					tone={toneClasses(toneFor(dimension))}
+					onclick={() => onTrigger(dimension)}
+				/>
 			{/each}
 
-			<div class="ml-auto flex items-center gap-3 pl-2">
-				<span class="text-label-md text-muted-foreground">
-					{#if !anySelected}
-						Showing all {matched} scenario sets
-					{:else}
-						{matched} of {matched + hidden} scenario sets
-					{/if}
-				</span>
-				{#if anySelected}
-					<button
-						type="button"
-						onclick={onClear}
-						class="text-label-md text-primary hover:underline"
-					>
-						Clear
-					</button>
-				{/if}
-			</div>
+			<FilterBarStatus
+				{matched}
+				{total}
+				{anySelected}
+				copyLabel={perspectiveCopy(copyLinkLabel, perspective) ?? 'Copy link'}
+				onCopyLink={copyLink}
+				{onClear}
+			/>
 		</div>
 	</div>
 
-	{#if open}
-		<!--
-			The backdrop is a button so a pointer click anywhere dismisses the panel;
-			Escape does the same from the keyboard, which is why it is `tabindex="-1"`
-			and never a tab stop of its own.
-		-->
-		<button
-			type="button"
-			tabindex="-1"
-			aria-label="Close filter panel"
-			class="fixed inset-0 z-20 cursor-default"
-			onclick={() => close(false)}
-			in:fade
-		></button>
+	{#if shown}
+		{#if !inline}
+			<!--
+				The backdrop is a button so a pointer click anywhere dismisses the overlay;
+				Escape does the same from the keyboard, which is why it is `tabindex="-1"`.
+				Overlay form only: below `sm:` the panel is in flow and needs none.
+			-->
+			<button
+				type="button"
+				tabindex="-1"
+				aria-label="Close filter panel"
+				class="fixed inset-0 z-20 hidden cursor-default sm:block"
+				onclick={() => close(false)}
+				in:fade
+			></button>
+		{/if}
 		<!--
 			`tabindex="-1"` makes the container programmatically focusable without
-			adding a tab stop of its own: opening the panel focuses it once, and from
-			there Tab walks the controls inside in DOM order.
+			adding a tab stop of its own.
 		-->
 		<div
 			bind:this={panel}
 			id="filter-panel"
 			tabindex="-1"
 			role="group"
-			aria-label={`${dimensions.find((d) => d.key === open)?.label} filter`}
-			class={`absolute inset-x-0 top-full z-30 -mx-4 border-t-2 border-b border-border bg-popover px-4 py-6 shadow-lg focus:outline-none ${tone.rail}`}
+			aria-label={`${dimensionCopy[shown].label} filter`}
+			class={`relative -mx-4 border-t-2 border-b border-border bg-popover px-4 py-6 focus:outline-none ${tone.rail} ${
+				inline ? '' : 'sm:absolute sm:inset-x-0 sm:top-full sm:z-30 sm:shadow-lg'
+			}`}
 			in:reveal
 		>
-			<!--
-				Points the panel back at the trigger that opened it. Two stacked triangles
-				drawn with the transparent-side border trick: an outer 18×9 in the rail's
-				colour, and a second 16×8 offset 3px down in whatever the panel paints under
-				the rail, leaving an even ~2px stroke that reads as the rail detouring up
-				around the trigger. The inner triangle is deliberately 1px taller than the
-				offset so its base swallows the 2px rail underneath — otherwise a line is
-				drawn straight across the notch's mouth.
-
-				The inner fill has to follow the panel's own surface or the notch reads as a
-				floating bracket: the soft header band below `sm:`, `bg-popover` above it.
-			-->
-			<span
-				aria-hidden="true"
-				class="pointer-events-none absolute -top-[9px] block"
-				style={`left: ${anchor.current}px; transform: translateX(-50%);`}
-			>
+			{#if !inline}
+				<!--
+					Points the overlay back at the trigger that opened it. Two stacked
+					triangles drawn with the transparent-side border trick: an outer 18×9
+					in the rail's colour, and a second 16×8 offset 3px down in the panel's
+					surface, leaving an even ~2px stroke that reads as the rail detouring up
+					around the trigger. Overlay form only.
+				-->
 				<span
-					class={`block size-0 border-x-[9px] border-b-[9px] border-x-transparent ${tone.notchStroke}`}
-				></span>
-				<span
-					class={`absolute top-[3px] left-1/2 block size-0 -translate-x-1/2 border-x-[8px] border-b-[8px] border-x-transparent sm:border-b-popover ${tone.notchFill}`}
-				></span>
-			</span>
-			{#if open === 'roles'}
-				<FilterPanel
-					heading="Roles"
-					description="A role is the part a product plays in a credential exchange. Wallets play the holder role; the label stays “Wallet.”"
-					items={panelItems.roles}
-					note={notes.roles}
-					noteTag={perspective}
-					overviewHref={rolesOverviewHref}
-					overviewLabel="How roles fit together"
-					onToggle={(slug) => onToggleRole(slug as RoleSlug)}
-					onClose={() => close()}
-					{tone}
-				/>
-			{:else if open === 'profiles'}
-				<FilterPanel
-					heading="Standard Profiles"
-					description="A Standard Profile is an interoperability profile: a fixed set of standards and options that two products must share to work together."
-					items={panelItems.profiles}
-					note={notes.profiles}
-					noteTag={perspective}
-					overviewHref={profilesOverviewHref}
-					overviewLabel="All Standard Profiles"
-					onToggle={(slug) => onToggleProfile(slug as ProfileSlug)}
-					onClose={() => close()}
-					{tone}
-				/>
-			{:else}
-				<FilterPanel
-					heading="Add-ons"
-					description="An add-on layers extra requirements, such as skills data or a pinned cryptosuite, onto a Standard Profile. It never runs alone — selecting one adds its requirements to every scenario set it applies to."
-					items={panelItems.additives}
-					columns={2}
-					footnote={additiveNote}
-					note={notes.additives}
-					noteTag={perspective}
-					overviewHref={profilesOverviewHref}
-					overviewLabel="All add-ons"
-					onToggle={(slug) => onToggleAdditive(slug as AdditiveProfileSlug)}
-					onClose={() => close()}
-					{tone}
-				/>
+					aria-hidden="true"
+					class="pointer-events-none absolute -top-[9px] hidden sm:block"
+					style={`left: ${anchor.current}px; transform: translateX(-50%);`}
+				>
+					<span
+						class={`block size-0 border-x-[9px] border-b-[9px] border-x-transparent ${tone.notchStroke}`}
+					></span>
+					<span
+						class="absolute top-[3px] left-1/2 block size-0 -translate-x-1/2 border-x-[8px] border-b-[8px] border-x-transparent border-b-popover"
+					></span>
+				</span>
 			{/if}
+			{@render panelFor(shown)}
 		</div>
 	{/if}
 </div>
+
+{#snippet panelFor(dimension: Dimension)}
+	{@const copy = dimensionCopy[dimension]}
+	<FilterPanel
+		heading={intro && copy.introHeading ? copy.introHeading : `${copy.step}. ${copy.label}`}
+		icon={copy.icon}
+		description={copy.description}
+		items={panelItems[dimension]}
+		columns={dimension === 'additives' ? 2 : 3}
+		footnote={dimension === 'additives' ? additiveNote : undefined}
+		note={perspectiveCopy(filterPanelNotes[dimension], perspective) ?? ''}
+		noteTag={perspective}
+		overviewHref={dimension === 'roles' ? overviewHref.roles : overviewHref.profiles}
+		overviewLabel={copy.overviewLabel}
+		primary={primaryFor(dimension)}
+		skip={intro && dimension === 'roles'
+			? { label: `Skip — show all ${total}`, onClick: finish }
+			: undefined}
+		onToggle={(slug) =>
+			dimension === 'roles'
+				? onToggleRole(slug as RoleSlug)
+				: dimension === 'profiles'
+					? onToggleProfile(slug as ProfileSlug)
+					: onToggleAdditive(slug as AdditiveProfileSlug)}
+		onClose={finish}
+		{tone}
+	/>
+{/snippet}

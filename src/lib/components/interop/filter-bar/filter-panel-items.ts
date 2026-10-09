@@ -19,6 +19,7 @@ import {
 	rolesOfAdditiveProfile
 } from '$lib/interop/index.js';
 import { type Perspective, perspectiveCopy } from '$lib/interop/perspective/index.js';
+import { profileMismatch } from '$lib/interop/selection/index.js';
 
 import type { FilterPanelItem } from './filter-panel-item.js';
 
@@ -37,9 +38,15 @@ export function roleItems(
 	}));
 }
 
+/**
+ * A Standard Profile with no scenario set for any selected role stays offered,
+ * annotated with the roles it does cover — dropping it would hide the reason a
+ * selection comes back empty.
+ */
 export function profileItems(
 	selected: Set<ProfileSlug>,
-	perspective: Perspective | undefined
+	perspective: Perspective | undefined,
+	roles: Set<RoleSlug> = new Set()
 ): FilterPanelItem[] {
 	return allProfiles.map((profile) => ({
 		slug: profile.slug,
@@ -48,6 +55,7 @@ export function profileItems(
 		docHref: profileHref(profile.slug),
 		docLabel: 'Read the Standard Profile',
 		example: profile.example && perspectiveCopy(profile.example, perspective),
+		warning: profileMismatch(profile.slug, [...roles]),
 		selected: selected.has(profile.slug)
 	}));
 }

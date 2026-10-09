@@ -46,10 +46,13 @@
 	const rolesOpen = selection(['wallet'], ['oid4']);
 	const profilesOpen = selection(['wallet'], ['oid4']);
 	const addOnsOpen = selection(['wallet'], ['oid4'], ['data-integrity-cryptosuites']);
+	const firstStep = selection();
+	const mismatch = selection(['wallet'], ['ob3-direct-delivery']);
+	const evaluator = selection(['issuer']);
 </script>
 
 <!--
-	Every story reserves space below the bar: the panel is absolutely positioned
+	Every story reserves space below the bar: from `sm:` up the panel is absolutely positioned
 	against it, so a story with no room under the bar renders the panel off-canvas.
 
 	The panel's entry animation runs on mount, so a screenshot taken the instant a
@@ -84,5 +87,26 @@
 <Story name="Add-ons panel open" asChild>
 	<div class="min-h-[40rem] bg-background px-4 py-6">
 		<FilterBar {...addOnsOpen} matched={1} hidden={3} open="additives" />
+	</div>
+</Story>
+
+<!-- The inline first step: in the page flow, no backdrop, Next and Skip. -->
+<Story name="Inline first step" asChild>
+	<div class="min-h-[36rem] bg-background px-4 py-6">
+		<FilterBar {...firstStep} matched={8} hidden={0} intro />
+	</div>
+</Story>
+
+<!-- A profile with no set for the selected role stays offered, annotated. -->
+<Story name="Mismatched profile annotated" asChild>
+	<div class="min-h-[40rem] bg-background px-4 py-6">
+		<FilterBar {...mismatch} matched={0} hidden={8} open="profiles" />
+	</div>
+</Story>
+
+<!-- The note carries its orchid Evaluator tag; Copy link reads "for the vendor". -->
+<Story name="Evaluator — roles open" asChild>
+	<div class="min-h-[40rem] bg-background px-4 py-6">
+		<FilterBar {...evaluator} matched={3} hidden={5} perspective="evaluator" open="roles" />
 	</div>
 </Story>
