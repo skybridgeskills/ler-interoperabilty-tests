@@ -3,6 +3,7 @@
 	import { SvelteSet } from 'svelte/reactivity';
 
 	import { allBadgeClaims } from '$lib/client/badges/index.js';
+	import { perspectiveStore } from '$lib/client/perspective/index.js';
 	import {
 		allScenarioRuns,
 		exportResults,
@@ -12,6 +13,8 @@
 	import { CompletionGroup } from '$lib/components/interop/completion-group/index.js';
 	import { FilterBar } from '$lib/components/interop/filter-bar/index.js';
 	import { ResultsTransfer } from '$lib/components/interop/results-transfer/index.js';
+	import { PageHero } from '$lib/components/page-hero/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
 	import {
 		badgeHrefFor,
 		badgeNameFor,
@@ -22,6 +25,7 @@
 		expandedClaimedInfoFor,
 		completionGroups
 	} from '$lib/interop/index.js';
+	import { PerspectiveCopy, perspectiveCopy } from '$lib/interop/perspective/index.js';
 	import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
 	import type { CannotServe } from '$lib/interop/scenarios/index.js';
 
@@ -36,6 +40,21 @@
 	 * is the honest default rather than a convenience.
 	 */
 	let { blocked = {} }: { blocked?: Record<string, CannotServe> } = $props();
+
+	const perspective = perspectiveStore();
+
+	/**
+	 * The only hero copy that varies by Perspective. Placeholder until the
+	 * Perspective copy is authored: all three versions read the same.
+	 */
+	const heroLede = PerspectiveCopy({
+		builder:
+			'Your console for building and evaluating interoperable Learning & Employment Record systems. Standards compliance isn’t the same as interoperability.',
+		evaluator:
+			'Your console for building and evaluating interoperable Learning & Employment Record systems. Standards compliance isn’t the same as interoperability.',
+		neutral:
+			'Your console for building and evaluating interoperable Learning & Employment Record systems. Standards compliance isn’t the same as interoperability.'
+	});
 
 	// Persisted scenario runs — localStorage, so browser-only. Seeded empty for
 	// SSR and hydrated on mount, exactly like the selection; the meters render
@@ -91,17 +110,23 @@
 	let showHidden = $state(false);
 </script>
 
-<section class="space-y-3 pb-6">
-	<!-- `text-display-lg` alone overflows at 375px; scale it up from `text-headline-md`. -->
-	<h1 class="text-headline-md sm:text-display-lg">LER Interoperability Test Suite</h1>
-	<p class="max-w-prose text-body-md text-muted-foreground">
-		Your console for building and evaluating interoperable Learning &amp; Employment Record systems.
-		Standards compliance isn’t the same as interoperability —
-		<a href={resolve('/about')} class="text-primary hover:underline">
-			read about what this tool does →
-		</a>
-	</p>
-</section>
+<div class="pb-6">
+	<PageHero
+		size="large"
+		perspective={perspective.current}
+		onPerspectiveChange={(p) => perspective.choose(p)}
+	>
+		{#snippet title()}LER Interoperability Test Suite{/snippet}
+		{#snippet lede()}{perspectiveCopy(heroLede, perspective.current)}{/snippet}
+		{#snippet actions()}
+			<Button
+				href={resolve('/about')}
+				variant="perspective"
+				class="h-9 rounded-full px-[18px] text-body-md">About these tests</Button
+			>
+		{/snippet}
+	</PageHero>
+</div>
 
 <FilterBar
 	roles={selection.roles}

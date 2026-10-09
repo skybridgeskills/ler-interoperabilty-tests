@@ -1,6 +1,8 @@
 <script lang="ts" module>
 	import { defineMeta } from '@storybook/addon-svelte-csf';
 
+	import { WithPerspective } from '$lib/storybook/index.js';
+
 	import { demoScenario, singleStepScenario, storedRun } from './scenario-fixture.js';
 	import ScenarioPage from './ScenarioPage.svelte';
 	import { stubExchangeApi, type StubBehaviour } from './stub-exchange-api.js';
@@ -99,4 +101,12 @@
 	<div class="w-[375px] bg-background p-4">
 		<ScenarioPage scenario={demoScenario} {storedRun} />
 	</div>
+</Story>
+
+<Story name="Builder chosen — stored run" asChild>
+	<WithPerspective perspective="builder">
+		<div class="mx-auto max-w-3xl bg-background p-6">
+			<ScenarioPage scenario={demoScenario} {storedRun} />
+		</div>
+	</WithPerspective>
 </Story>

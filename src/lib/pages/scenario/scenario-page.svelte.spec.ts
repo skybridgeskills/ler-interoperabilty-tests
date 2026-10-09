@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 
+import { perspectiveContext } from '$lib/client/perspective/index.js';
 import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
 import { scenarioBySlug } from '$lib/interop/scenarios/index.js';
 
@@ -78,7 +79,10 @@ async function answerEachStep(option: string, times: number) {
 describe('ScenarioPage — the label guard', UNDER_LOAD, () => {
 	it('never renders a shuffled step’s authored title, only shuffleLabel + position', async () => {
 		withApi({ kind: 'awaits' });
-		const { container } = render(ScenarioPage, { scenario: demoScenario });
+		const { container } = render(ScenarioPage, {
+			props: { scenario: demoScenario },
+			context: perspectiveContext()
+		});
 
 		await expect.element(page.getByText('Credential 1')).toBeInTheDocument();
 
@@ -92,7 +96,7 @@ describe('ScenarioPage — the label guard', UNDER_LOAD, () => {
 
 	it('labels every shuffled step positionally, in run order', async () => {
 		withApi({ kind: 'awaits' });
-		render(ScenarioPage, { scenario: demoScenario });
+		render(ScenarioPage, { props: { scenario: demoScenario }, context: perspectiveContext() });
 
 		await expect.element(page.getByText('Credential 1')).toBeInTheDocument();
 		await expect.element(page.getByText('Credential 2')).toBeInTheDocument();
@@ -103,7 +107,7 @@ describe('ScenarioPage — the label guard', UNDER_LOAD, () => {
 describe('ScenarioPage — the reveal choreography', UNDER_LOAD, () => {
 	it('does not offer a question until the step has settled', async () => {
 		withApi({ kind: 'awaits' });
-		render(ScenarioPage, { scenario: demoScenario });
+		render(ScenarioPage, { props: { scenario: demoScenario }, context: perspectiveContext() });
 
 		await expect.element(page.getByText('Credential 1')).toBeInTheDocument();
 		expect(page.getByRole('button', { name: 'Accepted it', exact: true }).elements()).toHaveLength(
@@ -114,7 +118,7 @@ describe('ScenarioPage — the reveal choreography', UNDER_LOAD, () => {
 
 	it('resolves the automatic requirement on settle, then asks', async () => {
 		withApi({ kind: 'settles' });
-		render(ScenarioPage, { scenario: demoScenario });
+		render(ScenarioPage, { props: { scenario: demoScenario }, context: perspectiveContext() });
 
 		// The wire's verdict is on screen while the question is being asked.
 		await expect
@@ -127,7 +131,7 @@ describe('ScenarioPage — the reveal choreography', UNDER_LOAD, () => {
 
 	it('withholds the attested reveal mid-run, echoing the answer, and does not stop the run', async () => {
 		withApi({ kind: 'settles' });
-		render(ScenarioPage, { scenario: demoScenario });
+		render(ScenarioPage, { props: { scenario: demoScenario }, context: perspectiveContext() });
 
 		await page.getByRole('button', { name: 'Accepted it', exact: true }).click();
 
@@ -143,7 +147,7 @@ describe('ScenarioPage — the reveal choreography', UNDER_LOAD, () => {
 
 	it('reveals every attested requirement together once the run is complete', async () => {
 		withApi({ kind: 'settles' });
-		render(ScenarioPage, { scenario: demoScenario });
+		render(ScenarioPage, { props: { scenario: demoScenario }, context: perspectiveContext() });
 
 		// Answer all three passes, then the debrief — nothing has revealed so far.
 		await answerEachStep('Refused it', 3);
@@ -163,7 +167,10 @@ describe('ScenarioPage — the reveal choreography', UNDER_LOAD, () => {
 describe('ScenarioPage — recording', UNDER_LOAD, () => {
 	it('disables Finish with a count until every requirement is answered', async () => {
 		withApi({ kind: 'settles' });
-		render(ScenarioPage, { scenario: singleStepScenario });
+		render(ScenarioPage, {
+			props: { scenario: singleStepScenario },
+			context: perspectiveContext()
+		});
 
 		const finish = page.getByRole('button', { name: 'Finish' });
 		await expect.element(finish).toBeDisabled();
@@ -172,7 +179,10 @@ describe('ScenarioPage — recording', UNDER_LOAD, () => {
 
 	it('records exactly once, only when every requirement is answered', async () => {
 		withApi({ kind: 'settles' });
-		render(ScenarioPage, { scenario: singleStepScenario });
+		render(ScenarioPage, {
+			props: { scenario: singleStepScenario },
+			context: perspectiveContext()
+		});
 
 		await page.getByRole('button', { name: 'Yes', exact: true }).click();
 
@@ -189,7 +199,7 @@ describe('ScenarioPage — recording', UNDER_LOAD, () => {
 describe('ScenarioPage — the errored dead end', UNDER_LOAD, () => {
 	it('offers only Start over, and never a Finish', async () => {
 		withApi({ kind: 'create-fails' });
-		render(ScenarioPage, { scenario: demoScenario });
+		render(ScenarioPage, { props: { scenario: demoScenario }, context: perspectiveContext() });
 
 		await expect.element(page.getByText(/this run cannot be recorded/)).toBeInTheDocument();
 		await expect.element(page.getByRole('button', { name: 'Start over' })).toBeInTheDocument();
@@ -200,12 +210,15 @@ describe('ScenarioPage — the errored dead end', UNDER_LOAD, () => {
 describe('ScenarioPage — blocked', UNDER_LOAD, () => {
 	it('renders the typed reason and no run affordance', async () => {
 		render(ScenarioPage, {
-			scenario: demoScenario,
-			blocked: {
-				kind: 'cryptosuite-unavailable',
-				requested: 'bbs-2023',
-				available: ['eddsa-rdfc-2022']
-			}
+			props: {
+				scenario: demoScenario,
+				blocked: {
+					kind: 'cryptosuite-unavailable',
+					requested: 'bbs-2023',
+					available: ['eddsa-rdfc-2022']
+				}
+			},
+			context: perspectiveContext()
 		});
 
 		await expect
@@ -219,7 +232,10 @@ describe('ScenarioPage — blocked', UNDER_LOAD, () => {
 
 describe('ScenarioPage — a stored run', UNDER_LOAD, () => {
 	it('re-renders read-only with its reveals, plus a retry', async () => {
-		render(ScenarioPage, { scenario: demoScenario, storedRun });
+		render(ScenarioPage, {
+			props: { scenario: demoScenario, storedRun },
+			context: perspectiveContext()
+		});
 
 		await expect.element(page.getByText('Failed')).toBeInTheDocument();
 		await expect.element(page.getByRole('button', { name: 'Run it again' })).toBeInTheDocument();
@@ -231,7 +247,10 @@ describe('ScenarioPage — a stored run', UNDER_LOAD, () => {
 describe('ScenarioPage — attach mode', UNDER_LOAD, () => {
 	it('declines for a multi-action-step scenario and offers the normal run', async () => {
 		withApi({ kind: 'awaits' });
-		render(ScenarioPage, { scenario: demoScenario, attachExchangeId: 'attached-exchange-1' });
+		render(ScenarioPage, {
+			props: { scenario: demoScenario, attachExchangeId: 'attached-exchange-1' },
+			context: perspectiveContext()
+		});
 
 		await expect.element(page.getByText(/Attach mode is not available/)).toBeInTheDocument();
 		await expect.element(page.getByText('Credential 1')).toBeInTheDocument();
@@ -240,8 +259,11 @@ describe('ScenarioPage — attach mode', UNDER_LOAD, () => {
 	it('adopts into step 1 for a single-action-step scenario', async () => {
 		withApi({ kind: 'awaits' });
 		render(ScenarioPage, {
-			scenario: singleStepScenario,
-			attachExchangeId: 'attached-exchange-1'
+			props: {
+				scenario: singleStepScenario,
+				attachExchangeId: 'attached-exchange-1'
+			},
+			context: perspectiveContext()
 		});
 
 		await expect.element(page.getByText('exchange · attached-exchange-1')).toBeInTheDocument();
@@ -252,7 +274,7 @@ describe('ScenarioPage — attach mode', UNDER_LOAD, () => {
 describe('ScenarioPage — a whole run', UNDER_LOAD, () => {
 	it('walks every step and records once every requirement is answered', async () => {
 		withApi({ kind: 'settles' });
-		render(ScenarioPage, { scenario: demoScenario });
+		render(ScenarioPage, { props: { scenario: demoScenario }, context: perspectiveContext() });
 
 		// Three shuffled passes, each one question, then the debrief's affirm.
 		await answerEachStep('Refused it', 3);
@@ -270,7 +292,10 @@ describe('ScenarioPage — a whole run', UNDER_LOAD, () => {
 describe('ScenarioPage — a deliver-direct step', UNDER_LOAD, () => {
 	it('signs a downloadable credential, settles, then offers the verdict', async () => {
 		withApi({ kind: 'settles' });
-		render(ScenarioPage, { scenario: directDeliveryScenario });
+		render(ScenarioPage, {
+			props: { scenario: directDeliveryScenario },
+			context: perspectiveContext()
+		});
 
 		// The download panel renders the signed deliverable...
 		await expect.element(page.getByRole('button', { name: /Download/ })).toBeInTheDocument();
@@ -288,7 +313,10 @@ describe('ScenarioPage — a deliver-direct step', UNDER_LOAD, () => {
 
 	it('cannot be recorded when signing fails', async () => {
 		withApi({ kind: 'create-fails' });
-		render(ScenarioPage, { scenario: directDeliveryScenario });
+		render(ScenarioPage, {
+			props: { scenario: directDeliveryScenario },
+			context: perspectiveContext()
+		});
 
 		await expect.element(page.getByText(/cannot be recorded/)).toBeInTheDocument();
 	});
@@ -305,7 +333,7 @@ describe('ScenarioPage — the step Details panel', UNDER_LOAD, () => {
 	 */
 	it('explains a 500 while the step is still in flight after a miss', async () => {
 		withApi({ kind: 'settles' });
-		render(ScenarioPage, { scenario: receiveScenario });
+		render(ScenarioPage, { props: { scenario: receiveScenario }, context: perspectiveContext() });
 
 		const field = page.getByRole('textbox');
 		await field.fill('openid-credential-offer://?credential_offer_uri=miss');
@@ -328,7 +356,10 @@ describe('ScenarioPage — the step Details panel', UNDER_LOAD, () => {
 
 	it('shows no panel for a stored run — evidence is live-only and never persisted', async () => {
 		withApi({ kind: 'settles' });
-		render(ScenarioPage, { scenario: demoScenario, storedRun });
+		render(ScenarioPage, {
+			props: { scenario: demoScenario, storedRun },
+			context: perspectiveContext()
+		});
 
 		// Same anchor the read-only stored-run test above uses.
 		await expect.element(page.getByRole('button', { name: 'Run it again' })).toBeInTheDocument();
@@ -339,7 +370,7 @@ describe('ScenarioPage — the step Details panel', UNDER_LOAD, () => {
 describe('ScenarioPage — a present-to-verifier step', UNDER_LOAD, () => {
 	it('presents once the operator pastes a URL, then offers the verdict', async () => {
 		withApi({ kind: 'settles' });
-		render(ScenarioPage, { scenario: presentScenario });
+		render(ScenarioPage, { props: { scenario: presentScenario }, context: perspectiveContext() });
 
 		// The paste field is shown; no verdict is answerable yet.
 		const field = page.getByRole('textbox');
@@ -365,7 +396,7 @@ describe('ScenarioPage — a present-to-verifier step', UNDER_LOAD, () => {
 
 	it('stays in-flight and lets the operator re-present after a transport miss', async () => {
 		withApi({ kind: 'settles' });
-		render(ScenarioPage, { scenario: presentScenario });
+		render(ScenarioPage, { props: { scenario: presentScenario }, context: perspectiveContext() });
 
 		const field = page.getByRole('textbox');
 		await field.fill('https://verifier.test/interactions/miss');
@@ -381,7 +412,10 @@ describe('ScenarioPage — a present-to-verifier step', UNDER_LOAD, () => {
 
 	it('drives the pure-automatic delivery scenario: present → wire checks resolve → finish', async () => {
 		withApi({ kind: 'settles' });
-		render(ScenarioPage, { scenario: scenarioBySlug('vcalm-verifier-delivery')! });
+		render(ScenarioPage, {
+			props: { scenario: scenarioBySlug('vcalm-verifier-delivery')! },
+			context: perspectiveContext()
+		});
 
 		const field = page.getByRole('textbox');
 		await field.fill('https://verifier.test/interactions/ex-1');

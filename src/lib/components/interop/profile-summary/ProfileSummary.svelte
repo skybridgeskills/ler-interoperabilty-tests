@@ -1,46 +1,17 @@
 <script lang="ts">
 	import type { Profile } from '$lib/interop/index.js';
 
+	/**
+	 * A Standard Profile's body: its key components and use cases. The identity
+	 * facts — version, status, last updated, the published-profile link — live in
+	 * the page hero's `meta` line, not here.
+	 */
 	let { profile }: { profile: Profile } = $props();
 </script>
 
-<section class="mt-8 grid gap-8 md:grid-cols-3">
-	<dl class="space-y-2 text-body-md md:col-span-1">
-		<div class="flex flex-col">
-			<dt class="text-label-md text-muted-foreground">ID</dt>
-			<dd class="font-mono text-foreground">{profile.id}</dd>
-		</div>
-		<div class="flex flex-col">
-			<dt class="text-label-md text-muted-foreground">Version</dt>
-			<dd class="font-mono text-foreground">{profile.version}</dd>
-		</div>
-		{#if profile.url}
-			<div class="flex flex-col">
-				<dt class="text-label-md text-muted-foreground">Published profile</dt>
-				<dd>
-					<a
-						class="break-all text-primary hover:underline"
-						href={profile.url}
-						rel="noopener noreferrer"
-						target="_blank"
-					>
-						{profile.url}
-					</a>
-				</dd>
-			</div>
-		{/if}
-		<div class="flex flex-col">
-			<dt class="text-label-md text-muted-foreground">Status</dt>
-			<dd class="text-foreground">{profile.status}</dd>
-		</div>
-		<div class="flex flex-col">
-			<dt class="text-label-md text-muted-foreground">Last updated</dt>
-			<dd class="text-foreground">{profile.lastUpdated}</dd>
-		</div>
-	</dl>
-
-	<dl class="space-y-3 text-body-md md:col-span-2">
-		<h2 class="text-headline-md">Key components</h2>
+<section class="mt-8 max-w-3xl space-y-3">
+	<h2 class="text-headline-md">Key components</h2>
+	<dl class="space-y-3 text-body-md">
 		{#each profile.keyComponents as component (component.label)}
 			<div class="flex flex-col">
 				<dt class="text-label-md text-muted-foreground">{component.label}</dt>

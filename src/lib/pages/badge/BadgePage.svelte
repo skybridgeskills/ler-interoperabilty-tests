@@ -2,11 +2,14 @@
 	import { onDestroy, onMount } from 'svelte';
 
 	import { latestClaimFor, recordBadgeClaim } from '$lib/client/badges/index.js';
+	import { perspectiveStore } from '$lib/client/perspective/index.js';
 	import { allScenarioRuns } from '$lib/client/scenario-runs/index.js';
 	import { ExchangeRunnerPanel } from '$lib/components/interop/exchange-runner/index.js';
 	import type { ExchangeRunnerPanelData } from '$lib/components/interop/exchange-runner/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { PageHero } from '$lib/components/page-hero/index.js';
+	import { ContextChip } from '$lib/components/perspective/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { additiveProfileBySlug, profileBySlug, roleBySlug } from '$lib/interop/accessors.js';
 	import {
 		type BadgeClaimSnapshot,
 		type BadgeDefinition,
@@ -24,9 +27,12 @@
 		isClaimable,
 		isExpandedClaimable
 	} from '$lib/interop/completion/index.js';
+	import { additiveProfileHref, profileHref, roleHref } from '$lib/interop/route-hrefs.js';
 	import type { CannotServe } from '$lib/interop/scenarios/index.js';
 
 	import { type ClaimError, type ClaimLink, startBadgeClaim } from './badge-claim.js';
+
+	import { resolve } from '$app/paths';
 
 	/**
 	 * `/badges/[slug]`, serving three audiences from **one** page:
@@ -63,6 +69,10 @@
 		priorClaim?: BadgeClaimSnapshot | null;
 		claimErrorForStory?: ClaimError;
 	} = $props();
+
+	const perspective = perspectiveStore();
+	const role = $derived(roleBySlug(badge.role));
+	const baseProfile = $derived(profileBySlug(badge.baseProfile));
 
 	// Store-derived state, filled on mount so SSR renders the stranger view. The
 	// Storybook props (`completion`/`priorClaim`/`claimErrorForStory`) win over
@@ -166,11 +176,35 @@
 </script>
 
 <article class="mx-auto max-w-2xl space-y-6">
-	<header class="space-y-3">
-		<Badge variant="secondary">Badge</Badge>
-		<h1 class="text-headline-md sm:text-display-lg">{badge.name}</h1>
-		<p class="max-w-prose text-body-md text-muted-foreground">{criteriaNarrative}</p>
-	</header>
+	<PageHero perspective={perspective.current} onPerspectiveChange={(p) => perspective.choose(p)}>
+		{#snippet breadcrumb()}
+			<a href={resolve('/')} class="text-primary hover:underline">Home</a>
+			<span aria-hidden="true">›</span>
+			<a href={profileHref(badge.baseProfile)} class="text-primary hover:underline">
+				{baseProfile?.name ?? badge.baseProfile}
+			</a>
+		{/snippet}
+		{#snippet eyebrow()}Badge{/snippet}
+		{#snippet title()}{badge.name}{/snippet}
+		{#snippet lede()}{criteriaNarrative}{/snippet}
+		{#snippet chips()}
+			{#if role}
+				<ContextChip kind="role" label={role.name} href={roleHref(role.slug)} />
+			{/if}
+			<ContextChip
+				kind="profile"
+				label={baseProfile?.name ?? badge.baseProfile}
+				href={profileHref(badge.baseProfile)}
+			/>
+			{#if badge.tier === 'add-on'}
+				<ContextChip
+					kind="addon"
+					label={additiveProfileBySlug(badge.additiveProfile)?.name ?? badge.additiveProfile}
+					href={additiveProfileHref(badge.additiveProfile)}
+				/>
+			{/if}
+		{/snippet}
+	</PageHero>
 
 	<dl class="space-y-2 rounded-md border border-border p-4 text-body-md">
 		<div class="flex flex-col gap-1">

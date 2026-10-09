@@ -1,11 +1,14 @@
 <script lang="ts">
+	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import { onMount } from 'svelte';
 
 	import { allBadgeClaims } from '$lib/client/badges/index.js';
+	import { perspectiveStore } from '$lib/client/perspective/index.js';
 	import { allScenarioRuns } from '$lib/client/scenario-runs/index.js';
 	import { selectionStore } from '$lib/client/selection/index.js';
 	import { CompletionGroup } from '$lib/components/interop/completion-group/index.js';
 	import { ProfileSummary } from '$lib/components/interop/profile-summary/index.js';
+	import { PageHero } from '$lib/components/page-hero/index.js';
 	import {
 		badgeHrefFor,
 		badgeNameFor,
@@ -23,7 +26,11 @@
 	} from '$lib/interop/index.js';
 	import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
 
+	import { resolve } from '$app/paths';
+
 	let { data } = $props();
+
+	const perspective = perspectiveStore();
 
 	// Runs and selection are localStorage-backed, so browser-only: the page renders
 	// a zeroed meter server-side and fills it in on mount. Selection only orders
@@ -113,47 +120,37 @@
 	{/if}
 {/snippet}
 
-<section class="space-y-4">
-	<div class="flex flex-wrap items-center gap-3">
-		{#if data.kind === 'additive'}
-			<span
-				class="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-label-md text-primary"
-			>
-				Add-on
-			</span>
+<PageHero perspective={perspective.current} onPerspectiveChange={(p) => perspective.choose(p)}>
+	{#snippet breadcrumb()}
+		<a href={resolve('/')} class="text-primary hover:underline">Home</a>
+		<span aria-hidden="true">›</span>
+		<a href={resolve('/profiles')} class="text-primary hover:underline">Standard Profiles</a>
+	{/snippet}
+	{#snippet eyebrow()}{data.kind === 'additive' ? 'Add-on' : 'Standard Profile'}{/snippet}
+	{#snippet title()}
+		{data.kind === 'additive' ? data.profile.name : `${data.profile.name} Standard Profile`}
+	{/snippet}
+	{#snippet lede()}{data.profile.description}{/snippet}
+	{#snippet meta()}
+		<!-- One item per fact, so the line wraps between them, never inside a date. -->
+		<span class="whitespace-nowrap">v{data.profile.version} · {data.profile.status}</span>
+		{#if data.kind === 'base'}
+			<span class="whitespace-nowrap">Updated {data.profile.lastUpdated}</span>
 		{/if}
-		<h1 class="text-display-lg">{data.profile.name}</h1>
-	</div>
-	<p class="max-w-prose text-body-md text-muted-foreground">{data.profile.description}</p>
-</section>
-
-{#if data.kind === 'additive'}
-	<dl class="mt-8 space-y-2 text-body-md">
-		<div class="flex flex-col">
-			<dt class="text-label-md text-muted-foreground">ID</dt>
-			<dd class="font-mono text-foreground">{data.profile.id}</dd>
-		</div>
-		<div class="flex flex-col">
-			<dt class="text-label-md text-muted-foreground">Version</dt>
-			<dd class="font-mono text-foreground">{data.profile.version}</dd>
-		</div>
 		{#if data.profile.url}
-			<div class="flex flex-col">
-				<dt class="text-label-md text-muted-foreground">Published profile</dt>
-				<dd>
-					<a
-						class="break-all text-primary hover:underline"
-						href={data.profile.url}
-						rel="noopener noreferrer"
-						target="_blank"
-					>
-						{data.profile.url}
-					</a>
-				</dd>
-			</div>
+			<a
+				href={data.profile.url}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="inline-flex items-center gap-0.5 text-primary hover:underline"
+			>
+				{data.kind === 'additive' ? 'Read the published add-on' : 'Read the published profile'}
+				<ArrowUpRight class="size-3.5" aria-hidden="true" />
+				<span class="sr-only">(opens in a new tab)</span>
+			</a>
 		{/if}
-	</dl>
-{/if}
+	{/snippet}
+</PageHero>
 
 {#if data.kind === 'base'}
 	<ProfileSummary profile={data.profile} />

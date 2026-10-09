@@ -1,6 +1,8 @@
 <script lang="ts" module>
 	import { defineMeta } from '@storybook/addon-svelte-csf';
 
+	import { WithPerspective } from '$lib/storybook/index.js';
+
 	import LandingPage from './LandingPage.svelte';
 
 	// Seed localStorage so the story renders the filtered console rather than the
@@ -61,4 +63,12 @@
 	<div class="min-h-screen bg-background p-12">
 		<LandingPage {blocked} />
 	</div>
+</Story>
+
+<Story name="Builder chosen" asChild>
+	<WithPerspective perspective="builder">
+		<div class="min-h-screen bg-background p-12">
+			<LandingPage />
+		</div>
+	</WithPerspective>
 </Story>

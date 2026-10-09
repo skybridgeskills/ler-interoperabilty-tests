@@ -1,16 +1,23 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 
+	import { perspectiveStore } from '$lib/client/perspective/index.js';
 	import { DeliverableCredentialPanel } from '$lib/components/interop/deliverable-credential/index.js';
 	import { ExchangeRunnerPanel } from '$lib/components/interop/exchange-runner/index.js';
 	import { InlineMarkup } from '$lib/components/interop/inline-markup/index.js';
 	import { ScenarioStepCard } from '$lib/components/interop/scenario-step/index.js';
+	import { PageHero } from '$lib/components/page-hero/index.js';
+	import { ContextChip } from '$lib/components/perspective/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { profileHref } from '$lib/interop/route-hrefs.js';
+	import { additiveProfileBySlug, profileBySlug, roleBySlug } from '$lib/interop/accessors.js';
+	import type { AdditiveProfileSlug } from '$lib/interop/additive-profile-schema.js';
+	import { additiveProfileHref, profileHref, roleHref } from '$lib/interop/route-hrefs.js';
 	import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
 	import {
 		baseProfileOf,
+		baseProfilesOf,
 		type CannotServe,
+		isBaseProfile,
 		cannotServeMessage,
 		type Scenario
 	} from '$lib/interop/scenarios/index.js';
@@ -21,6 +28,8 @@
 	import { RECEIVE_COPY, RECEIVE_SETTLED_NOTE } from './receive-step.js';
 	import ReceiveField from './ReceiveField.svelte';
 	import { createScenarioRunController } from './scenario-run-controller.svelte.js';
+
+	import { resolve } from '$app/paths';
 
 	/**
 	 * The one generic scenario runner. Turns a `Scenario` into a run: drives the
@@ -76,7 +85,24 @@
 
 	onDestroy(() => run.destroy());
 
+	const perspective = perspectiveStore();
+
 	const profile = $derived(baseProfileOf(scenario.memberships));
+	const role = $derived(roleBySlug(scenario.role));
+	/** The hero's context chips: the Standard Profiles it runs over, then every Add-on it counts toward. */
+	const profileChips = $derived(
+		baseProfilesOf(scenario.memberships).map((slug) => ({
+			slug,
+			name: profileBySlug(slug)?.name ?? slug
+		}))
+	);
+	const addOnChips = $derived(
+		scenario.memberships
+			.filter((m) => !isBaseProfile(m.profile))
+			.map((m) => m.profile as AdditiveProfileSlug)
+			.filter((slug, i, all) => all.indexOf(slug) === i)
+			.map((slug) => ({ slug, name: additiveProfileBySlug(slug)?.name ?? slug }))
+	);
 	const activeStep = $derived(scenario.steps.find((s) => s.id === run.activeStepId));
 	const activeIndex = $derived(run.runSteps.findIndex((s) => s.id === run.activeStepId));
 	const deliverableLabel = $derived(activeStep ? run.labelFor(activeStep, activeIndex) : '');
@@ -98,26 +124,39 @@
 	});
 </script>
 
-{#snippet header(status: string, statusClass: string)}
-	<header class="space-y-3">
-		{#if profile}
-			<nav class="text-label-md text-muted-foreground">
-				<a href={profileHref(profile)} class="text-primary hover:underline">{profile}</a>
-			</nav>
-		{/if}
-		<div class="flex flex-wrap items-start justify-between gap-3">
-			<!-- `text-display-lg` alone took four lines and half the viewport at 375px. -->
-			<h1 class="text-headline-md sm:text-display-lg">{scenario.name}</h1>
+{#snippet header(statusLabel: string, statusClass: string)}
+	<PageHero perspective={perspective.current} onPerspectiveChange={(p) => perspective.choose(p)}>
+		{#snippet breadcrumb()}
+			<a href={resolve('/')} class="text-primary hover:underline">Home</a>
+			{#if profile}
+				<span aria-hidden="true">›</span>
+				<a href={profileHref(profile)} class="text-primary hover:underline">
+					{profileBySlug(profile)?.name ?? profile}
+				</a>
+			{/if}
+		{/snippet}
+		{#snippet eyebrow()}Scenario{/snippet}
+		{#snippet title()}{scenario.name}{/snippet}
+		{#snippet status()}
 			<span
 				class={`shrink-0 rounded-full border px-2 py-1 text-label-md font-medium ${statusClass}`}
 			>
-				{status}
+				{statusLabel}
 			</span>
-		</div>
-		<p class="max-w-prose text-body-md text-muted-foreground">
-			<InlineMarkup text={scenario.blurb} />
-		</p>
-	</header>
+		{/snippet}
+		{#snippet lede()}<InlineMarkup text={scenario.blurb} />{/snippet}
+		{#snippet chips()}
+			{#if role}
+				<ContextChip kind="role" label={role.name} href={roleHref(role.slug)} />
+			{/if}
+			{#each profileChips as chip (chip.slug)}
+				<ContextChip kind="profile" label={chip.name} href={profileHref(chip.slug)} />
+			{/each}
+			{#each addOnChips as chip (chip.slug)}
+				<ContextChip kind="addon" label={chip.name} href={additiveProfileHref(chip.slug)} />
+			{/each}
+		{/snippet}
+	</PageHero>
 {/snippet}
 
 {#snippet actionPanel()}

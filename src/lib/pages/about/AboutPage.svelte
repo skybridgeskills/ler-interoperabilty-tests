@@ -1,17 +1,26 @@
 <script lang="ts">
+	import { perspectiveStore } from '$lib/client/perspective/index.js';
+	import { PageHero } from '$lib/components/page-hero/index.js';
+
 	import { resolve } from '$app/paths';
+
+	const perspective = perspectiveStore();
 </script>
 
-<section class="space-y-4">
-	<h1 class="text-display-lg">About the LER Interoperability Test Suite</h1>
-	<p class="max-w-prose text-body-md text-muted-foreground">
+<PageHero perspective={perspective.current} onPerspectiveChange={(p) => perspective.choose(p)}>
+	{#snippet breadcrumb()}
+		<a href={resolve('/')} class="text-primary hover:underline">Home</a>
+	{/snippet}
+	{#snippet eyebrow()}About{/snippet}
+	{#snippet title()}About the LER Interoperability Test Suite{/snippet}
+	{#snippet lede()}
 		The LER Interoperability Test Suite is an always-available, self-help kit for teams building
 		Learning &amp; Employment Record systems — wallets, verifiers, and issuers working with Open
 		Badges 3.0 and related standards. Pick the roles and Standard Profiles you care about, run the
 		scenarios, and get an honest read on whether your implementation actually interoperates with the
 		rest of the ecosystem — not just whether it follows a specification on paper.
-	</p>
-</section>
+	{/snippet}
+</PageHero>
 
 <section class="mt-12 space-y-4">
 	<h2 class="text-headline-md">Standards compliance is not interoperability</h2>

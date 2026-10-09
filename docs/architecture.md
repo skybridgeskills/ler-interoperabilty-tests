@@ -241,6 +241,19 @@ the run's `$state` and drives the engine — the component decides nothing about
 scoring. URL reading stays at the route boundary; the page component takes props,
 so Storybook drives the same component.
 
+**Page heroes.** Every page opens with the one `PageHero`
+(`src/lib/components/page-hero/`): `large` on Home, `compact` everywhere else
+(About, Standard Profiles, a Standard Profile or Add-on, a role landing, a
+scenario, a badge). The page passes the hero its slots — breadcrumb, eyebrow,
+title, status, lede, chips, meta, actions — and wires `perspective` /
+`onPerspectiveChange` from the context-provided Perspective store; the hero
+itself never reads the store. On the scenario page the header's three states
+(Unavailable here / Passed or Failed / In progress) pass their pill into the
+hero's `status` slot unchanged, and the chips name the scenario's Role, its
+Standard Profile(s) and every Add-on it counts toward. On a Standard Profile or
+Add-on page the identity facts (version, status, last updated, the published
+link) sit in the hero's `meta` line rather than a body list.
+
 - **Step-as-spine.** Each step is a collapsing card
   (`components/interop/scenario-step/`) with its action rendered inside it —
   superseding the two-column `RunnableChecklist` layout for scenarios. A live

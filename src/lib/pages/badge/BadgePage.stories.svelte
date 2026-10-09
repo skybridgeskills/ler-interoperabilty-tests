@@ -1,6 +1,8 @@
 <script lang="ts" module>
 	import { defineMeta } from '@storybook/addon-svelte-csf';
 
+	import { WithPerspective } from '$lib/storybook/index.js';
+
 	import {
 		claimedSnapshot,
 		emptyResult,
@@ -97,4 +99,17 @@
 			priorClaim={null}
 		/>
 	</div>
+</Story>
+
+<Story name="Builder chosen — earned" asChild>
+	<WithPerspective perspective="builder">
+		<div class="mx-auto max-w-3xl bg-background p-6">
+			<BadgePage
+				{...serverProps}
+				versionMismatch={false}
+				completion={fullResult}
+				priorClaim={null}
+			/>
+		</div>
+	</WithPerspective>
 </Story>

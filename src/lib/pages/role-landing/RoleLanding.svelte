@@ -1,9 +1,15 @@
 <script lang="ts">
+	import { perspectiveStore } from '$lib/client/perspective/index.js';
 	import { WorkflowCard } from '$lib/components/interop/workflow-card/index.js';
+	import { PageHero } from '$lib/components/page-hero/index.js';
 	import { roleBySlug, workflowsForRole, type RoleSlug } from '$lib/interop/index.js';
 	import { allScenarios } from '$lib/interop/scenarios/index.js';
 
+	import { resolve } from '$app/paths';
+
 	let { roleSlug }: { roleSlug: RoleSlug } = $props();
+
+	const perspective = perspectiveStore();
 
 	const role = $derived(roleBySlug(roleSlug)!);
 	const workflows = $derived(workflowsForRole(roleSlug));
@@ -21,10 +27,14 @@
 		allScenarios.filter((s) => s.role === roleSlug && s.workflow === workflow);
 </script>
 
-<section class="space-y-4">
-	<h1 class="text-display-lg">{role.plural}</h1>
-	<p class="max-w-prose text-body-md text-muted-foreground">{role.blurb}</p>
-</section>
+<PageHero perspective={perspective.current} onPerspectiveChange={(p) => perspective.choose(p)}>
+	{#snippet breadcrumb()}
+		<a href={resolve('/')} class="text-primary hover:underline">Home</a>
+	{/snippet}
+	{#snippet eyebrow()}Role{/snippet}
+	{#snippet title()}{role.plural}{/snippet}
+	{#snippet lede()}{role.blurb}{/snippet}
+</PageHero>
 
 <section class="mt-12 space-y-6">
 	<h2 class="text-headline-md">Workflows</h2>

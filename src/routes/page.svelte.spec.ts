@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 
+import { perspectiveContext } from '$lib/client/perspective/index.js';
+
 import Page from './+page.svelte';
 
 /**
@@ -19,10 +21,18 @@ function meterLabels(root: HTMLElement): (string | null)[] {
 
 describe('/+page.svelte', () => {
 	it('renders the console heading, the filter bar, and the completion groups', async () => {
-		render(Page, { data: { blocked: {} } });
+		render(Page, { props: { data: { blocked: {} } }, context: perspectiveContext() });
 
 		const heading = page.getByRole('heading', { level: 1 });
 		await expect.element(heading).toHaveTextContent('LER Interoperability Test Suite');
+
+		// The hero's own action, beside the Perspective switch it renders itself.
+		await expect
+			.element(page.getByRole('link', { name: 'About these tests' }))
+			.toHaveAttribute('href', '/about');
+		await expect
+			.element(page.getByRole('radiogroup', { name: 'Building or evaluating?' }))
+			.toBeInTheDocument();
 
 		// The three choosers are now one filter bar. Each dimension is a trigger
 		// that states its own selection; an untouched dimension reads "Any" rather
@@ -44,7 +54,7 @@ describe('/+page.svelte', () => {
 	});
 
 	it('opens the roles panel with the role toggles and their docs links', async () => {
-		render(Page, { data: { blocked: {} } });
+		render(Page, { props: { data: { blocked: {} } }, context: perspectiveContext() });
 
 		await page.getByRole('button', { name: 'Roles Any' }).click();
 
@@ -82,8 +92,14 @@ describe('/+page.svelte', () => {
 			}
 		} as never;
 
-		const { container: unblocked } = render(Page, { data: { blocked: {} } });
-		const { container: withBlocked } = render(Page, { data: { blocked } });
+		const { container: unblocked } = render(Page, {
+			props: { data: { blocked: {} } },
+			context: perspectiveContext()
+		});
+		const { container: withBlocked } = render(Page, {
+			props: { data: { blocked } },
+			context: perspectiveContext()
+		});
 
 		// `aria-label` is `${met} of ${total} requirements met`; no runs are seeded,
 		// so met is 0 on both sides and this compares denominators.
@@ -100,7 +116,7 @@ describe('/+page.svelte', () => {
 	});
 
 	it('opens the Standard Profiles panel with the profile toggles', async () => {
-		render(Page, { data: { blocked: {} } });
+		render(Page, { props: { data: { blocked: {} } }, context: perspectiveContext() });
 
 		await page.getByRole('button', { name: 'Standard Profiles Any' }).click();
 
