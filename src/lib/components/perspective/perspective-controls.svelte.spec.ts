@@ -5,7 +5,14 @@ import { render } from 'vitest-browser-svelte';
 import PerspectiveChip from './PerspectiveChip.svelte';
 import PerspectiveSwitch from './PerspectiveSwitch.svelte';
 
-describe('PerspectiveSwitch', () => {
+/**
+ * `pnpm turbo validate` runs the production build beside the browser projects —
+ * enough load to trip the default timeout on real clicks. Same allowance the
+ * sibling component and route specs take.
+ */
+const UNDER_LOAD = { timeout: 20_000 };
+
+describe('PerspectiveSwitch', UNDER_LOAD, () => {
 	it('asks the question only while unset', async () => {
 		const screen = render(PerspectiveSwitch, { perspective: undefined, onChange: () => {} });
 		await expect.element(page.getByText('Building or evaluating?')).toBeInTheDocument();
@@ -25,7 +32,7 @@ describe('PerspectiveSwitch', () => {
 	});
 });
 
-describe('PerspectiveChip', () => {
+describe('PerspectiveChip', UNDER_LOAD, () => {
 	it('names the chosen Perspective', async () => {
 		render(PerspectiveChip, { perspective: 'evaluator', onChange: () => {} });
 		await expect

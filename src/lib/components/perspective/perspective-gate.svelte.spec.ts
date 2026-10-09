@@ -4,7 +4,14 @@ import { render } from 'vitest-browser-svelte';
 
 import PerspectiveGate from './PerspectiveGate.svelte';
 
-describe('PerspectiveGate', () => {
+/**
+ * `pnpm turbo validate` runs the production build beside the browser projects —
+ * enough load to trip the default timeout on real clicks. Same allowance the
+ * sibling component and route specs take.
+ */
+const UNDER_LOAD = { timeout: 20_000 };
+
+describe('PerspectiveGate', UNDER_LOAD, () => {
 	it('renders nothing when the reader has decided', async () => {
 		render(PerspectiveGate, { open: false, onChoose: () => {}, onDismiss: () => {} });
 		await expect.element(page.getByRole('dialog')).not.toBeInTheDocument();

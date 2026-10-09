@@ -472,6 +472,9 @@ group — never the top-level grouping, so "how close am I to the OID4 Wallet
 badge?" is answerable at a glance rather than spread across three headings. It
 renders in two places: the homepage (replacing the flat workflow list) and each
 profile detail page (one group per role, scoped to that profile).
+Its heading names the bundle with two neutral markers — "ROLE Wallet ·
+STANDARD PROFILE VCALM", with the `app-window` and `layers` icons the filter bar
+uses for the same dimensions — told apart by icon and label, never by hue.
 
 A base profile-role reads as up to **three kinds of category**, in this order:
 

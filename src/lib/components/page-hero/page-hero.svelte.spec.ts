@@ -7,7 +7,14 @@ import PageHero from './PageHero.svelte';
 
 const text = (html: string) => createRawSnippet(() => ({ render: () => html }));
 
-describe('PageHero', () => {
+/**
+ * `pnpm turbo validate` runs the production build beside the browser projects —
+ * enough load to trip the default timeout on real clicks. Same allowance the
+ * sibling component and route specs take.
+ */
+const UNDER_LOAD = { timeout: 20_000 };
+
+describe('PageHero', UNDER_LOAD, () => {
 	it('renders the title as the page h1', async () => {
 		render(PageHero, {
 			perspective: undefined,

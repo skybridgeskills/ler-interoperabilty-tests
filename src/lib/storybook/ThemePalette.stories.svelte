@@ -121,8 +121,7 @@
 				<code class="font-mono">accent</code> violet → Add-ons
 				<code class="font-mono">additive</code> teal. Deliberately clear of
 				<code class="font-mono">success</code> green, so a filled add-on chip never reads as &ldquo;passed&rdquo;,
-				and cool rather than warm, because an additive profile is a requirement layer and not a runtime
-				state.
+				and cool rather than warm, because an add-on is a requirement layer and not a runtime state.
 			</p>
 			<div class="grid gap-4 md:grid-cols-2">
 				<div
