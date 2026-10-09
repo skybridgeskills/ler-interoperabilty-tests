@@ -1,14 +1,30 @@
 import type { ProfileKeyComponent } from '../../profile-schema.js';
+import type { StandardCitation } from '../../standards.js';
 
 /** Identity + key technical choices for the OB 3.0 Direct Delivery profile. */
 export const ob3DirectDeliveryProfileMeta = {
 	id: 'ob3-direct-delivery-v1',
 	slug: 'ob3-direct-delivery' as const,
-	name: 'OB 3.0 Direct Delivery Profile',
+	name: 'OB 3.0 Direct Delivery',
 	version: '0.1',
 	status: "Editor's Draft",
 	url: 'https://interoperability.learningmobilitycollaborative.org/profiles/ob-3.0-direct-delivery/',
 	lastUpdated: '2026-02-15',
+	standards: [
+		{ standard: 'ob-3' },
+		{ standard: 'vcdm-2' },
+		{ standard: 'vc-di-1' },
+		{ standard: 'vc-di-eddsa-1' },
+		{ standard: 'bsl-1' },
+		{ standard: 'did-core-1' },
+		{ standard: 'did-web' },
+		{ standard: 'did-key' },
+		{ standard: 'cid-1', section: 'Multikey', label: '§2.2.2 Multikey' }
+	] satisfies StandardCitation[],
+	example: {
+		builder: 'e.g. your issuer lets learners download their badge as a file',
+		evaluator: 'e.g. learners will get badges as a file or by email, with no wallet'
+	},
 	description:
 		'Direct credential issuance and verification using EdDSA-signed Open Badges 3.0 credentials delivered as JSON files or copy-paste text, without an exchange protocol. Recipient identifiers are email addresses.',
 	keyComponents: [
@@ -31,6 +47,6 @@ export const ob3DirectDeliveryProfileMeta = {
 	],
 	notes: [
 		'Recipients may lose access to the email address bound to a credential — for example, college email accounts often deactivate within ~6 months of graduation, and former employer addresses are typically inaccessible after employment ends. Strong proof of control may not be possible in those cases.',
-		'When strong proof of control is required, prefer a profile that uses verifiable presentations.'
+		'When strong proof of control is required, prefer a Standard Profile that uses verifiable presentations.'
 	]
 };

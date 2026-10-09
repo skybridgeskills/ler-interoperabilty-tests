@@ -32,7 +32,7 @@
 					<dd class="text-foreground">{profile.status} · v{profile.version}</dd>
 				</div>
 			</dl>
-			<p class="mt-4 text-label-md text-primary">View additive profile →</p>
+			<p class="mt-4 text-label-md text-primary">Open the add-on →</p>
 		</CardContent>
 	</Card>
 </a>

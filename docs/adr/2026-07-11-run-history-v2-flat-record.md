@@ -1,9 +1,16 @@
 # Run-history v2: flat, id-keyed record with checklist-drift detection
 
-- Status: accepted
+- Status: superseded
 - Date: 2026-07-11
 - Supersedes: [2026-06-10 Run-history local persistence model](./2026-06-10-run-history-local-persistence.md)
+- Superseded by: [2026-08-13 Scenario run record and completion](./2026-08-13-scenario-run-record-and-completion.md)
 - Context: Shareable run reports (persist enough of a run to render + share it)
+
+> **Superseded (2026-08-13).** `TestRunRecord`, the `lits.run-history.v2` store,
+> the checklist fingerprint and the `/runs/[id]` reopen route were all deleted
+> outright rather than migrated: the `(role, workflow, profile)` combination this
+> record keys on is no longer the runnable unit, and every field below is keyed
+> to a vocabulary that is being removed. The scenario run record replaces it.
 
 ## Context
 

@@ -13,6 +13,14 @@ export const Oid4vpAuthorizationRequest = ZodFactory(
 		response_uri: z.string().url(),
 		response_mode: z.literal('direct_post'),
 		nonce: z.string().min(1),
+		/**
+		 * Opaque correlation token. OID4VP 1.0 §8.2: when the authorization
+		 * request carries `state`, the wallet MUST return it on the
+		 * `direct_post` response. Verifiers use it as a replay / correlation
+		 * guard and reject a response without it, so a wallet that drops it
+		 * cannot complete an exchange even though everything else is correct.
+		 */
+		state: z.string().min(1).optional(),
 		presentation_definition: z.object({
 			id: z.string().min(1),
 			/**

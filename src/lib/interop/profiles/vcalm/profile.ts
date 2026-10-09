@@ -1,4 +1,5 @@
 import type { ProfileKeyComponent } from '../../profile-schema.js';
+import type { StandardCitation } from '../../standards.js';
 
 /**
  * Identity + key technical choices for the VCALM profile.
@@ -12,25 +13,40 @@ import type { ProfileKeyComponent } from '../../profile-schema.js';
 export const vcalmProfileMeta = {
 	id: 'vcalm-v1',
 	slug: 'vcalm' as const,
-	name: 'VCALM Profile',
+	name: 'VCALM',
 	version: '0.2',
 	status: "Editor's Draft",
 	url: 'https://interoperability.learningmobilitycollaborative.org/profiles/vcalm-eddsa/',
 	lastUpdated: '2026-05-16',
+	standards: [
+		{ standard: 'vcalm-1' },
+		{ standard: 'ob-3' },
+		{ standard: 'vcdm-2' },
+		{ standard: 'vc-di-1' },
+		{ standard: 'bsl-1' },
+		{ standard: 'did-core-1' },
+		{ standard: 'did-web' },
+		{ standard: 'did-key' },
+		{ standard: 'cid-1', section: 'Multikey', label: '§2.2.2 Multikey' }
+	] satisfies StandardCitation[],
+	example: {
+		builder: 'e.g. your product exchanges credentials in the browser over VCALM',
+		evaluator: 'e.g. your partners exchange credentials over VCALM, so the vendor must too'
+	},
 	description:
 		'Browser-based credential exchange using VCALM Exchanges over Open Badges 3.0 credentials. ' +
 		'The cryptosuite, key type, and DID-method options are declared by the ' +
-		'data-integrity-cryptosuites additive profile.',
+		'Data Integrity Cryptosuites add-on.',
 	keyComponents: [
 		{ label: 'Exchange Protocol', value: 'VCALM Exchanges' },
 		{
 			label: 'Cryptographic Suite',
-			value: 'See data-integrity-cryptosuites additive (EdDSA or ECDSA)'
+			value: 'See the Data Integrity Cryptosuites add-on (EdDSA or ECDSA)'
 		},
 		{
 			label: 'Key Proof of Possession',
 			value:
-				'DIDAuthentication verifiablePresentation secured with a Data Integrity proof (proofPurpose: authentication); cryptosuite per the data-integrity-cryptosuites additive.'
+				'DIDAuthentication verifiablePresentation secured with a Data Integrity proof (proofPurpose: authentication); cryptosuite per the Data Integrity Cryptosuites add-on.'
 		},
 		{ label: 'Credential Format', value: 'W3C Verifiable Credentials Data Model 2.0' },
 		{ label: 'Credential Schema', value: 'Open Badges 3.0' },

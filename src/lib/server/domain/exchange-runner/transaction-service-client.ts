@@ -47,6 +47,20 @@ export const ExchangeProtocols = ZodFactory(
 );
 export type ExchangeProtocols = ReturnType<typeof ExchangeProtocols>;
 
+/**
+ * Envelope returned by `GET /workflows/:workflowId/exchanges/:exchangeId/protocols`.
+ *
+ * The protocols object itself is byte-identical to the one `POST …/exchanges`
+ * returns — the transaction service builds both with the same `getProtocols()`
+ * — but the GET wraps it in a `{ protocols }` envelope where the POST returns it
+ * bare. {@link TransactionServiceClient.getProtocols} unwraps it so both paths
+ * hand callers the same {@link CreateExchangeResult}.
+ */
+export const ExchangeProtocolsEnvelope = ZodFactory(
+	z.object({ protocols: ExchangeProtocols.schema })
+);
+export type ExchangeProtocolsEnvelope = ReturnType<typeof ExchangeProtocolsEnvelope>;
+
 /** Exchange state from `GET /workflows/:workflowId/exchanges/:exchangeId`. */
 export const ExchangeState = ZodFactory(z.enum(['pending', 'active', 'complete', 'invalid']));
 export type ExchangeState = ReturnType<typeof ExchangeState>;
@@ -74,7 +88,30 @@ export const ExchangeRecord = ZodFactory(
 		workflowId: z.string().optional(),
 		state: ExchangeState.schema,
 		variables: z.record(z.string(), z.unknown()).optional(),
-		expires: z.string().optional()
+		expires: z.string().optional(),
+		/**
+		 * Which well-known constructions a client actually fetched metadata under,
+		 * in the order it first tried them. A **sibling of `variables`**, not one
+		 * of them: the transaction service records it directly onto the exchange
+		 * record and the poll route returns the record wholesale.
+		 *
+		 * It has to be named here or Zod strips it — this schema being a closed
+		 * `z.object` is the only reason the field was ever invisible to the suite.
+		 *
+		 * Ordered and de-duplicated upstream on purpose: "tried both" and "took the
+		 * concatenated form" are different observations about a client, and a
+		 * last-write-wins field would erase the difference. So the discovery check
+		 * scores the array, never a value.
+		 */
+		discoveryElections: z
+			.array(
+				z.object({
+					construction: z.enum(['rfc8414-path-suffix', 'oidc-concat']),
+					doc: z.string(),
+					at: z.string()
+				})
+			)
+			.optional()
 	})
 );
 export type ExchangeRecord = ReturnType<typeof ExchangeRecord>;
@@ -82,14 +119,53 @@ export type ExchangeRecord = ReturnType<typeof ExchangeRecord>;
 /** Inputs the suite passes when initiating an issuance (`claim`) exchange. */
 export type CreateIssuanceExchangeRequest = {
 	retrievalId: string;
+	/**
+	 * The unsigned credential document to issue, already built from a recipe.
+	 * Sent as the `vc` variable, which the workflow interpolates with a
+	 * triple-stache — so this document *is* the credential.
+	 */
+	credential: Record<string, unknown>;
+	/** Corrupt the credential after signing, before delivery. */
+	tamper?: 'proof' | 'claim';
+	/**
+	 * Correlation tag that rides into the minted `exchangeId` and the exchange
+	 * journal. A sibling of `variables` on the wire, not one of them.
+	 */
+	exchangeIdPrefix?: string;
+	/**
+	 * Which tenant to mint under, defaulting to the configured one.
+	 *
+	 * **This is how a scenario pins a cryptosuite.** The transaction service
+	 * chooses its issuer instance at claim time by ranking the tenant's instances
+	 * against the cryptosuites the *wallet* advertised, so the exchange creator
+	 * cannot request a suite — it can only choose a tenant that offers the one it
+	 * wants. `resolveIssuingContext` makes that choice; this carries it. The
+	 * tenant travels entirely in the Bearer token, which is why nothing else on
+	 * the request changes.
+	 */
+	tenantToken?: string;
 };
 
-/** Inputs the suite passes when initiating a verification (`verify`) exchange. */
+/**
+ * Inputs the suite passes when initiating a verification (`verify`) exchange.
+ *
+ * The first four describe the **payload** — what is asked for, resolved from the
+ * server-side presentation-request registry. The last three describe the
+ * **conduct** — how the asking is done — and come from the scenario action.
+ * `verificationExchangeBody` maps them onto the transaction service's own wire
+ * names, which keep their prefixes because that service names them, not us.
+ */
 export type CreateVerificationExchangeRequest = {
 	vprCredentialType: string[];
 	vprContext: string[];
 	trustedIssuers?: string[];
 	vprClaims?: DcqlClaim[];
+	/** OID4VP query language to ask in. Absent means the service's default. */
+	queryLanguage?: 'dcql' | 'pex';
+	/** DIF PE `constraints.limit_disclosure`. PEX arm only. */
+	limitDisclosure?: 'required' | 'preferred';
+	/** Extra cryptosuite names unioned into the advertised `cryptosuite_values`. */
+	advertiseCryptosuites?: string[];
 };
 
 /** Result returned to suite callers. */
@@ -108,6 +184,13 @@ export interface TransactionServiceClient {
 	createIssuanceExchange(req: CreateIssuanceExchangeRequest): Promise<CreateExchangeResult>;
 	createVerificationExchange(req: CreateVerificationExchangeRequest): Promise<CreateExchangeResult>;
 	getExchange(workflowId: WorkflowId, exchangeId: string): Promise<ExchangeRecord>;
+	/**
+	 * Read the protocols of an exchange this suite did not necessarily mint.
+	 * Backs attach mode: an exchange minted out-of-band (CLI, another harness)
+	 * is adopted by id, and the wallet-facing links come from the service rather
+	 * than being derived locally.
+	 */
+	getProtocols(workflowId: WorkflowId, exchangeId: string): Promise<CreateExchangeResult>;
 }
 
 /** Network-layer / API error surfaced from the real client. */
@@ -126,32 +209,41 @@ export class TransactionServiceError extends Error {
 export function RealTransactionServiceClient(
 	config: ExchangeRunnerConfig
 ): TransactionServiceClient {
-	const baseHeaders = {
-		Authorization: `Bearer ${config.tenantToken}`,
+	/**
+	 * Headers for one call. The tenant is carried **entirely** by the Bearer
+	 * token — `config.tenantName` never appears in a transaction-service URL — so
+	 * minting under a different tenant is a different token and nothing else.
+	 * Built per request rather than once at construction for exactly that reason.
+	 */
+	const headers = (tenantToken: string = config.tenantToken) => ({
+		Authorization: `Bearer ${tenantToken}`,
 		'Content-Type': 'application/json',
 		Accept: 'application/json'
-	};
+	});
 
 	async function createIssuanceExchange(
 		req: CreateIssuanceExchangeRequest
 	): Promise<CreateExchangeResult> {
-		return postExchange('claim', issuanceExchangeBody(config, req));
+		return postExchange('claim', issuanceExchangeBody(config, req), req.tenantToken);
 	}
 
 	async function createVerificationExchange(
 		req: CreateVerificationExchangeRequest
 	): Promise<CreateExchangeResult> {
+		// No tenant override: a verify exchange mints no credential, so it has no
+		// cryptosuite to pin and nothing to choose a tenant for.
 		return postExchange('verify', verificationExchangeBody(config, req));
 	}
 
 	async function postExchange(
 		workflowId: WorkflowId,
-		body: unknown
+		body: unknown,
+		tenantToken?: string
 	): Promise<CreateExchangeResult> {
 		const url = `${config.transactionServiceUrl}/workflows/${workflowId}/exchanges`;
 		const res = await fetch(url, {
 			method: 'POST',
-			headers: baseHeaders,
+			headers: headers(tenantToken),
 			body: JSON.stringify(body)
 		});
 		if (!res.ok) throw new TransactionServiceError(res.status, await res.text());
@@ -161,12 +253,29 @@ export function RealTransactionServiceClient(
 
 	async function getExchange(workflowId: WorkflowId, exchangeId: string): Promise<ExchangeRecord> {
 		const url = `${config.transactionServiceUrl}/workflows/${workflowId}/exchanges/${exchangeId}`;
-		const res = await fetch(url, { headers: baseHeaders });
+		const res = await fetch(url, { headers: headers() });
 		if (!res.ok) throw new TransactionServiceError(res.status, await res.text());
 		return ExchangeRecord(await res.json());
 	}
 
-	return { createIssuanceExchange, createVerificationExchange, getExchange };
+	/**
+	 * The service leaves this route unauthenticated (the wallet's own entry
+	 * points read it), but we send the default tenant's headers anyway to keep the
+	 * client uniform. The `exchangeId` echoed back is the caller's — this endpoint is
+	 * addressed by id, so there is nothing to extract from `iu`.
+	 */
+	async function getProtocols(
+		workflowId: WorkflowId,
+		exchangeId: string
+	): Promise<CreateExchangeResult> {
+		const url = `${config.transactionServiceUrl}/workflows/${workflowId}/exchanges/${exchangeId}/protocols`;
+		const res = await fetch(url, { headers: headers() });
+		if (!res.ok) throw new TransactionServiceError(res.status, await res.text());
+		const { protocols } = ExchangeProtocolsEnvelope(await res.json());
+		return { exchangeId, protocols, workflowId };
+	}
+
+	return { createIssuanceExchange, createVerificationExchange, getExchange, getProtocols };
 }
 
 /** Pull the exchange UUID out of an interaction URL like `…/interactions/<id>`. */

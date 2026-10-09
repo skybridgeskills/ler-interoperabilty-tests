@@ -1,6 +1,8 @@
 import '../src/routes/layout.css';
 import type { Preview } from '@storybook/sveltekit';
 
+import WithPerspective from '../src/lib/storybook/with-perspective.svelte';
+
 function applyTheme() {
 	if (typeof window === 'undefined') return;
 	const theme = localStorage.getItem('theme') || 'system';
@@ -18,7 +20,9 @@ if (typeof window !== 'undefined') {
 }
 
 const preview: Preview = {
-	decorators: [],
+	// Every story gets an undecided Perspective store, as the root layout provides one to every
+	// page; a story wraps itself in `WithPerspective` to start from a chosen value instead.
+	decorators: [() => ({ Component: WithPerspective })],
 	parameters: {
 		controls: {
 			matchers: { color: /(background|color)$/i, date: /date$/i }

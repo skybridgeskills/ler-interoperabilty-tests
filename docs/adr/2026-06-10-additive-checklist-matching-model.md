@@ -1,8 +1,19 @@
 # Additive-checklist matching model (multi-base by role + workflow)
 
-- Status: accepted
+- Status: superseded
 - Date: 2026-06-10
+- Superseded by: [2026-08-13 Scenario as the runnable unit](./2026-08-13-scenario-as-runnable-unit.md)
+  and, for the replacement model in detail,
+  [2026-08-21 Additive requirements as memberships](./2026-08-21-additive-requirements-as-memberships.md)
 - Context: OID4 profile rename + additive-profile application
+
+> **Superseded (2026-08-13).** An additive no longer contributes requirements by
+> matching `appliesToBaseProfiles` against `(role, workflow)`. A scenario names
+> the additive directly through a `Membership`, and a profile — base or additive
+> — is the derived set of memberships that name it. The matching model described
+> below **remains live** until the last runnable page migrates to a scenario and
+> `profile.checklists` is deleted; it is recorded here as superseded so the new
+> direction is discoverable from the old one.
 
 ## Context
 

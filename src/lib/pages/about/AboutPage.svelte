@@ -1,17 +1,29 @@
 <script lang="ts">
+	import { perspectiveStore } from '$lib/client/perspective/index.js';
+	import { ExternalLink } from '$lib/components/external-link/index.js';
+	import { PageHero } from '$lib/components/page-hero/index.js';
+
+	import { builtBy } from './credits.js';
+
 	import { resolve } from '$app/paths';
+
+	const perspective = perspectiveStore();
 </script>
 
-<section class="space-y-4">
-	<h1 class="text-display-lg">About the LER Interoperability Test Suite</h1>
-	<p class="max-w-prose text-body-md text-muted-foreground">
+<PageHero perspective={perspective.current} onPerspectiveChange={(p) => perspective.choose(p)}>
+	{#snippet breadcrumb()}
+		<a href={resolve('/')} class="text-primary hover:underline">Home</a>
+	{/snippet}
+	{#snippet eyebrow()}About{/snippet}
+	{#snippet title()}About the LER Interoperability Test Suite{/snippet}
+	{#snippet lede()}
 		The LER Interoperability Test Suite is an always-available, self-help kit for teams building
 		Learning &amp; Employment Record systems — wallets, verifiers, and issuers working with Open
-		Badges 3.0 and related standards. Pick the roles and profiles you care about, run the
-		checklists, and get an honest read on whether your implementation actually interoperates with
-		the rest of the ecosystem — not just whether it follows a specification on paper.
-	</p>
-</section>
+		Badges 3.0 and related standards. Pick the roles and Standard Profiles you care about, run the
+		scenarios, and get an honest read on whether your implementation actually interoperates with the
+		rest of the ecosystem — not just whether it follows a specification on paper.
+	{/snippet}
+</PageHero>
 
 <section class="mt-12 space-y-4">
 	<h2 class="text-headline-md">Standards compliance is not interoperability</h2>
@@ -58,24 +70,73 @@
 	</div>
 	<p class="text-body-sm max-w-prose text-muted-foreground">
 		Other axes break interoperability the same way: status-list handling, and schema or extension
-		expectations two implementations don’t share.
+		assumptions two implementations don’t share.
 	</p>
 </section>
 
 <section class="mt-12 space-y-4">
 	<h2 class="text-headline-md">How this tool helps</h2>
 	<p class="max-w-prose text-body-md text-foreground">
-		The <a href={resolve('/profiles')} class="text-primary hover:underline"
-			>interoperability profiles</a
-		> in this suite exist precisely because “OB 3.0 compliant” is not enough. Each profile pins down the
-		exact choices that make or break interoperability — credential format, exchange protocol, and proof
-		cryptosuite — so that “interoperable” means something concrete.
+		The <a href={resolve('/profiles')} class="text-primary hover:underline">Standard Profiles</a> in this
+		suite exist precisely because “OB 3.0 compliant” is not enough. Each one is an interoperability profile:
+		it pins down the exact choices that make or break interoperability — credential format, exchange protocol,
+		and proof cryptosuite — so that “interoperable” means something concrete.
 	</p>
 	<p class="max-w-prose text-body-md text-muted-foreground">
-		Pick the profiles you must interoperate with, run their checklists, and prove real
+		Pick the Standard Profiles you must interoperate with, run their scenarios, and prove real
 		interoperability instead of spec conformance on paper.
 	</p>
-	<p class="max-w-prose text-body-md">
-		<a href={resolve('/')} class="text-primary hover:underline">← Back to the console</a>
-	</p>
 </section>
+
+<section class="mt-12 space-y-6">
+	<h2 class="text-headline-md">Acknowledgements</h2>
+
+	<div class="space-y-3">
+		<h3 class="text-title-lg">Funders and sponsors</h3>
+		<!--
+			The funders' own wording, verbatim: names are linked in place and not a word
+			changes. Rockefeller Philanthropy Advisors stays unlinked until its URL is
+			confirmed.
+		-->
+		<p class="max-w-prose text-body-md text-muted-foreground">
+			The LER Interoperability Test Suite was created through <ExternalLink
+				href="https://www.skillsfwd.org/">SkillsFWD</ExternalLink
+			> with funding from <ExternalLink href="https://www.walmart.org/">Walmart</ExternalLink> and sponsorship
+			from the <ExternalLink href="https://www.uschamberfoundation.org/"
+				>U.S. Chamber of Commerce Foundation</ExternalLink
+			>. It is adapted from the original SkillsFWD assessment, which was developed during the
+			SkillsFWD grant period with sponsorship from Rockefeller Philanthropy Advisors. The tool now
+			lives on the
+			<ExternalLink href="https://dccommons.org/">Digital Credentials Commons</ExternalLink> as a resource
+			for the broader LER community.
+		</p>
+		<p class="max-w-prose text-body-md text-muted-foreground">
+			<ExternalLink href="https://www.strada.org/">Strada Education Foundation</ExternalLink> supports
+			its ongoing sustainability.
+		</p>
+	</div>
+
+	<div class="space-y-3">
+		<h3 class="text-title-lg">Built by</h3>
+		<ul class="space-y-3">
+			{#each builtBy as credit (credit.name)}
+				<li class="flex items-center gap-4">
+					{#if credit.logo}
+						<!-- White in both themes on purpose: one file per organisation works everywhere. -->
+						<span class="size-16 shrink-0 rounded-md border border-border bg-white p-2">
+							<img src={credit.logo} alt="" class="h-full w-full object-contain" />
+						</span>
+					{/if}
+					<span class="flex flex-col">
+						<ExternalLink href={credit.url}>{credit.name}</ExternalLink>
+						<span class="text-label-md text-muted-foreground">{credit.role}</span>
+					</span>
+				</li>
+			{/each}
+		</ul>
+	</div>
+</section>
+
+<p class="mt-12 max-w-prose text-body-md">
+	<a href={resolve('/')} class="text-primary hover:underline">← Back to the console</a>
+</p>

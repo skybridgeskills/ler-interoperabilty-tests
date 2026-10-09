@@ -12,59 +12,75 @@ Tailwind utilities (`bg-background`, `text-foreground`, etc.).
 
 ### Light mode
 
-| Token                  | Value                     |
-| ---------------------- | ------------------------- |
-| `--background`         | `hsl(220 23% 95%)`        |
-| `--foreground`         | `hsl(234 16% 13%)`        |
-| `--card`               | `hsl(220 22% 92%)`        |
-| `--popover`            | `hsl(220 22% 92%)`        |
-| `--primary`            | `hsl(217 87% 45%)`        |
-| `--primary-foreground` | `hsl(0 0% 100%)`          |
-| `--secondary`          | `hsl(220 16% 86%)`        |
-| `--muted`              | `hsl(220 16% 88%)`        |
-| `--muted-foreground`   | `hsl(232 10% 35%)`        |
-| `--accent`             | `hsl(261 60% 55%)`        |
-| `--warning`            | `hsl(35 75% 40%)`         |
-| `--destructive`        | `hsl(350 70% 45%)`        |
-| `--live`               | `hsl(20 92% 48%)`         |
-| `--live-soft`          | `hsl(20 90% 92%)`         |
-| `--requirement`        | `hsl(217 87% 45%)`        |
-| `--requirement-soft`   | `hsl(217 80% 92%)`        |
-| `--result-pass`        | `hsl(142 60% 33%)`        |
-| `--result-pass-soft`   | `hsl(142 48% 90%)`        |
-| `--result-fail`        | `var(--destructive)`      |
-| `--result-fail-soft`   | `hsl(350 70% 93%)`        |
-| `--result-incomplete`  | `var(--muted-foreground)` |
-| `--progress`           | `var(--live)`             |
-| `--border` / `--input` | `hsl(220 13% 78%)`        |
-| `--ring`               | `hsl(217 87% 45%)`        |
+| Token                  | Value                                                            |
+| ---------------------- | ---------------------------------------------------------------- |
+| `--background`         | `hsl(220 23% 95%)`                                               |
+| `--foreground`         | `hsl(234 16% 13%)`                                               |
+| `--card`               | `hsl(220 22% 92%)`                                               |
+| `--popover`            | `hsl(220 22% 92%)`                                               |
+| `--primary`            | `hsl(217 87% 45%)`                                               |
+| `--primary-foreground` | `hsl(0 0% 100%)`                                                 |
+| `--secondary`          | `hsl(220 16% 86%)`                                               |
+| `--muted`              | `hsl(220 16% 88%)`                                               |
+| `--muted-foreground`   | `hsl(232 10% 35%)`                                               |
+| `--accent`             | `hsl(261 60% 55%)`                                               |
+| `--warning`            | `hsl(35 75% 40%)`                                                |
+| `--warning-soft`       | `hsl(35 75% 92%)`                                                |
+| `--warning-border`     | `hsl(35 58% 62%)`                                                |
+| `--destructive`        | `hsl(350 70% 45%)`                                               |
+| `--live`               | `hsl(20 92% 48%)`                                                |
+| `--live-soft`          | `hsl(20 90% 92%)`                                                |
+| `--requirement`        | `hsl(217 87% 45%)`                                               |
+| `--requirement-soft`   | `hsl(217 80% 92%)`                                               |
+| `--additive`           | `hsl(188 72% 28%)`                                               |
+| `--additive-soft`      | `hsl(188 55% 90%)`                                               |
+| `--perspective`        | `hsl(305 55% 38%)`                                               |
+| `--perspective-soft`   | `hsl(305 60% 93%)`                                               |
+| `--perspective-border` | `hsl(305 40% 70%)`                                               |
+| `--hero-field`         | orchid + sky blooms over `hsl(300 40% 97%)` → `hsl(200 60% 97%)` |
+| `--result-pass`        | `hsl(142 60% 33%)`                                               |
+| `--result-pass-soft`   | `hsl(142 48% 90%)`                                               |
+| `--result-fail`        | `var(--destructive)`                                             |
+| `--result-fail-soft`   | `hsl(350 70% 93%)`                                               |
+| `--result-incomplete`  | `var(--muted-foreground)`                                        |
+| `--progress`           | `var(--live)`                                                    |
+| `--border` / `--input` | `hsl(220 13% 78%)`                                               |
+| `--ring`               | `hsl(217 87% 45%)`                                               |
 
 ### Dark mode (primary)
 
-| Token                  | Value              |
-| ---------------------- | ------------------ |
-| `--background`         | `hsl(234 16% 13%)` |
-| `--foreground`         | `hsl(230 73% 86%)` |
-| `--card`               | `hsl(232 17% 17%)` |
-| `--popover`            | `hsl(232 17% 17%)` |
-| `--primary`            | `hsl(217 87% 73%)` |
-| `--primary-foreground` | `hsl(234 16% 13%)` |
-| `--secondary`          | `hsl(231 13% 23%)` |
-| `--muted`              | `hsl(231 12% 20%)` |
-| `--muted-foreground`   | `hsl(229 28% 70%)` |
-| `--accent`             | `hsl(261 84% 78%)` |
-| `--warning`            | `hsl(35 65% 64%)`  |
-| `--destructive`        | `hsl(350 89% 71%)` |
-| `--live`               | `hsl(22 95% 64%)`  |
-| `--live-soft`          | `hsl(20 50% 18%)`  |
-| `--requirement`        | `hsl(217 87% 73%)` |
-| `--requirement-soft`   | `hsl(217 42% 22%)` |
-| `--result-pass`        | `hsl(142 52% 62%)` |
-| `--result-pass-soft`   | `hsl(142 28% 18%)` |
-| `--result-fail-soft`   | `hsl(350 38% 22%)` |
-| `--result-fail-border` | `hsl(350 48% 48%)` |
-| `--border` / `--input` | `hsl(231 12% 25%)` |
-| `--ring`               | `hsl(217 87% 73%)` |
+| Token                  | Value                                   |
+| ---------------------- | --------------------------------------- |
+| `--background`         | `hsl(234 16% 13%)`                      |
+| `--foreground`         | `hsl(230 73% 86%)`                      |
+| `--card`               | `hsl(232 17% 17%)`                      |
+| `--popover`            | `hsl(232 17% 17%)`                      |
+| `--primary`            | `hsl(217 87% 73%)`                      |
+| `--primary-foreground` | `hsl(234 16% 13%)`                      |
+| `--secondary`          | `hsl(231 13% 23%)`                      |
+| `--muted`              | `hsl(231 12% 20%)`                      |
+| `--muted-foreground`   | `hsl(229 28% 70%)`                      |
+| `--accent`             | `hsl(261 84% 78%)`                      |
+| `--warning`            | `hsl(35 65% 64%)`                       |
+| `--warning-soft`       | `hsl(35 35% 20%)`                       |
+| `--warning-border`     | `hsl(35 48% 45%)`                       |
+| `--destructive`        | `hsl(350 89% 71%)`                      |
+| `--live`               | `hsl(22 95% 64%)`                       |
+| `--live-soft`          | `hsl(20 50% 18%)`                       |
+| `--requirement`        | `hsl(217 87% 73%)`                      |
+| `--requirement-soft`   | `hsl(217 42% 22%)`                      |
+| `--additive`           | `hsl(188 62% 66%)`                      |
+| `--additive-soft`      | `hsl(188 32% 18%)`                      |
+| `--perspective`        | `hsl(305 62% 76%)`                      |
+| `--perspective-soft`   | `hsl(305 30% 21%)`                      |
+| `--perspective-border` | `hsl(305 35% 45%)`                      |
+| `--hero-field`         | orchid + sky blooms over `--background` |
+| `--result-pass`        | `hsl(142 52% 62%)`                      |
+| `--result-pass-soft`   | `hsl(142 28% 18%)`                      |
+| `--result-fail-soft`   | `hsl(350 38% 22%)`                      |
+| `--result-fail-border` | `hsl(350 48% 48%)`                      |
+| `--border` / `--input` | `hsl(231 12% 25%)`                      |
+| `--ring`               | `hsl(217 87% 73%)`                      |
 
 ### Live state — warm flame
 
@@ -73,6 +89,12 @@ on a runner page, the QR code surface, exchange-status indicators,
 delivered-credential summaries. The rest of the app stays cool — reserve
 warm hues for surfaces and elements that are talking to a real service
 right now.
+
+The completion group's **add-on sections used to bend this rule**, and no
+longer do: they render in the cool [`additive`](#additive--the-add-on-requirement-layer)
+family as of 2026-08-21. An additive profile is a requirement layer, not a
+runtime state. The reserve rule now holds without exceptions — do not
+reintroduce one. (See [ADR 2026-08-21](adr/2026-08-21-additive-requirement-layer-colour.md).)
 
 | Class                  | Where to use                                               |
 | ---------------------- | ---------------------------------------------------------- |
@@ -89,7 +111,7 @@ both light and dark.
 
 The `requirement` family renders RFC 2119 conformance levels
 (MUST / SHOULD / MAY) in cool blue. Red stays reserved for actual run
-failures, so a checklist of requirements never reads as a wall of errors.
+failures, so a list of requirements never reads as a wall of errors.
 All three levels use the single `requirement` Badge variant; intensity
 encodes the level.
 
@@ -106,17 +128,82 @@ encodes the level.
 | `text-requirement`          | Requirement label text on soft/outline chips.      |
 | `border-requirement-border` | Edge of soft/outline requirement chips.            |
 
+`requirement` is **not** used in the homepage filter bar. Since the guided
+filters, the bar's Roles and Standard Profiles dimensions speak **neutral ink**
+(`text-foreground`, a `foreground` underline and rail, an ink-filled selected
+card and pip); only Add-ons keeps a hue, `additive`. Blue there implied a
+requirement level the dimensions do not select.
+
+### Additive — the add-on requirement layer
+
+The `additive` family (cyan-teal, h188) renders the **add-on requirement
+layer**: the Add-ons sections of a completion card, and the Add-ons dimension
+of the homepage filter bar. Named for the domain term (`AdditiveProfile`), not
+for the UI label "Add-ons".
+
+| Class                      | Where to use                                                    |
+| -------------------------- | --------------------------------------------------------------- |
+| `text-additive`            | Add-on tier labels, the filter bar's Add-ons trigger + heading. |
+| `bg-additive`              | Solid add-on chips (a selected card's check pip).               |
+| `text-additive-foreground` | Foreground on `bg-additive`.                                    |
+| `bg-additive-soft`         | Soft add-on surfaces — selected cards, the panel header band.   |
+| `border-additive-border`   | Edge of soft add-on surfaces, and the add-on tier's left rule.  |
+
+Measured **4.93:1** light and **8.42:1** dark as text on `popover` — the bar
+the warm flame failed (2.96:1 in light), and the reason the add-on layer got a
+token of its own rather than continuing to borrow `live`.
+
+### Perspective — orchid
+
+The `perspective` family (orchid, h305) means **you, the reader**: the Builder /
+Evaluator choice. Named for the domain term (`Perspective`). Builder and
+Evaluator share the hue and are told apart by icon and label.
+
+| Class                         | Where to use                                                          |
+| ----------------------------- | --------------------------------------------------------------------- |
+| `text-perspective`            | Perspective control and marker text; the hero's About button label.   |
+| `bg-perspective`              | A chosen Perspective control (solid).                                 |
+| `text-perspective-foreground` | Foreground on `bg-perspective`.                                       |
+| `bg-perspective-soft`         | Soft Perspective surfaces — the framing block, a chosen chip.         |
+| `border-perspective-border`   | Edge of soft Perspective surfaces, and the framing block's left rule. |
+
+The controls: the Home switch's chosen segment is `bg-perspective
+text-perspective-foreground` inside a `border-perspective-border` pill (neutral
+`border-border` while unset); the chosen chip is `bg-perspective-soft
+text-perspective border-perspective-border`, the unset chip a dashed neutral
+`border-border`; menu icons are `text-perspective`. The hero's About button is
+`bg-perspective text-perspective-foreground`.
+
+**Permitted uses only:** the Perspective controls and markers, the hero bloom,
+and the hero's own action (its About button). **Never** on content (scenario,
+requirement, role or profile surfaces), general links or CTAs — those stay
+`primary` blue or neutral. Measured as text on `popover`: **5.68:1** light,
+**7.33:1** dark; a chip (`text-perspective` on `bg-perspective-soft`) 5.67 / 6.38;
+a button (`perspective-foreground` on `perspective`) 6.90 / 8.19. See
+[ADR 2026-10-09](adr/2026-10-09-perspective-and-hero-field-colour.md).
+
+### Hero field — the sky exemption
+
+`--hero-field` is the page hero's decorative wash, exposed as the
+`bg-hero-field` utility (it is not a colour token): an orchid bloom and a sky
+(h196) bloom over a pale base. **It is the only place sky may appear** — never
+as text, chips, borders or controls. The exemption is narrow and by name: pale
+soft surfaces carry meaning elsewhere in this system (`live-soft`,
+`warning-soft`, the tier softs), so there is no general "washes don't count"
+rule. The field never varies by page or by Perspective, and it goes plain in
+print.
+
 ### Success, run result + progress
 
 `success` is the green "done / good" family. It marks anything completed
-and successful: a **completed checklist step** (the `StepRunStateIndicator`
-`complete` state and the "Run complete" banner read prominently green) and a
-**passed run** (`result-pass` aliases `success`). Green is reserved for
-_finished success_ — the warm `progress`/`live` flame stays for _in-flight_
-work, so a filling checklist and a finished one are never confused.
+and successful: a **completed step** (the `complete` state and the "Run
+complete" banner read prominently green) and a **passed run** (`result-pass`
+aliases `success`). Green is reserved for _finished success_ — the warm
+`progress`/`live` flame stays for _in-flight_ work, so a filling meter and a
+finished one are never confused.
 
-Per-run outcome tokens summarise the most recent run of a checklist
-combination on the homepage rows and in `RunResultBadge`:
+Per-run outcome tokens summarise the most recent run of a scenario on the
+homepage rows:
 
 | Token / class           | Meaning                                                                                                     |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -126,6 +213,59 @@ combination on the homepage rows and in `RunResultBadge`:
 | `result-incomplete`     | Abandoned / timed-out / never-finished run. Neutral (`muted`).                                              |
 | `progress` (warm flame) | In-flight runtime. Aliases the `live` family; reserve it strictly for _progress_, not for finished results. |
 
+#### The three outcome tones
+
+A scenario asks the operator to judge what their wallet did, and there are
+three honest answers to that — not two. Each has its own tone, and the third
+one is the point:
+
+| Outcome       | Tone          | Why                                                                                                                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| pass          | `result-pass` | Finished success.                                                                                                                        |
+| fail          | `result-fail` | A wrong answer, or a failed automatic check.                                                                                             |
+| couldn't tell | `warning`     | It fails, and it is counted as a failure — but it is the _honest_ answer, and must be distinguishable at a glance from getting it wrong. |
+
+**Both halves of that last row are deliberate.** `can't tell` counts against
+the operator, because a wallet that leaves you unable to tell what happened
+has failed you. And it is amber rather than red, because "I couldn't tell" is
+a finding worth recording, not a mistake — rendering it identically to a wrong
+answer made the copy and the colour argue with each other in the M5 design
+review. Do not "fix" it to red for consistency, and do not soften it to a pass.
+
+`can't tell` uses the `warning` family: `bg-warning-soft`, `border-warning-border`,
+`text-warning`. `--warning-soft` and `--warning-border` exist for exactly this,
+and are reused by the completion group.
+
+#### The three requirement layers
+
+The completion group distinguishes its tiers with a coloured dot and label in each
+header row, echoed by a matching left rule on each body section:
+
+| Tier      | Token      | Hue             |
+| --------- | ---------- | --------------- |
+| Essential | `primary`  | blue, h217      |
+| Expanded  | `accent`   | violet, h261    |
+| Add-ons   | `additive` | cyan-teal, h188 |
+
+All three sit at the **cool** end, and that is the constraint, not a preference:
+warm `progress`/`live` is spoken for by in-flight runtime, green `success` by
+finished success, red by failures, and amber `warning` by "can't tell". A tier
+label is a _chooser_, not an outcome, so the cool end is the only part of the
+palette it can safely claim.
+
+The two base tiers (M14) reused `primary` and `accent` — Expanded borrows the
+violet the palette already defined, so Essential reads as the everyday bar and
+Expanded as the stretch one. (M15 renamed the tiers from `base`/`complete`/`additive`
+to **Essential / Expanded / Add-on**; the tokens and hues are unchanged.) The
+**Add-ons tier is the one that needed a new token**; it rendered in the warm `live` flame until 2026-08-21, which contradicted
+that family's meaning and failed AA in light mode.
+[ADR 2026-08-21](adr/2026-08-21-additive-requirement-layer-colour.md) has the
+reasoning and the rejected alternatives.
+
+The header meters use `CompletionMeter`'s dense `showPercent` readout
+(`met/total · pct%`) because each tier's own label already says
+"Essential" / "Expanded", making the word "requirements" redundant there.
+
 Each of `success`, `result-pass`, `result-fail`, `result-incomplete`, and
 `progress` has `-soft` (surface) and `-border` companions for chip styling;
 `success`/`result-pass` and `progress` also expose `-foreground` for solid
@@ -134,51 +274,6 @@ fills. The `progress` aliases let runtime components (e.g.
 
 `--radius` defaults to `0.5rem` and is exposed as `--radius-sm/md/lg/xl`
 via `@theme inline`.
-
-## Test wallet
-
-The runnable issuer pages (VCALM, OID4, OB3 direct-delivery) drive a
-stripped-down **test wallet** rendered by
-`src/lib/components/interop/test-wallet/`. It reads top-to-bottom like a real
-(minimal) digital wallet, on the warm `live` runtime surface:
-
-1. **Header** — wallet identity + a small live/idle state chip.
-2. **Primary action** — a semantically-labelled initiation input (interaction
-   URL / credential-offer URL / pasted credential) + a semantic submit button.
-3. **Wallet settings** — a visually-separated section (holder cryptosuite);
-   omitted entirely for the paste variant.
-4. **Credentials** — `WalletArtifact` summary cards for produced credentials.
-5. **Activity** — the ordered `WalletActivity[]` list; each row leads with a
-   neutral kind icon (interaction vs check) and trails with a
-   `RunStatusIndicator`, so activity results read in the same status language as
-   the checklist.
-
-**Base + variants (composition, not inheritance).** `TestWallet.svelte` is the
-presentational base — every label and the settings contents are props/snippets,
-no protocol strings. Thin wrappers `VcalmIssuerFlowWallet`, `Oid4IssuerFlowWallet`,
-and `DirectDeliveryWallet` supply per-flow copy/settings and forward run data.
-
-**Normalized run-response model.** The `/api/wallet-runner/issuer-{vcalm,oid4}/run`
-and `/api/issuer-runner/verify` endpoints return a client-safe
-`walletActivity: WalletActivity[]` + `artifacts: WalletArtifact[]`, derived
-server-side by a shared mapper (`wallet-activity-map.ts`) so the three
-structurally-different flows speak one activity vocabulary. Schema:
-`src/lib/interop/wallet-activity.ts`; rationale:
-[ADR 2026-07-03](adr/2026-07-03-normalized-wallet-run-response.md).
-
-**Overall verdict outside the box.** The wallet box owns artifacts + activity
-only. The overall pass/fail/stopped-early/error verdict renders in a dedicated
-`RunResultCard` in the right column, above the wallet — the detailed counterpart
-to the at-a-glance "Run complete/failed" badge `RunnableChecklist` shows at the
-top of the page.
-
-**Responsive.** Additive-profile sections render inside the left checklist
-column (via `RunnableChecklist`'s `belowSteps` snippet) so they align to the
-requirements width rather than spanning full width. On mobile the right-column
-verdict + wallet move into `MobileWalletDrawer` — a live-colored drawer opened by
-a persistent edge handle (or, in the idle state, an inline call-to-action);
-inline and unchanged on `lg+`. The drawer is opt-in and used only on the three
-issuer pages.
 
 ## Fonts
 
@@ -227,6 +322,44 @@ Generated by [shadcn-svelte](https://shadcn-svelte.com) into
 | Input     | `ui/input/`  | Form-styled `<input>`.                                                                                                    |
 | Tabs      | `ui/tabs/`   | List / Trigger / Content. Backed by bits-ui.                                                                              |
 | Dialog    | `ui/dialog/` | Trigger / Content / Header / Title / Description / Footer / Close. Backed by bits-ui.                                     |
+
+### ExternalLink
+
+`src/lib/components/external-link/` — every link that leaves the suite: **named
+text, never a raw URL**, the Lucide `arrow-up-right` icon, `target="_blank"
+rel="noopener noreferrer"`, an sr-only "(opens in a new tab)", and a `title`
+naming the target in full ("OpenID for Verifiable Credential Issuance 1.0 ·
+OpenID Final"). `text-primary` by default; `muted` (foreground ink) on a hero's
+meta line. Never on cards.
+
+### PageHero
+
+`src/lib/components/page-hero/` — the one page hero, stories under
+`Components/PageHero` (one per page type, each at phone / tablet / desktop).
+**Adopted on every page**: no hand-rolled `h1 text-display-lg` header remains.
+
+- **Two sizes.** `large` is **Home only**: centred, `bg-hero-field`, a bottom
+  feather that fades into `background`, and the Perspective switch rendered by
+  the hero itself before the page's `actions`. `compact` is **every other page**:
+  left-aligned, `bg-hero-field-compact` (the same hues with the blooms pushed
+  into the corners, so the title and chips sit on the pale centre), and a crisp
+  edge — a feather there washes the chips.
+- **Eight slots**, all optional but `title`: `breadcrumb` (compact only),
+  `eyebrow`, `title` (the `h1`), `status` (a pill right of the title), `lede`,
+  `chips` (compact only), `meta`, `actions`.
+- **The Perspective chip is automatic.** On `compact` it always renders first in
+  the chips row, even when the page passes no chips.
+- **Container-responsive.** Breakpoints are container queries (`@xl:`, 36rem)
+  against the layout's `@container` main, so `ResponsivePreview` shows real
+  widths. Mobile scales the same two sizes down and hides nothing.
+- **Prop-driven.** The page passes `perspective` and `onPerspectiveChange`; the
+  hero never reads the store.
+
+The Perspective controls live in `src/lib/components/perspective/`:
+`PerspectiveSwitch` (Home; a single-line radio-group pill at every width),
+`PerspectiveChip` (compact heroes; a menu repeating each one-line description)
+and `ContextChip` (the neutral Role / Standard Profile / Add-on marker —
+`app-window` / `layers` / `square-plus`, icon and label, never a hue).
 
 ## Adding a new primitive
 

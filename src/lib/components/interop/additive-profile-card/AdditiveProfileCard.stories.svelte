@@ -11,7 +11,7 @@
 	});
 </script>
 
-<Story name="All additive profiles" asChild>
+<Story name="All add-ons" asChild>
 	<div class="grid max-w-5xl gap-6 bg-background p-6 md:grid-cols-3">
 		{#each allAdditiveProfiles as profile (profile.slug)}
 			<AdditiveProfileCard {profile} />

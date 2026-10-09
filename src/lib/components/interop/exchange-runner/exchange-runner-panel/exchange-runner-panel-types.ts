@@ -1,4 +1,4 @@
-import type { ChecklistRunState, StepRunState } from '$lib/interop/index.js';
+import type { RunnerRunState, StepRunState } from '$lib/interop/index.js';
 
 /**
  * Protocol identifier used by the page to select which single link a runner
@@ -19,7 +19,7 @@ export type ExchangeRunnerPanelData = {
 	intent: 'issuance' | 'verification';
 	/** The single protocol this runner drives; selects the QR header label. */
 	protocol: ExchangeProtocolId;
-	run: ChecklistRunState;
+	run: RunnerRunState;
 	perStep: StepRunState[];
 	/** The single protocol link to present (VCALM `iu`, the OID4VCI offer, or the OID4VP request). */
 	interactionUrl?: string;
@@ -27,8 +27,18 @@ export type ExchangeRunnerPanelData = {
 	error?: { message: string; hint?: string };
 };
 
+/**
+ * What the panel is allowed to do. Every field is optional because attach mode
+ * passes none of them: a page showing an exchange minted outside the suite must
+ * offer no path to minting, and a button that silently does nothing is worse
+ * than an absent one. With no `onInitiate` the panel replaces the idle CTA with
+ * an explanation of why, rather than rendering a dead control.
+ */
 export type ExchangeRunnerActions = {
-	onInitiate: () => void | Promise<void>;
+	/** Mint a fresh exchange. Omitted in attach mode. */
+	onInitiate?: () => void | Promise<void>;
+	/** Mint again after a failure. Falls back to `onInitiate`; omitted in attach mode. */
 	onRetry?: () => void | Promise<void>;
+	/** Clear back to idle after a completed run. Omitted in attach mode — see above. */
 	onReset?: () => void | Promise<void>;
 };

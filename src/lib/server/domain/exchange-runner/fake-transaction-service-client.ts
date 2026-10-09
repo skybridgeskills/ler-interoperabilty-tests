@@ -1,3 +1,4 @@
+import { fakeClaimProtocols } from './fake-claim-protocols.js';
 import { oid4vciHooks } from './fake-oid4vci-hooks.js';
 import {
 	clone,
@@ -80,30 +81,30 @@ export function FakeTransactionServiceClient({
 		req: CreateIssuanceExchangeRequest
 	): Promise<CreateExchangeResult> {
 		const exchangeId = newUuid();
+		// Record what the caller asked to mint, exactly as the real service stores
+		// it in `variables`, so tests can assert on the credential document and the
+		// tamper mode rather than only on the resulting protocols.
 		store.set(exchangeId, {
 			exchangeId,
 			workflowId: 'claim',
 			state: 'pending',
-			variables: { retrievalId: req.retrievalId }
+			variables: {
+				retrievalId: req.retrievalId,
+				vc: JSON.stringify(req.credential),
+				...(req.tamper ? { tamper: req.tamper } : {}),
+				...(req.exchangeIdPrefix ? { exchangeIdPrefix: req.exchangeIdPrefix } : {}),
+				// Not a real exchange variable — the real service carries the tenant in
+				// the Bearer token and never echoes it. Recorded here so a route test
+				// can assert WHICH tenant an exchange was minted under, which for a
+				// pinned scenario is the entire difference between issuing the
+				// cryptosuite it claims and issuing the default one under a false label.
+				...(req.tenantToken ? { mintedWithTenantToken: req.tenantToken } : {})
+			}
 		});
-		const credentialOfferUri = `${host}/workflows/claim/exchanges/${exchangeId}/openid/credential-offer`;
-		const oid4vciDeepLink = `openid-credential-offer://?credential_offer_uri=${encodeURIComponent(
-			credentialOfferUri
-		)}`;
 		return {
 			exchangeId,
 			workflowId: 'claim',
-			protocols: {
-				iu: `${host}/interactions/${exchangeId}`,
-				vcapi: `${host}/workflows/claim/exchanges/${exchangeId}`,
-				lcw: `${host}/lcw?xid=${exchangeId}`,
-				OID4VCI: oid4vciDeepLink,
-				verifiablePresentationRequest: {
-					query: { type: 'DIDAuthentication' },
-					challenge: `challenge-${exchangeId}`,
-					domain: host
-				}
-			}
+			protocols: fakeClaimProtocols(host, exchangeId)
 		};
 	}
 
@@ -111,6 +112,10 @@ export function FakeTransactionServiceClient({
 		req: CreateVerificationExchangeRequest
 	): Promise<CreateExchangeResult> {
 		const exchangeId = newUuid();
+		// The three conduct variables are stored under the REAL service's wire
+		// names, matching `verificationExchangeBody`, because that is what the
+		// `*-recorded` automatic checks read off `exchange.variables`. Spread
+		// conditionally: presence is the proof, so an absent one must be absent.
 		store.set(exchangeId, {
 			exchangeId,
 			workflowId: 'verify',
@@ -119,7 +124,12 @@ export function FakeTransactionServiceClient({
 				vprCredentialType: req.vprCredentialType,
 				vprContext: req.vprContext,
 				...(req.trustedIssuers ? { trustedIssuers: req.trustedIssuers } : {}),
-				...(req.vprClaims ? { vprClaims: req.vprClaims } : {})
+				...(req.vprClaims ? { vprClaims: req.vprClaims } : {}),
+				...(req.queryLanguage ? { oid4vpQueryLanguage: req.queryLanguage } : {}),
+				...(req.limitDisclosure ? { vprLimitDisclosure: req.limitDisclosure } : {}),
+				...(req.advertiseCryptosuites
+					? { vprAdvertiseCryptosuites: req.advertiseCryptosuites }
+					: {})
 			}
 		});
 		return {
@@ -133,6 +143,31 @@ export function FakeTransactionServiceClient({
 		const record = store.get(exchangeId);
 		if (!record) throw new TransactionServiceError(404, `Exchange ${exchangeId} not found`);
 		return clone(record);
+	}
+
+	/**
+	 * Attach-mode read: rebuild the protocols of an exchange already in the
+	 * store. Mirrors the real service, which resolves the exchange under the
+	 * workflow in the path — an id looked up under the wrong workflow is a 404,
+	 * not a silent cross-workflow answer.
+	 */
+	async function getProtocols(
+		workflowId: WorkflowId,
+		exchangeId: string
+	): Promise<CreateExchangeResult> {
+		const record = store.get(exchangeId);
+		if (!record || (record.workflowId ?? workflowId) !== workflowId) {
+			throw new TransactionServiceError(404, `Exchange ${exchangeId} not found`);
+		}
+		if (workflowId === 'verify') {
+			const requested = record.variables?.vprCredentialType;
+			return {
+				exchangeId,
+				workflowId,
+				protocols: fakeVerifyProtocols(host, exchangeId, asStringArray(requested))
+			};
+		}
+		return { exchangeId, workflowId, protocols: fakeClaimProtocols(host, exchangeId) };
 	}
 
 	function advanceToActive(exchangeId: string, vars: Record<string, unknown> = {}): void {
@@ -179,6 +214,7 @@ export function FakeTransactionServiceClient({
 		createIssuanceExchange,
 		createVerificationExchange,
 		getExchange,
+		getProtocols,
 		advanceToActive,
 		advanceToComplete,
 		advanceToInvalid,
@@ -188,4 +224,9 @@ export function FakeTransactionServiceClient({
 		listExchanges,
 		clear
 	};
+}
+
+/** Narrow a stored `variables` entry back to the `string[]` the mint put there. */
+function asStringArray(value: unknown): string[] {
+	return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
 }

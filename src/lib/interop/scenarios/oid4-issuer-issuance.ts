@@ -1,0 +1,146 @@
+import { cite } from './citations.js';
+import { Scenario } from './scenario-schema.js';
+
+/**
+ * The OID4VCI **issuer** scenario — the operator's issuer publishes a
+ * pre-authorized-code credential offer, the suite redeems it as a wallet would,
+ * and the credential that comes back is measured on the wire and in the payload.
+ *
+ * Fifteen requirements: the eight the OID4VCI wire answers, the shared holder
+ * binding, then the six shared `credential-*` payload rows. That is fifteen rows
+ * against the engine's fifteen ids — `tls-credential` merged into `tls` (the same
+ * probe over the same host under a second id) and `binds-verified-holder`
+ * counted once. The arithmetic is in `mapping.md` § 3.
+ *
+ * **Pure-automatic**, as the VCALM issuer scenario is. Two rows carry the
+ * engine's honesty caveats verbatim in substance: neither the credential
+ * endpoint's error handling nor the rejection of a malformed key proof is
+ * negatively probed, and their messages say so.
+ *
+ * The profile standardises OID4VCI issuance on the **pre-authorized-code** flow
+ * — there are no authorization-code clauses, and the copy does not imply
+ * otherwise.
+ */
+export const oid4IssuerIssuance = Scenario({
+	slug: 'oid4-issuer-issuance',
+	name: 'Issue a credential to us over OID4VCI',
+	blurb:
+		'Publish a pre-authorized-code credential offer on the issuer and give us the offer URL. We redeem it as a wallet would and check both the protocol and the credential.',
+	framing: {
+		builder:
+			'You’re testing your own issuer’s OID4VCI issuance: have a build that can publish a pre-authorized-code credential offer and accept a Data Integrity key proof. We redeem the offer as a wallet would, so the results cover your metadata, token and credential endpoints as well as the credential itself. A failure in the protocol rows usually means a step a real wallet would trip on, often a JWT-only key proof; a failure in the credential rows is about what your issuer signed.',
+		evaluator:
+			'You’re checking whether a vendor’s issuer can deliver a conforming credential over OID4VCI to a wallet it has never met. Get a pre-authorized-code offer URL from the vendor’s issuer; the results show whether its metadata advertised a Data Integrity key proof and whether the credential came back bound to our DID. Everything here is read off the wire, so there are no questions to answer; an issuer that only accepts JWT key proofs fails on that point, and that is the finding.'
+	},
+	standards: [cite.vciPreAuthorizedCode, cite.vciDiVpKeyProof, cite.vciMetadataRetrieval],
+	role: 'issuer',
+	workflow: 'credential-issuance',
+	memberships: [{ profile: 'oid4', level: 'required' }],
+	steps: [
+		{
+			id: 'issue',
+			title: 'Issue a credential to us over OID4VCI',
+			summary:
+				'Generate a pre-authorized-code credential offer on the issuer and paste its `openid-credential-offer://` URL below. We will read the issuer’s metadata, redeem the code, present a Data Integrity key proof, and take delivery.',
+			action: {
+				kind: 'receive-from-issuer',
+				transport: 'oid4vci',
+				keyProofSuite: 'eddsa-rdfc-2022'
+			},
+			requirements: [
+				{
+					id: 'metadata-endpoint',
+					statement:
+						'The credential-issuer metadata was reachable and named a credential endpoint.',
+					level: 'MUST',
+					check: { kind: 'automatic', checkId: 'oid4-issuer-metadata-endpoint' }
+				},
+				{
+					id: 'di-vp-proof-type',
+					statement: 'The issuer metadata advertised a `di_vp` key-proof type.',
+					level: 'MUST',
+					check: { kind: 'automatic', checkId: 'oid4-issuer-di-vp-proof-type' }
+				},
+				{
+					id: 'di-vp-signing-algs',
+					statement: 'The issuer’s `di_vp` signing algorithms included a supported cryptosuite.',
+					level: 'MUST',
+					check: { kind: 'automatic', checkId: 'oid4-issuer-di-vp-signing-algs' }
+				},
+				{
+					id: 'not-jwt-only',
+					statement: 'The issuer did not require a JWT-only key proof.',
+					level: 'MUST',
+					check: { kind: 'automatic', checkId: 'oid4-issuer-not-jwt-only-proof' }
+				},
+				{
+					id: 'tls',
+					statement: 'The issuer’s endpoints used TLS 1.2 or above.',
+					level: 'MUST',
+					check: { kind: 'automatic', checkId: 'oid4-issuer-tls' }
+				},
+				{
+					id: 'pre-auth-code',
+					statement: 'The issuer’s token endpoint accepted the pre-authorized-code grant.',
+					level: 'MUST',
+					check: { kind: 'automatic', checkId: 'oid4-issuer-pre-authorized-code' }
+				},
+				{
+					id: 'credential-endpoint',
+					statement:
+						'The issuer’s credential endpoint delivered a credential to our authorised request.',
+					level: 'MUST',
+					check: { kind: 'automatic', checkId: 'oid4-issuer-credential-endpoint' }
+				},
+				{
+					id: 'di-vp-accepted',
+					statement: 'The issuer accepted our Data Integrity key proof.',
+					level: 'MUST',
+					check: { kind: 'automatic', checkId: 'oid4-issuer-di-vp-accepted' }
+				},
+				{
+					id: 'binds-holder',
+					statement: 'The issuer bound the credential to the DID in our key proof.',
+					level: 'MUST',
+					check: { kind: 'automatic', checkId: 'issuer-binds-holder-did' }
+				},
+				{
+					id: 'vcdm2',
+					statement: 'The credential declares the VC Data Model 2.0 context and type.',
+					level: 'MUST',
+					check: { kind: 'automatic', checkId: 'credential-vcdm2' }
+				},
+				{
+					id: 'ob3-type',
+					statement: 'The credential’s `type` includes `OpenBadgeCredential`.',
+					level: 'MUST',
+					check: { kind: 'automatic', checkId: 'credential-ob3-type' }
+				},
+				{
+					id: 'di-proof',
+					statement: 'The issuer signed the credential with a supported Data Integrity suite.',
+					level: 'MUST',
+					check: { kind: 'automatic', checkId: 'credential-di-proof-bundle' }
+				},
+				{
+					id: 'status-list',
+					statement: 'The credential carries a Bitstring Status List entry.',
+					level: 'MUST',
+					check: { kind: 'automatic', checkId: 'credential-status-list' }
+				},
+				{
+					id: 'issuer-did',
+					statement: 'The issuer’s DID uses a supported method and the credential verifies.',
+					level: 'MUST',
+					check: { kind: 'automatic', checkId: 'credential-issuer-did' }
+				},
+				{
+					id: 'valid-until',
+					statement: 'The credential declares an expiration date.',
+					level: 'SHOULD',
+					check: { kind: 'automatic', checkId: 'credential-valid-until' }
+				}
+			]
+		}
+	]
+});

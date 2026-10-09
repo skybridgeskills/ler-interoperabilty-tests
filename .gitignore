@@ -36,3 +36,7 @@ playwright-report/
 
 # Local DCC dev-service state (docker compose volumes)
 .data/
+
+# Per-developer compose env overlays. `docker/env/*.env` are committed;
+# these are read after them, so later wins.
+docker/env/*.local.env

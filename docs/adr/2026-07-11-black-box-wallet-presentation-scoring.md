@@ -101,3 +101,52 @@ The report reuses the normalized `IssuerRunnerReport`/`WalletReport` shape
 - **Score before the exchange settles** (grade `active`/`pending`). Rejected: the
   two-phase Open Badges pass can flip `verified`, and OID4VP pre-verification
   failures leave the exchange `pending`; grading early yields spurious fails.
+
+## Amendment (2026-08-22, M12 — the model moves onto scenarios, and one decision above is reversed)
+
+M12 migrated the two wallet presentation pages onto scenarios. Most of this ADR survives the move
+intact; **one paragraph of the Decision does not.** Recording which is which, because the reversal
+is consequential and should not read later as drift.
+
+### Preserved
+
+- **Score the wallet black-box from the observed exchange.** Unchanged, and cheaper than expected:
+  the scenario model reads `variables.results.default` off `StepEvidence.exchange` directly.
+- **Never drive the suite's own wallet**, and **never claim to observe a private refusal**. A
+  wallet's refusal happens after delivery succeeds, beyond our last observation point; attesting it
+  is the operator's job, and that only they can see it is the thing the quiz measures.
+- **`preserve-vc-proofs` degrades to presence-only** for a real operator VC. Verbatim identity is
+  not assertable when there is no original to diff against.
+- **Settle-gated scoring.** The mechanism changed, the guarantee did not: instead of a `SETTLED`
+  set inside a scorer, the run engine settles a step on any **terminal** exchange state. No
+  spurious report from a half-settled exchange, and the two-phase `active`+`verifyTask` window is
+  still non-terminal.
+
+### Superseded
+
+> _"Non-observable MUSTs are held `n/a`, not attested and not failed."_
+
+**The scenario model has no `n/a`.** Every requirement is answered, so each of those rows had to be
+given an honest home:
+
+- **Consent and the presentation interface become attested affirms.** They are observations of the
+  run the operator just performed.
+- **TLS and the empty-POST row are dropped.** The suite hosts the endpoint, so faulting a wallet on
+  TLS would need a plaintext-endpoint negative probe we do not run.
+
+The line is M11's: _attested re-homes an observation of the run just performed; a standing property,
+or a row needing a probe we do not run, is dropped._ It lands differently here than the original
+reasoning did, and the reason is that the original weighed operator burden **against `n/a`** — an
+option that no longer exists. Given a real choice between "ask the operator" and "drop the row",
+asking is right for something they genuinely just watched happen. The original decision was correct
+for the model it was made in.
+
+### Moved
+
+The scoring is now **client-side and pure** over `StepEvidence.exchange`, not a server endpoint. The
+`verify-exchange-context` adapter's readers live beside the checks as `presented-vp.ts`.
+`POST /api/wallet-runner/present-score` and the engine behind it are dead code, swept in M13.
+
+**Gained coverage, incidentally:** `vcalm-wallet-presentation` now carries `di-vp-not-jwt` and
+`vp-signature-valid`, which the VCALM checklist never declared and the old page therefore never
+scored. Two rows of new measurement from checks that already existed.

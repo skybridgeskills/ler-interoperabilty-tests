@@ -1,54 +1,30 @@
 <script lang="ts">
+	import { BuiltOn } from '$lib/components/interop/built-on/index.js';
 	import type { Profile } from '$lib/interop/index.js';
 
+	/**
+	 * A Standard Profile's body: its key components beside the standards it is
+	 * built on, then its use cases. The identity facts — version, status, last
+	 * updated, the published-profile link — live in the page hero's `meta` line.
+	 * Key components stay unlinked prose: several have no clean spec to point at.
+	 */
 	let { profile }: { profile: Profile } = $props();
 </script>
 
-<section class="mt-8 grid gap-8 md:grid-cols-3">
-	<dl class="space-y-2 text-body-md md:col-span-1">
-		<div class="flex flex-col">
-			<dt class="text-label-md text-muted-foreground">Profile ID</dt>
-			<dd class="font-mono text-foreground">{profile.id}</dd>
-		</div>
-		<div class="flex flex-col">
-			<dt class="text-label-md text-muted-foreground">Version</dt>
-			<dd class="font-mono text-foreground">{profile.version}</dd>
-		</div>
-		{#if profile.url}
-			<div class="flex flex-col">
-				<dt class="text-label-md text-muted-foreground">Profile URL</dt>
-				<dd>
-					<a
-						class="break-all text-primary hover:underline"
-						href={profile.url}
-						rel="noopener noreferrer"
-						target="_blank"
-					>
-						{profile.url}
-					</a>
-				</dd>
-			</div>
-		{/if}
-		<div class="flex flex-col">
-			<dt class="text-label-md text-muted-foreground">Status</dt>
-			<dd class="text-foreground">{profile.status}</dd>
-		</div>
-		<div class="flex flex-col">
-			<dt class="text-label-md text-muted-foreground">Last updated</dt>
-			<dd class="text-foreground">{profile.lastUpdated}</dd>
-		</div>
-	</dl>
-
-	<dl class="space-y-3 text-body-md md:col-span-2">
+<div class="mt-8 grid gap-10 md:grid-cols-3">
+	<section class="space-y-3 md:col-span-2">
 		<h2 class="text-headline-md">Key components</h2>
-		{#each profile.keyComponents as component (component.label)}
-			<div class="flex flex-col">
-				<dt class="text-label-md text-muted-foreground">{component.label}</dt>
-				<dd class="text-foreground">{component.value}</dd>
-			</div>
-		{/each}
-	</dl>
-</section>
+		<dl class="space-y-3 text-body-md">
+			{#each profile.keyComponents as component (component.label)}
+				<div class="flex flex-col">
+					<dt class="text-label-md text-muted-foreground">{component.label}</dt>
+					<dd class="text-foreground">{component.value}</dd>
+				</div>
+			{/each}
+		</dl>
+	</section>
+	<BuiltOn standards={profile.standards} />
+</div>
 
 {#if profile.useCases.length}
 	<section class="mt-12 space-y-4">

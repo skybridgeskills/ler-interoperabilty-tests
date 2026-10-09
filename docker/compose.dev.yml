@@ -1,13 +1,24 @@
 name: ler-interoperability-test-suite-dev
 
+# The PINNED stack: published images at fixed digests, the end state a merged
+# branch restores. It is deliberately behind — see docker/README.md for what it
+# cannot run today, and `pnpm dev:services:local` for the stack that can.
+#
+# No `${...}` interpolation and no tenant name appears in this file. All
+# container configuration lives in `docker/env/*.env`, read directly by
+# `env_file:`, so adding a tenant is editing one file per service. `.local.env`
+# overlays are gitignored and read second, and later files win.
+
 services:
   signing-service:
     image: skybridgeskills/dcc-signing-service@sha256:ea486bc5c71f78cb93057fafad95885a1a33fd911aee348faee111283f158050
     container_name: lits-signing-service
     ports:
       - '4006:4006'
-    environment:
-      PORT: 4006
+    env_file:
+      - env/signing.env
+      - path: env/signing.local.env
+        required: false
     volumes:
       - ./.data/signing-service:/data
 
@@ -18,12 +29,9 @@ services:
       - signing-service
     ports:
       - '4004:4004'
-    environment:
-      PORT: 4004
-      DEFAULT_EXCHANGE_HOST: ${DEFAULT_EXCHANGE_HOST:-http://localhost:4004}
-      SIGNING_SERVICE: http://signing-service:4006
-      PERSIST_TO_FILE: /data/exchanges.kv
-      TENANT_TOKEN_DEFAULT: ${TENANT_TOKEN_DEFAULT:?must be set in .env}
-      ACCESS_JWT_SECRET: ${ACCESS_JWT_SECRET:?must be set in .env}
+    env_file:
+      - env/transaction.env
+      - path: env/transaction.local.env
+        required: false
     volumes:
       - ./.data/transaction-service:/data
