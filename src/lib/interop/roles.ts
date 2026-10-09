@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { ZodFactory } from '$lib/util/zod-factory.js';
 
+import { PerspectiveCopy } from './perspective/perspective.js';
 import { RoleSlug } from './profile-schema.js';
 
 /**
@@ -13,7 +14,13 @@ export const Role = ZodFactory(
 		slug: RoleSlug.schema,
 		name: z.string(),
 		plural: z.string(),
-		blurb: z.string()
+		blurb: z.string(),
+		/**
+		 * One line per Perspective under this item's blurb on a filter-panel choice
+		 * card — what choosing it means to a Builder or an Evaluator. No `neutral`:
+		 * absent when the Perspective is unset. Required from M10.
+		 */
+		example: PerspectiveCopy.schema.optional()
 	})
 );
 export type Role = ReturnType<typeof Role>;

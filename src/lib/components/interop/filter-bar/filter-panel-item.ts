@@ -9,5 +9,7 @@ export type FilterPanelItem = {
 	docLabel: string;
 	/** Optional dense line above the blurb, e.g. an additive's roles + reach. */
 	meta?: string;
+	/** The item's example line for the reader's Perspective, already resolved; absent when unset. */
+	example?: string;
 	selected: boolean;
 };

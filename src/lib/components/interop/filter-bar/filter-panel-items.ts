@@ -18,34 +18,44 @@ import {
 	type RoleSlug,
 	rolesOfAdditiveProfile
 } from '$lib/interop/index.js';
+import { type Perspective, perspectiveCopy } from '$lib/interop/perspective/index.js';
 
 import type { FilterPanelItem } from './filter-panel-item.js';
 
-export function roleItems(selected: Set<RoleSlug>): FilterPanelItem[] {
+export function roleItems(
+	selected: Set<RoleSlug>,
+	perspective: Perspective | undefined
+): FilterPanelItem[] {
 	return allRoles.map((role) => ({
 		slug: role.slug,
 		title: role.plural,
 		body: role.blurb,
 		docHref: roleHref(role.slug),
 		docLabel: `About ${role.plural.toLowerCase()}`,
+		example: role.example && perspectiveCopy(role.example, perspective),
 		selected: selected.has(role.slug)
 	}));
 }
 
-export function profileItems(selected: Set<ProfileSlug>): FilterPanelItem[] {
+export function profileItems(
+	selected: Set<ProfileSlug>,
+	perspective: Perspective | undefined
+): FilterPanelItem[] {
 	return allProfiles.map((profile) => ({
 		slug: profile.slug,
 		title: profile.name,
 		body: profile.description,
 		docHref: profileHref(profile.slug),
 		docLabel: 'Read the Standard Profile',
+		example: profile.example && perspectiveCopy(profile.example, perspective),
 		selected: selected.has(profile.slug)
 	}));
 }
 
 export function additiveItems(
 	offered: AdditiveProfile[],
-	selected: Set<AdditiveProfileSlug>
+	selected: Set<AdditiveProfileSlug>,
+	perspective: Perspective | undefined
 ): FilterPanelItem[] {
 	return offered.map((additive) => ({
 		slug: additive.slug,
@@ -53,6 +63,7 @@ export function additiveItems(
 		body: additive.description,
 		docHref: additiveProfileHref(additive.slug),
 		docLabel: 'Read the add-on',
+		example: additive.example && perspectiveCopy(additive.example, perspective),
 		meta: `For ${rolesOfAdditiveProfile(additive).join(', ')} · layers on ${
 			additive.appliesToBaseProfiles.length
 		} Standard Profiles`,

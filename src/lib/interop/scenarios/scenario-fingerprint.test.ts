@@ -87,6 +87,11 @@ describe('scenarioFingerprint', () => {
 			expect(scenarioFingerprint(Scenario({ ...base, blurb: 'Reworded blurb.' }))).toBe(expected);
 		});
 
+		it('ignores framing — Perspective copy, so authoring it resets nobody', () => {
+			const framing = { builder: 'On your own build…', evaluator: 'Watching a vendor…' };
+			expect(scenarioFingerprint(Scenario({ ...base, framing }))).toBe(expected);
+		});
+
 		it('ignores a step summary', () => {
 			const step = { ...base.steps[0], summary: 'Completely reworded setup copy.' };
 			expect(scenarioFingerprint(withStep(base, 0, step))).toBe(expected);

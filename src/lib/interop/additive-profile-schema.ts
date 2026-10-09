@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { ZodFactory } from '$lib/util/zod-factory.js';
 
+import { PerspectiveCopy } from './perspective/perspective.js';
 import { ProfileSlug } from './profile-schema.js';
 
 /** URL slug for an additive interoperability profile (user-facing label: Add-on). */
@@ -30,7 +31,13 @@ export const AdditiveProfile = ZodFactory(
 		url: z.string().url().optional(),
 		lastUpdated: z.string(),
 		description: z.string(),
-		appliesToBaseProfiles: z.array(ProfileSlug.schema).min(1)
+		appliesToBaseProfiles: z.array(ProfileSlug.schema).min(1),
+		/**
+		 * One line per Perspective under this item's blurb on a filter-panel choice
+		 * card — what choosing it means to a Builder or an Evaluator. No `neutral`:
+		 * absent when the Perspective is unset. Required from M10.
+		 */
+		example: PerspectiveCopy.schema.optional()
 	})
 );
 export type AdditiveProfile = ReturnType<typeof AdditiveProfile>;

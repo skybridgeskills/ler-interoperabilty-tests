@@ -47,7 +47,7 @@
 	 * The only hero copy that varies by Perspective. Placeholder until the
 	 * Perspective copy is authored: all three versions read the same.
 	 */
-	const heroLede = PerspectiveCopy({
+	const HOME_LEDE = PerspectiveCopy({
 		builder:
 			'Your console for building and evaluating interoperable Learning & Employment Record systems. Standards compliance isn’t the same as interoperability.',
 		evaluator:
@@ -117,7 +117,7 @@
 		onPerspectiveChange={(p) => perspective.choose(p)}
 	>
 		{#snippet title()}LER Interoperability Test Suite{/snippet}
-		{#snippet lede()}{perspectiveCopy(heroLede, perspective.current)}{/snippet}
+		{#snippet lede()}{perspectiveCopy(HOME_LEDE, perspective.current)}{/snippet}
 		{#snippet actions()}
 			<Button
 				href={resolve('/about')}
@@ -138,6 +138,7 @@
 	onClear={selectionStore.clear}
 	matched={shownGroups.length}
 	hidden={hiddenGroups.length}
+	perspective={perspective.current}
 />
 
 {#snippet groupCard(group: (typeof groups)[number])}

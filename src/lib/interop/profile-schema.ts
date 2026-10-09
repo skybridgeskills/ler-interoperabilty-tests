@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import { ZodFactory } from '$lib/util/zod-factory.js';
 
+import { PerspectiveCopy } from './perspective/perspective.js';
+
 /**
  * URL slug for the three product roles. Wallets play the holder role in the
  * source guide; we use `wallet` to match user-facing terminology.
@@ -51,7 +53,13 @@ export const Profile = ZodFactory(
 		description: z.string(),
 		keyComponents: z.array(ProfileKeyComponent.schema),
 		useCases: z.array(z.string()),
-		notes: z.array(z.string()).optional()
+		notes: z.array(z.string()).optional(),
+		/**
+		 * One line per Perspective under this item's blurb on a filter-panel choice
+		 * card — what choosing it means to a Builder or an Evaluator. No `neutral`:
+		 * absent when the Perspective is unset. Required from M10.
+		 */
+		example: PerspectiveCopy.schema.optional()
 	})
 );
 export type Profile = ReturnType<typeof Profile>;

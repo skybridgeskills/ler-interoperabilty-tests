@@ -17,16 +17,19 @@
 		portalProps,
 		children,
 		showCloseButton = true,
+		overlayClass,
 		...restProps
 	}: WithoutChildrenOrChild<DialogPrimitive.ContentProps> & {
 		portalProps?: WithoutChildrenOrChild<ComponentProps<typeof DialogPortal>>;
 		children: Snippet;
 		showCloseButton?: boolean;
+		/** Extra classes for the scrim, e.g. `print:hidden`. */
+		overlayClass?: string;
 	} = $props();
 </script>
 
 <DialogPortal {...portalProps}>
-	<Dialog.Overlay />
+	<Dialog.Overlay class={overlayClass} />
 	<DialogPrimitive.Content
 		bind:ref
 		data-slot="dialog-content"

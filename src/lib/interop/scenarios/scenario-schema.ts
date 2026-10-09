@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { PerspectiveCopy } from '$lib/interop/perspective/perspective.js';
 import { RoleSlug, WorkflowSlug } from '$lib/interop/profile-schema.js';
 import { ZodFactory } from '$lib/util/zod-factory.js';
 
@@ -251,6 +252,13 @@ export const Scenario = ZodFactory(
 		name: z.string().min(1),
 		/** One line, shown on the catalog row. Cosmetic — outside the fingerprint. */
 		blurb: z.string(),
+		/**
+		 * One paragraph per Perspective on how to approach this scenario — running
+		 * it on your own build vs. watching a vendor demonstrate. Rendered once,
+		 * under the hero. No `neutral`: absent when unset. Outside the fingerprint.
+		 * Required from M10.
+		 */
+		framing: PerspectiveCopy.schema.optional(),
 		role: RoleSlug.schema,
 		/** Taxonomy only. Never a constraint on what the steps may do. */
 		workflow: WorkflowSlug.schema,

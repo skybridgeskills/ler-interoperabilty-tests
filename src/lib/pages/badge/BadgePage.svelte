@@ -27,6 +27,7 @@
 		isClaimable,
 		isExpandedClaimable
 	} from '$lib/interop/completion/index.js';
+	import { PerspectiveCopy, perspectiveCopy } from '$lib/interop/perspective/index.js';
 	import { additiveProfileHref, profileHref, roleHref } from '$lib/interop/route-hrefs.js';
 	import type { CannotServe } from '$lib/interop/scenarios/index.js';
 
@@ -71,6 +72,17 @@
 	} = $props();
 
 	const perspective = perspectiveStore();
+
+	/**
+	 * The line under the Claim button, per Perspective. An Evaluator is looking at
+	 * a vendor's badge to ask for or verify, not one to claim themselves.
+	 */
+	const claimFraming = (set: string) =>
+		PerspectiveCopy({
+			builder: `Your ${set} set is complete — claim this badge into your wallet.`,
+			evaluator: `The ${set} set is complete — the vendor claims this badge into their wallet; ask for it, or verify the one they show you.`,
+			neutral: `Your ${set} set is complete — claim this badge into your wallet.`
+		});
 	const role = $derived(roleBySlug(badge.role));
 	const baseProfile = $derived(profileBySlug(badge.baseProfile));
 
@@ -254,7 +266,7 @@
 		<div class="flex flex-col gap-1">
 			<Button type="button" class="w-fit" onclick={startClaim}>Claim badge</Button>
 			<span class="text-label-md text-muted-foreground">
-				Your {isExpanded ? 'expanded' : 'required'} set is complete — claim this badge into your wallet.
+				{perspectiveCopy(claimFraming(isExpanded ? 'expanded' : 'required'), perspective.current)}
 			</span>
 		</div>
 	{/if}

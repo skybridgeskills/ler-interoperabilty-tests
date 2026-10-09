@@ -1,6 +1,9 @@
 <script lang="ts">
 	import XIcon from '@lucide/svelte/icons/x';
 
+	import { perspectiveOption } from '$lib/components/perspective/index.js';
+	import type { Perspective } from '$lib/interop/perspective/index.js';
+
 	import type { ToneClasses } from './filter-bar-tone.js';
 	import type { FilterPanelItem } from './filter-panel-item.js';
 
@@ -9,7 +12,7 @@
 	 *
 	 * It is the home of the educational content the homepage used to carry
 	 * inline: the dimension's own explanation, a card per item with its blurb and
-	 * a link to that item's page, the builder/evaluator framing, and a link to the
+	 * a link to that item's page, a note for the reader's Perspective, and a link to the
 	 * dimension's overview page. The cards are **also** the toggles, so a reader
 	 * who came here to understand the dimension never has to close the
 	 * explanation to act on it.
@@ -21,8 +24,8 @@
 		description,
 		items,
 		columns = 3,
-		builderNote,
-		evaluatorNote,
+		note,
+		noteTag,
 		overviewHref,
 		overviewLabel,
 		footnote,
@@ -35,8 +38,10 @@
 		items: FilterPanelItem[];
 		/** Card grid width at `sm:` and up. One column below it, always. */
 		columns?: 2 | 3;
-		builderNote: string;
-		evaluatorNote: string;
+		/** The footer note, already resolved for the reader's Perspective. */
+		note: string;
+		/** The Perspective the note was written for; absent (no tag) when unset. */
+		noteTag?: Perspective;
 		overviewHref: string;
 		overviewLabel: string;
 		/** Optional line under the grid, e.g. "2 more add-ons apply to other roles." */
@@ -51,6 +56,8 @@
 		 */
 		tone: ToneClasses;
 	} = $props();
+
+	const tag = $derived(noteTag ? perspectiveOption(noteTag) : undefined);
 </script>
 
 <div class="space-y-4">
@@ -112,6 +119,13 @@
 					the panel the page. The item's own link carries the rest.
 				-->
 				<span class="line-clamp-4 flex-1 text-body-md text-muted-foreground">{item.body}</span>
+				{#if item.example}
+					<span
+						class="border-t border-dashed border-border pt-2 text-body-md text-muted-foreground italic"
+					>
+						{item.example}
+					</span>
+				{/if}
 				<!--
 					The docs link sits inside the toggle, so its click must not also flip
 					the switch it is nested in.
@@ -133,12 +147,13 @@
 
 	<div class="mt-5 flex flex-col gap-4 border-t border-border pt-4 sm:flex-row sm:items-start">
 		<div class="flex-1 space-y-1">
-			<span class="text-label-md text-muted-foreground">For builders</span>
-			<p class="text-body-md text-foreground">{builderNote}</p>
-		</div>
-		<div class="flex-1 space-y-1">
-			<span class="text-label-md text-muted-foreground">For evaluators</span>
-			<p class="text-body-md text-foreground">{evaluatorNote}</p>
+			{#if tag}
+				<span class="inline-flex items-center gap-1 text-label-md text-perspective">
+					<tag.icon class="size-3.5" aria-hidden="true" />
+					{tag.noun}
+				</span>
+			{/if}
+			<p class="text-body-md text-foreground">{note}</p>
 		</div>
 		<a
 			href={overviewHref}

@@ -432,3 +432,31 @@ describe('ScenarioPage — a present-to-verifier step', UNDER_LOAD, () => {
 		expect(persistedRun('vcalm-verifier-delivery')?.status).toBe('passed');
 	});
 });
+
+describe('ScenarioPage — the framing block', UNDER_LOAD, () => {
+	// Story-and-spec placeholder only; catalog framing is authored separately.
+	const framed = {
+		...demoScenario,
+		framing: { builder: 'Builder framing.', evaluator: 'Evaluator framing.' }
+	};
+
+	it('is absent while the Perspective is unset', async () => {
+		withApi({ kind: 'awaits' });
+		render(ScenarioPage, { props: { scenario: framed }, context: perspectiveContext() });
+		await expect.element(page.getByRole('heading', { level: 1 })).toBeInTheDocument();
+		await expect.element(page.getByText('Builder framing.')).not.toBeInTheDocument();
+		await expect.element(page.getByText('Evaluator framing.')).not.toBeInTheDocument();
+	});
+
+	it('renders the chosen Perspective’s paragraph once, under the hero', async () => {
+		withApi({ kind: 'awaits' });
+		render(ScenarioPage, {
+			props: { scenario: framed },
+			context: perspectiveContext('builder')
+		});
+		await expect
+			.element(page.getByRole('complementary', { name: 'Builder framing' }))
+			.toHaveTextContent('Builder framing.');
+		await expect.element(page.getByText('Evaluator framing.')).not.toBeInTheDocument();
+	});
+});

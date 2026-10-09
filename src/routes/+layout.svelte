@@ -5,13 +5,14 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { createPerspectiveStore, setPerspectiveStore } from '$lib/client/perspective/index.js';
 	import { AppHeader } from '$lib/components/app-header/index.js';
+	import { PerspectiveGate } from '$lib/components/perspective/index.js';
 
 	let { data, children } = $props();
 
 	// Per request on the server, so created here rather than at module scope. The
 	// cookie seeds it once; after that the store owns the value and writes it back.
 	// svelte-ignore state_referenced_locally
-	setPerspectiveStore(createPerspectiveStore(data.perspective));
+	const perspective = setPerspectiveStore(createPerspectiveStore(data.perspective));
 
 	onMount(() => {
 		if (typeof window === 'undefined') return;
@@ -40,3 +41,8 @@
 
 <AppHeader />
 <main class="@container mx-auto max-w-7xl px-4 py-12">{@render children()}</main>
+<PerspectiveGate
+	open={perspective.undecided}
+	onChoose={(p) => perspective.choose(p)}
+	onDismiss={() => perspective.dismiss()}
+/>

@@ -7,6 +7,7 @@
 		type ProfileSlug,
 		type RoleSlug
 	} from '$lib/interop/index.js';
+	import { type Perspective, perspectiveCopy } from '$lib/interop/perspective/index.js';
 
 	import { anchorX } from './anchor-x.svelte.js';
 	import { type Dimension, toneClasses, toneFor } from './filter-bar-tone.js';
@@ -16,6 +17,7 @@
 		roleItems,
 		unofferedAdditiveNote
 	} from './filter-panel-items.js';
+	import { filterPanelNotes } from './filter-panel-notes.js';
 	import FilterPanel from './FilterPanel.svelte';
 	import { panelMotion } from './panel-motion.js';
 
@@ -62,6 +64,7 @@
 		onClear,
 		matched,
 		hidden,
+		perspective,
 		open = $bindable(null)
 	}: {
 		roles: Set<RoleSlug>;
@@ -75,6 +78,8 @@
 		matched: number;
 		/** Scenario sets the filter is holding back. */
 		hidden: number;
+		/** The reader's Perspective, for the panels' notes and example lines. */
+		perspective?: Perspective;
 		/** Which panel is open. Bindable so a story can render one open. */
 		open?: Dimension | null;
 	} = $props();
@@ -219,9 +224,14 @@
 	const anySelected = $derived(roles.size > 0 || profiles.size > 0 || additives.size > 0);
 
 	const panelItems = $derived({
-		roles: roleItems(roles),
-		profiles: profileItems(profiles),
-		additives: additiveItems(offeredAdditives, additives)
+		roles: roleItems(roles, perspective),
+		profiles: profileItems(profiles, perspective),
+		additives: additiveItems(offeredAdditives, additives, perspective)
+	});
+	const notes = $derived({
+		roles: perspectiveCopy(filterPanelNotes.roles, perspective) ?? '',
+		profiles: perspectiveCopy(filterPanelNotes.profiles, perspective) ?? '',
+		additives: perspectiveCopy(filterPanelNotes.additives, perspective) ?? ''
 	});
 	const additiveNote = $derived(unofferedAdditiveNote(offeredAdditives));
 
@@ -368,8 +378,8 @@
 					heading="Roles"
 					description="A role is the part a product plays in a credential exchange. Wallets play the holder role; the label stays “Wallet.”"
 					items={panelItems.roles}
-					builderNote="Pick the role(s) your product plays: issuer, wallet, verifier, or some combination."
-					evaluatorNote="Pick the role(s) you need a platform, vendor, or implementation to demonstrate."
+					note={notes.roles}
+					noteTag={perspective}
 					overviewHref={rolesOverviewHref}
 					overviewLabel="How roles fit together"
 					onToggle={(slug) => onToggleRole(slug as RoleSlug)}
@@ -381,8 +391,8 @@
 					heading="Standard Profiles"
 					description="A Standard Profile is an interoperability profile: a fixed set of standards and options that two products must share to work together."
 					items={panelItems.profiles}
-					builderNote="Cover the Standard Profiles your product needs to interoperate with."
-					evaluatorNote="Pick the Standard Profiles your ecosystem requires, then ask the platform or implementation to demonstrate them."
+					note={notes.profiles}
+					noteTag={perspective}
 					overviewHref={profilesOverviewHref}
 					overviewLabel="All Standard Profiles"
 					onToggle={(slug) => onToggleProfile(slug as ProfileSlug)}
@@ -396,8 +406,8 @@
 					items={panelItems.additives}
 					columns={2}
 					footnote={additiveNote}
-					builderNote="Layer the add-ons your ecosystem mandates on top of the Standard Profiles you already cover."
-					evaluatorNote="Add the data or crypto requirements your procurement asks for, and see them inside each scenario set."
+					note={notes.additives}
+					noteTag={perspective}
 					overviewHref={profilesOverviewHref}
 					overviewLabel="All add-ons"
 					onToggle={(slug) => onToggleAdditive(slug as AdditiveProfileSlug)}

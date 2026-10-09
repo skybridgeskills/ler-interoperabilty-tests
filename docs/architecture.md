@@ -748,6 +748,36 @@ Flash prevention: an inline script in `app.html` reads
 `+layout.svelte` `onMount` and the `ThemeToggle` keep the class in sync
 on subsequent navigations and OS-preference changes.
 
+## Perspective
+
+The reader's **Perspective** — Builder or Evaluator (see the
+[vocabulary table](#vocabulary)) — is how they are using the suite: building a
+product, or judging one. It changes **copy only**. Nothing is gated on it,
+nothing scores differently, and badges claim the same way in both.
+
+- **Model.** `src/lib/interop/perspective/`: `Perspective`, `PerspectiveCopy =
+{ builder, evaluator, neutral? }` and `perspectiveCopy(copy, perspective)`, the
+  only resolver — no `{#if perspective === 'builder'}` branches anywhere. Unset
+  is `undefined`, not a third Perspective: it resolves to `neutral`, or to
+  nothing when there is none.
+- **Where per-Perspective copy lives.** `Scenario.framing` (one paragraph each,
+  no `neutral`, rendered once under the scenario hero as the orchid
+  `FramingBlock`; absent when unset), `example` on `Role` / `Profile` /
+  `AdditiveProfile` (the italic line on a filter-panel card; absent when unset),
+  and UI strings as inline `PerspectiveCopy` literals with a `neutral`, resolved
+  at the call site (the Home lede, the filter panels' notes, the badge claim
+  line, the Copy-link label). There is no requirement-level guidance. Both
+  fields sit **outside the fingerprint**, so authoring them resets nobody.
+- **Persistence and the gate.** The `lits.perspective` cookie (see
+  [Client-side persistence](#client-side-persistence)) seeds a per-request store
+  in the root layout. The layout renders `PerspectiveGate` only while the store
+  is **undecided** — no cookie at all — so a returning reader never sees it, and
+  a first-timer gets it in the server-rendered HTML (its portal is disabled so
+  it renders inline). Choosing writes the Perspective; "Not now", Escape or the
+  scrim writes `dismissed`. Switching later happens in place from the Home
+  hero's switch or any compact hero's first chip. The Perspective is never in a
+  URL.
+
 ## Client-side persistence
 
 The app keeps three pieces of state in `localStorage`, isolated under

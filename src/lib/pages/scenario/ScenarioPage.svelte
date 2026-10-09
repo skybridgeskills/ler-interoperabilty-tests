@@ -7,10 +7,11 @@
 	import { InlineMarkup } from '$lib/components/interop/inline-markup/index.js';
 	import { ScenarioStepCard } from '$lib/components/interop/scenario-step/index.js';
 	import { PageHero } from '$lib/components/page-hero/index.js';
-	import { ContextChip } from '$lib/components/perspective/index.js';
+	import { ContextChip, FramingBlock } from '$lib/components/perspective/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { additiveProfileBySlug, profileBySlug, roleBySlug } from '$lib/interop/accessors.js';
 	import type { AdditiveProfileSlug } from '$lib/interop/additive-profile-schema.js';
+	import { perspectiveCopy } from '$lib/interop/perspective/index.js';
 	import { additiveProfileHref, profileHref, roleHref } from '$lib/interop/route-hrefs.js';
 	import type { ScenarioRunRecord } from '$lib/interop/scenario-run/index.js';
 	import {
@@ -88,6 +89,10 @@
 	const perspective = perspectiveStore();
 
 	const profile = $derived(baseProfileOf(scenario.memberships));
+	/** The framing paragraph for the reader's Perspective — absent when unset or unauthored. */
+	const framing = $derived(
+		scenario.framing && perspectiveCopy(scenario.framing, perspective.current)
+	);
 	const role = $derived(roleBySlug(scenario.role));
 	/** The hero's context chips: the Standard Profiles it runs over, then every Add-on it counts toward. */
 	const profileChips = $derived(
@@ -157,6 +162,9 @@
 			{/each}
 		{/snippet}
 	</PageHero>
+	{#if framing && perspective.current}
+		<FramingBlock perspective={perspective.current} text={framing} />
+	{/if}
 {/snippet}
 
 {#snippet actionPanel()}
